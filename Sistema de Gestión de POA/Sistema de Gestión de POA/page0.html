@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard POA - Portafolio de Proyectos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --banner-azul:#002b5c;
+  --fondo-azul:#0b2447;
+  --tarjeta-azul:#142d52;
+
+  /* Paneles diferenciados */
+  --panel-kpi:#163566;           /* Tarjetas de indicadores */
+  --panel-proyectos:#071730;     /* Caja de proyectos (más oscura) */
+  --panel-actividades:#052a35;   /* Caja de actividades del mes (más verdosa/azulada) */
+
+  --texto-claro:#e9edf3;
+  --texto-sec:#bfc7d1;
+  --texto-actividades:#d0f4ff;   /* texto principal en actividades del mes */
+  --texto-actividades-sec:#9fd0de;
+
+  --verde-hoja:#3fa65b;
+  --borde:rgba(255,255,255,0.08);
+
+  --estado-P:#a93226;
+  --estado-I:#a5673f;
+  --estado-F:#2ecc71;
+}
+
+/* RESET */
+*{
+  box-sizing:border-box;
+  margin:0;
+  font-family:"Segoe UI",system-ui,sans-serif;
+}
+
+body{
+  background:var(--fondo-azul);
+  color:var(--texto-claro);
+  line-height:1.45;
+}
+
+/* HEADER */
+header{
+  background:var(--banner-azul);
+  padding:1rem 2rem;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.brand-title{
+  font-weight:bold;
+  text-transform:uppercase;
+  font-size:1.05rem;
+  letter-spacing:.05em;
+}
+
+.brand-sub{
+  font-size:.82rem;
+  color:var(--texto-sec);
+}
+
+.user{
+  text-align:right;
+  font-size:.78rem;
+}
+
+/* LAYOUT GENERAL */
+main{
+  max-width:1150px;
+  margin:1.5rem auto;
+  padding:0 1rem;
+}
+
+.card{
+  background:var(--tarjeta-azul);
+  border-radius:14px;
+  padding:1.6rem 1.7rem 1.4rem;
+  border:1px solid var(--borde);
+  box-shadow:0 8px 20px rgba(0,0,0,.25);
+}
+
+/* CABECERA DEL DASHBOARD */
+.card-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.8rem;
+}
+
+.card-title{
+  font-size:1.2rem;
+}
+
+.card-sub{
+  font-size:.85rem;
+  color:var(--texto-sec);
+  margin-top:.2rem;
+}
+
+.btn{
+  border:none;
+  border-radius:999px;
+  padding:.4rem 1rem;
+  font-size:.8rem;
+  cursor:pointer;
+}
+
+.btn-alt{
+  background:transparent;
+  border:1px solid var(--verde-hoja);
+  color:var(--verde-hoja);
+}
+
+.btn-alt:hover{
+  background:rgba(63,166,91,.12);
+}
+
+/* DIVISORES */
+.divider{
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--verde-hoja),transparent);
+  margin:1.2rem 0;
+}
+
+.section-title{
+  display:flex;
+  align-items:center;
+  gap:.4rem;
+  font-size:.95rem;
+  font-weight:600;
+}
+
+.section-title::before{
+  content:"";
+  width:4px;
+  height:18px;
+  background:var(--verde-hoja);
+  border-radius:10px;
+}
+
+.section-divider{
+  height:1px;
+  background:var(--verde-hoja);
+  opacity:.4;
+  margin:.4rem 0 .7rem;
+}
+
+.section-desc{
+  font-size:.8rem;
+  color:var(--texto-sec);
+}
+
+/* PANEL GENERAL DEL PORTAFOLIO (KPI) */
+.panel-portafolio{
+  margin-bottom:1.5rem;
+}
+
+.portafolio-resumen{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:1rem;
+  margin-bottom:1rem;
+  flex-wrap:wrap;
+}
+
+.portafolio-texto{
+  font-size:.85rem;
+  color:var(--texto-sec);
+}
+
+/* KPI CARDS PORTAFOLIO */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:1rem;
+}
+
+.kpi-card{
+  background:var(--panel-kpi);
+  border-radius:12px;
+  border:1px solid var(--borde);
+  padding:.75rem .9rem;
+}
+
+.kpi-label{
+  font-size:.78rem;
+  color:var(--texto-sec);
+  margin-bottom:.25rem;
+}
+
+.kpi-value{
+  font-size:1.15rem;
+  font-weight:600;
+}
+
+.kpi-sub{
+  font-size:.75rem;
+  color:var(--texto-sec);
+  margin-top:.15rem;
+}
+
+.kpi-bar-bg{
+  margin-top:.4rem;
+  width:100%;
+  height:6px;
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
+  overflow:hidden;
+}
+
+.kpi-bar-fill{
+  height:100%;
+  width:0%;
+  border-radius:999px;
+  background:var(--verde-hoja);
+}
+
+/* PANEL PROYECTOS (SECCIÓN 2) */
+.panel-proyectos{
+  margin-top:0.3rem;
+  background:var(--panel-proyectos);
+  border-radius:12px;
+  border:1px solid var(--borde);
+  padding:1rem 1rem 1rem;
+  margin-bottom:1.3rem;
+}
+
+.panel-proyectos .section-title::before{
+  background:var(--verde-hoja);
+}
+
+/* TABLA PROYECTOS */
+.tabla-proyectos{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.78rem;
+  margin-top:.5rem;
+}
+
+.tabla-proyectos thead{
+  background:rgba(0,0,0,.3);
+}
+
+.tabla-proyectos th,
+.tabla-proyectos td{
+  padding:.4rem .35rem;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+
+.tabla-proyectos th{
+  text-align:left;
+  color:var(--texto-sec);
+  font-weight:500;
+}
+
+.tabla-proyectos th.center,
+.tabla-proyectos td.center{
+  text-align:center;
+}
+
+.tabla-proyectos tbody tr:nth-child(even){
+  background:rgba(255,255,255,.02);
+}
+
+.tabla-proyectos tbody tr:hover{
+  background:rgba(255,255,255,.05);
+}
+
+/* link de proyecto */
+.proyecto-link{
+  color:#9ad7ff;
+  text-decoration:none;
+}
+
+.proyecto-link:hover{
+  text-decoration:underline;
+}
+
+/* Nº actividades mes en círculo */
+.badge-activ{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:1.6rem;
+  height:1.6rem;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.55);
+  font-size:.75rem;
+  color:var(--texto-claro);
+}
+
+/* PANEL ACTIVIDADES DEL MES (SECCIÓN 3) */
+.panel-actividades{
+  background:var(--panel-actividades);
+  border-radius:12px;
+  border:1px solid rgba(63,166,91,0.65); /* borde verdoso */
+  padding:1rem 1rem 1.1rem;
+  margin-top:1rem;
+}
+
+.panel-actividades .section-title{
+  color:var(--texto-actividades);
+}
+
+.panel-actividades .section-title::before{
+  background:var(--verde-hoja);
+}
+
+.panel-actividades .section-desc{
+  color:var(--texto-actividades-sec);
+}
+
+/* TABLA ACTIVIDADES DEL MES */
+.actividades-tabla{
+  margin-top:.5rem;
+  font-size:.78rem;
+  width:100%;
+  border-collapse:collapse;
+  color:var(--texto-actividades);
+}
+
+.actividades-tabla thead{
+  background:rgba(0,0,0,.2);
+}
+
+.actividades-tabla th,
+.actividades-tabla td{
+  padding:.4rem .35rem;
+  border-bottom:1px solid rgba(255,255,255,.09);
+}
+
+.actividades-tabla th{
+  text-align:left;
+  color:var(--texto-actividades-sec);
+  font-weight:500;
+}
+
+.actividades-tabla tbody tr:nth-child(even){
+  background:rgba(255,255,255,0.02);
+}
+
+.actividades-tabla tbody tr:hover{
+  background:rgba(0,255,209,0.08);
+}
+
+/* centrar avance y logro en actividades del mes */
+.actividades-tabla th.center,
+.actividades-tabla td.center{
+  text-align:center;
+}
+
+/* links de actividades */
+.actividad-link{
+  color:#72e1ff;
+  text-decoration:none;
+}
+
+.actividad-link:hover{
+  text-decoration:underline;
+}
+
+/* ESTADOS */
+.estado-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:.1rem .5rem;
+  border-radius:999px;
+  font-size:.72rem;
+  font-weight:600;
+}
+
+.estado-P{
+  background:rgba(169,50,38,.2);
+  border:1px solid var(--estado-P);
+  color:#f7d5d0;
+}
+
+.estado-I{
+  background:rgba(165,103,63,.2);
+  border:1px solid var(--estado-I);
+  color:#f7ddcc;
+}
+
+.estado-F{
+  background:rgba(46,204,113,.2);
+  border:1px solid var(--estado-F);
+  color:#daf8e6;
+}
+
+/* UTILIDADES */
+.btn-mini{
+  padding:.25rem .6rem;
+  font-size:.72rem;
+}
+
+/* RESPONSIVE */
+@media (max-width:900px){
+  .portafolio-resumen{
+    flex-direction:column;
+  }
+  .tabla-proyectos,
+  .actividades-tabla{
+    font-size:.75rem;
+  }
+}
+
+@media (max-width:600px){
+  .card{
+    padding:1.3rem 1.2rem;
+  }
+}
+
+/* IMPRESIÓN */
+@media print{
+  header,.btn{display:none!important;}
+  body{background:#fff;color:#000;}
+  .card,.panel-proyectos,.panel-actividades{
+    background:#fff;
+    border:1px solid #ccc;
+    box-shadow:none;
+  }
+  .kpi-bar-bg{
+    background:#eee;
+  }
+  .actividad-link,
+  .proyecto-link{color:#0000ee;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand-title">Universidad de Sonsonate</div>
+    <div class="brand-sub">Dashboard POA - Portafolio de Proyectos</div>
+  </div>
+  <div class="user">
+    Usuario:<br>
+    <strong>Carlos Roberto Martínez Martínez</strong>
+  </div>
+</header>
+
+<main>
+<section class="card">
+
+  <!-- CABECERA -->
+  <div class="card-header">
+    <div>
+      <h1 class="card-title">Resumen del portafolio de proyectos POA</h1>
+      <p class="card-sub">Visión global del presupuesto, avance y resultados de todos los proyectos activos.</p>
+    </div>
+    <button class="btn btn-alt" type="button" onclick="window.print()">🖨 Imprimir dashboard</button>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- PANEL 1: KPI DEL PORTAFOLIO -->
+  <div class="panel-portafolio">
+    <div class="portafolio-resumen">
+      <div class="portafolio-texto">
+        Proyectos activos: <strong id="lbl-total-proyectos">0</strong><br>
+        Seguimiento por ejecución del plan, logro de indicadores y uso de presupuesto.
+      </div>
+      <div class="portafolio-texto">
+        Mes de referencia: <strong id="lbl-mes-ref">Marzo 2025</strong><br>
+        Este resumen consolida los datos de todos los proyectos aprobados en el POA.
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <!-- Presupuesto del portafolio -->
+      <div class="kpi-card">
+        <div class="kpi-label">Presupuesto del portafolio</div>
+        <div class="kpi-value" id="kpi-pres-disponible-portfolio">$ 0.00</div>
+        <div class="kpi-sub">
+          Aprobado: <span id="kpi-pres-aprobado-portfolio">$ 0.00</span> · Gastado:
+          <span id="kpi-pres-gastado-portfolio">$ 0.00</span>
+        </div>
+        <div class="kpi-bar-bg">
+          <div class="kpi-bar-fill" id="kpi-pres-bar-portfolio"></div>
+        </div>
+      </div>
+
+      <!-- Avance operativo -->
+      <div class="kpi-card">
+        <div class="kpi-label">Avance operativo promedio</div>
+        <div class="kpi-value" id="kpi-avance-portfolio">0%</div>
+        <div class="kpi-sub">
+          Calculado a partir de los meses P/I/F de todas las actividades.
+        </div>
+        <div class="kpi-bar-bg">
+          <div class="kpi-bar-fill" id="kpi-avance-bar-portfolio"></div>
+        </div>
+      </div>
+
+      <!-- Logro de indicadores -->
+      <div class="kpi-card">
+        <div class="kpi-label">Logro promedio de indicadores (KPI)</div>
+        <div class="kpi-value" id="kpi-logro-portfolio">0%</div>
+        <div class="kpi-sub">
+          Promedio de cumplimiento de metas de los proyectos.
+        </div>
+        <div class="kpi-bar-bg">
+          <div class="kpi-bar-fill" id="kpi-logro-bar-portfolio"></div>
+        </div>
+      </div>
+
+      <!-- Actividades del mes -->
+      <div class="kpi-card">
+        <div class="kpi-label">Actividades del mes en todo el portafolio</div>
+        <div class="kpi-value" id="kpi-activ-mes-portfolio">0</div>
+        <div class="kpi-sub" id="kpi-activ-detalle-portfolio">
+          Pendientes: 0 · En proceso: 0 · Finalizadas: 0
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 2: LISTADO DE PROYECTOS (TABLA) -->
+  <div class="panel-proyectos">
+    <div class="section-title">Listado de proyectos activos</div>
+    <div class="section-divider"></div>
+    <p class="section-desc">
+      Visión compacta para más de 20 proyectos: por fila se muestra presupuesto y porcentajes clave.
+    </p>
+
+    <table class="tabla-proyectos" id="tabla-proyectos">
+      <thead>
+        <tr>
+          <th style="width:26%;">Proyecto</th>
+          <th style="width:6%;" class="center">Año</th>
+          <th style="width:18%;">Responsable</th>
+          <th style="width:10%;">Aprobado</th>
+          <th style="width:10%;">Gastado</th>
+          <th style="width:10%;">Disponible</th>
+          <th style="width:8%;" class="center">Avance %</th>
+          <th style="width:8%;" class="center">Logro %</th>
+          <th style="width:9%;" class="center">Act. mes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PANEL 3: ACTIVIDADES DEL MES (CAJA DIFERENCIADA) -->
+  <div class="panel-actividades">
+    <div class="section-title">Actividades del mes (todos los proyectos)</div>
+    <div class="section-divider"></div>
+    <p class="section-desc">
+      Vista consolidada de las actividades que tienen ejecución este mes: proyecto, responsable y estado.
+    </p>
+
+    <table class="actividades-tabla" id="tabla-actividades-mes">
+      <thead>
+        <tr>
+          <th style="width:30%;">Actividad</th>
+          <th style="width:26%;">Proyecto</th>
+          <th style="width:18%;">Responsable</th>
+          <th style="width:9%;">Estado</th>
+          <th style="width:9%;" class="center">Avance act. %</th>
+          <th style="width:8%;" class="center">Logro KPI %</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- JS -->
+      </tbody>
+    </table>
+  </div>
+
+</section>
+</main>
+
+<script>
+// ====== Datos de ejemplo del portafolio ======
+const proyectos = [
+  {
+    id: 1,
+    nombre: "Gestión de acreditación de la Carrera de Ingeniería Industrial",
+    anio: 2025,
+    responsable: "Coord. Ing. Industrial",
+    presupuestoAprobado: 10000,
+    gastado: 1500,
+    avanceOperativo: 55,
+    logroKpi: 62,
+    actividadesMes: 3
+  },
+  {
+    id: 2,
+    nombre: "Fortalecimiento de laboratorios de Ingeniería Eléctrica",
+    anio: 2025,
+    responsable: "Coord. Ing. Eléctrica",
+    presupuestoAprobado: 18000,
+    gastado: 4000,
+    avanceOperativo: 40,
+    logroKpi: 35,
+    actividadesMes: 4
+  },
+  {
+    id: 3,
+    nombre: "Programa de vinculación con el sector productivo Agronegocios",
+    anio: 2025,
+    responsable: "Coord. Ing. Agronegocios",
+    presupuestoAprobado: 12000,
+    gastado: 3000,
+    avanceOperativo: 70,
+    logroKpi: 55,
+    actividadesMes: 5
+  }
+  // Aquí podrían ir muchos más proyectos en la vida real
+];
+
+const actividadesMes = [
+  {
+    proyectoId: 1,
+    proyectoNombre: "Gestión de acreditación de la Carrera de Ingeniería Industrial",
+    nombre: "Acercamiento y entendimiento con ACAAI",
+    responsable: "Carlos Martínez",
+    estado: "I",
+    avanceActividad: 60,
+    logroKpiActividad: 40
+  },
+  {
+    proyectoId: 1,
+    proyectoNombre: "Gestión de acreditación de la Carrera de Ingeniería Industrial",
+    nombre: "Capacitación de actores de la USO",
+    responsable: "Equipo de acreditación",
+    estado: "P",
+    avanceActividad: 30,
+    logroKpiActividad: 30
+  },
+  {
+    proyectoId: 2,
+    proyectoNombre: "Fortalecimiento de laboratorios de Ingeniería Eléctrica",
+    nombre: "Adquisición de equipo de medición",
+    responsable: "Ing. responsable de laboratorio",
+    estado: "I",
+    avanceActividad: 45,
+    logroKpiActividad: 20
+  },
+  {
+    proyectoId: 2,
+    proyectoNombre: "Fortalecimiento de laboratorios de Ingeniería Eléctrica",
+    nombre: "Capacitación en uso de equipo",
+    responsable: "Unidad de capacitación",
+    estado: "P",
+    avanceActividad: 0,
+    logroKpiActividad: 0
+  },
+  {
+    proyectoId: 3,
+    proyectoNombre: "Programa de vinculación con el sector productivo Agronegocios",
+    nombre: "Diseño de talleres con productores",
+    responsable: "Equipo Agronegocios",
+    estado: "F",
+    avanceActividad: 100,
+    logroKpiActividad: 90
+  },
+  {
+    proyectoId: 3,
+    proyectoNombre: "Programa de vinculación con el sector productivo Agronegocios",
+    nombre: "Ejecución de jornadas de campo",
+    responsable: "Equipo de campo",
+    estado: "I",
+    avanceActividad: 50,
+    logroKpiActividad: 40
+  }
+];
+
+// URL de la página 2 (seguimiento de proyecto/actividades)
+const urlSeguimiento = "seguimiento_proyecto.html";
+
+// ====== Helpers ======
+function formatoDinero(v){
+  return "$ " + v.toLocaleString("es-SV",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function estadoTexto(estado){
+  if(estado === "P") return "Pendiente";
+  if(estado === "I") return "En proceso";
+  if(estado === "F") return "Finalizada";
+  return "-";
+}
+
+// ====== Cálculos portafolio ======
+const totalProyectos = proyectos.length;
+let totalAprobado = 0;
+let totalGastado = 0;
+let sumaAvance = 0;
+let sumaLogro = 0;
+let totalActivMes = 0;
+
+proyectos.forEach(p => {
+  totalAprobado += p.presupuestoAprobado;
+  totalGastado += p.gastado;
+  sumaAvance += p.avanceOperativo;
+  sumaLogro += p.logroKpi;
+  totalActivMes += p.actividadesMes;
+});
+
+const dispPortafolio = totalAprobado - totalGastado;
+const promAvance = totalProyectos ? Math.round(sumaAvance/totalProyectos) : 0;
+const promLogro = totalProyectos ? Math.round(sumaLogro/totalProyectos) : 0;
+const pctGastadoPortafolio = totalAprobado>0 ? (totalGastado/totalAprobado)*100 : 0;
+
+// Estados de actividades del mes
+let cP=0, cI=0, cF=0;
+actividadesMes.forEach(a => {
+  if(a.estado==="P") cP++;
+  if(a.estado==="I") cI++;
+  if(a.estado==="F") cF++;
+});
+
+// ====== Pintar KPI portafolio ======
+document.getElementById("lbl-total-proyectos").textContent = totalProyectos.toString();
+document.getElementById("kpi-pres-aprobado-portfolio").textContent = formatoDinero(totalAprobado);
+document.getElementById("kpi-pres-gastado-portfolio").textContent = formatoDinero(totalGastado);
+document.getElementById("kpi-pres-disponible-portfolio").textContent = formatoDinero(dispPortafolio);
+document.getElementById("kpi-pres-bar-portfolio").style.width = `${Math.min(pctGastadoPortafolio,100)}%`;
+
+document.getElementById("kpi-avance-portfolio").textContent = promAvance + "%";
+document.getElementById("kpi-avance-bar-portfolio").style.width = `${Math.min(promAvance,100)}%`;
+
+document.getElementById("kpi-logro-portfolio").textContent = promLogro + "%";
+document.getElementById("kpi-logro-bar-portfolio").style.width = `${Math.min(promLogro,100)}%`;
+
+document.getElementById("kpi-activ-mes-portfolio").textContent = totalActivMes.toString();
+document.getElementById("kpi-activ-detalle-portfolio").textContent =
+  `Pendientes: ${cP} · En proceso: ${cI} · Finalizadas: ${cF}`;
+
+// ====== Pintar tabla de proyectos ======
+const tbodyProy = document.querySelector("#tabla-proyectos tbody");
+tbodyProy.innerHTML = "";
+
+proyectos.forEach(p => {
+  const disp = p.presupuestoAprobado - p.gastado;
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>
+      <a href="${urlSeguimiento}?proyectoId=${encodeURIComponent(p.id)}"
+         class="proyecto-link">
+        ${p.nombre}
+      </a>
+    </td>
+    <td class="center">${p.anio}</td>
+    <td>${p.responsable}</td>
+    <td>${formatoDinero(p.presupuestoAprobado)}</td>
+    <td>${formatoDinero(p.gastado)}</td>
+    <td>${formatoDinero(disp)}</td>
+    <td class="center">${p.avanceOperativo}%</td>
+    <td class="center">${p.logroKpi}%</td>
+    <td class="center">
+      <span class="badge-activ">${p.actividadesMes}</span>
+    </td>
+  `;
+  tbodyProy.appendChild(tr);
+});
+
+// ====== Pintar tabla de actividades del mes ======
+const tbodyActiv = document.querySelector("#tabla-actividades-mes tbody");
+tbodyActiv.innerHTML = "";
+
+actividadesMes.forEach(a => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>
+      <a href="${urlSeguimiento}?proyectoId=${encodeURIComponent(a.proyectoId)}&actividad=${encodeURIComponent(a.nombre)}"
+         class="actividad-link">
+        ${a.nombre}
+      </a>
+    </td>
+    <td>${a.proyectoNombre}</td>
+    <td>${a.responsable}</td>
+    <td>
+      <span class="estado-pill estado-${a.estado}">
+        ${estadoTexto(a.estado)}
+      </span>
+    </td>
+    <td class="center">${a.avanceActividad}%</td>
+    <td class="center">${a.logroKpiActividad}%</td>
+  `;
+  tbodyActiv.appendChild(tr);
+});
+</script>
+
+</body>
+</html>
+

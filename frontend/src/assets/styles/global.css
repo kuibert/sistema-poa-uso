@@ -1,0 +1,32 @@
+:root {
+  --banner-azul: #002b5c;
+  --fondo-azul: #0b2447;
+  --tarjeta-azul: #142d52;
+  --panel-kpi: #163566;
+  --panel-proyectos: #071730;
+  --panel-actividades: #052a35;
+  --texto-claro: #e9edf3;
+  --texto-sec: #bfc7d1;
+  --verde-hoja: #3fa65b;
+  --borde: rgba(255,255,255,0.08);
+  --estado-P: #a93226;
+  --estado-I: #a5673f;
+  --estado-F: #2ecc71;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  background: var(--fondo-azul);
+  color: var(--texto-claro);
+  line-height: 1.45;
+}
+
+.app {
+  padding: 2rem;
+}

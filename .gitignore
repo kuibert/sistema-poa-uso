@@ -38,3 +38,8 @@ coverage/
 .cache/
 temp/
 tmp/
+
+# Documentation (except Gaby's guide)
+docs/
+*.md
+!GUIA_INSTALACION_GABI.md

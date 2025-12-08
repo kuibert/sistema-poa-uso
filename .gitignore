@@ -39,7 +39,8 @@ coverage/
 temp/
 tmp/
 
-# Documentation (except Gaby's guide)
+# Documentation (except specific files)
 docs/
 *.md
 !GUIA_INSTALACION_GABI.md
+!README.md

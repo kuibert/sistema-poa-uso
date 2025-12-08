@@ -226,32 +226,36 @@ npm test
 2. Build: `npm run build`
 3. Deploy carpeta `dist/`
 
-## 📚 Documentación Adicional
+## 📚 Documentación
 
-- **PLAN_DE_TRABAJO.md** - División de tareas por integrante y sprints
-- **ESTRUCTURA_PROYECTO.md** - Arquitectura y estructura de carpetas
-- **EJEMPLOS_CODIGO.md** - Código de inicio rápido para cada integrante
-- **CHECKLIST_PROYECTO.md** - Checklist de seguimiento del proyecto
-- **docs/API.md** - Documentación completa de endpoints
-- **docs/ARQUITECTURA.md** - Diagramas y arquitectura del sistema
+- **PLAN_DE_TRABAJO.md** - División de tareas y plan de 4 sprints
+- **GUIA_MIGRACION_HTML_A_REACT.md** - Cómo migrar los 5 HTML a React
+- **EJEMPLOS_CODIGO.md** - Código backend para Salvador
+- **EJEMPLOS_MIGRACION_HTML_REACT.md** - Ejemplos React para Gabi
+- **backend/README.md** - Instrucciones para Salvador
+- **frontend/README.md** - Instrucciones para Gabi
 
-## 🤝 Contribución
+## 🚀 Inicio Rápido para el Equipo
 
-### Flujo de trabajo Git:
-1. Crear rama desde `develop`: `git checkout -b feature/nombre-feature`
-2. Hacer commits frecuentes: `git commit -m "feat: descripción"`
-3. Push a rama: `git push origin feature/nombre-feature`
-4. Crear Pull Request a `develop`
-5. Code review por otro integrante
-6. Merge después de aprobación
+### Salvador (Backend):
+1. `cd backend`
+2. `npm install`
+3. Copiar `.env.example` a `.env` y configurar
+4. Crear BD: `psql -U postgres -d poa_db -f ../database/base_postgres.sql`
+5. `npm run dev`
+6. Leer `EJEMPLOS_CODIGO.md`
+
+### Gabi (Frontend):
+1. `cd frontend`
+2. `npm install`
+3. Copiar `.env.example` a `.env`
+4. `npm run dev`
+5. Leer `GUIA_MIGRACION_HTML_A_REACT.md`
 
 ### Convención de commits:
 - `feat:` Nueva funcionalidad
 - `fix:` Corrección de bug
-- `style:` Cambios de estilo/formato
-- `refactor:` Refactorización de código
 - `docs:` Cambios en documentación
-- `test:` Agregar o modificar tests
 
 ## 🐛 Reporte de Bugs
 

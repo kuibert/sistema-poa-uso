@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { DashboardPOA } from './pages/DashboardPOA';
-import { MainLayout } from './components/layout/MainLayout';
+import { ProyectoPOA } from './pages/ProyectoPOA';
 import { authApi } from './services/authApi';
 
 // Componente para proteger rutas
@@ -19,12 +19,30 @@ function App() {
           path="/" 
           element={
             <ProtectedRoute>
-              <MainLayout>
-                <DashboardPOA />
-              </MainLayout>
+              <DashboardPOA />
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/proyectos/nuevo" 
+          element={
+            <ProtectedRoute>
+              <ProyectoPOA />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/proyectos/:id" 
+          element={
+            <ProtectedRoute>
+              <ProyectoPOA />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Rutas para Gaby - Seguimiento, Gastos, Evidencias */}
+        {/* <Route path="/proyectos/:id/seguimiento" element={...} /> */}
+        {/* <Route path="/actividades/:id/gastos" element={...} /> */}
+        {/* <Route path="/actividades/:id/evidencias" element={...} /> */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

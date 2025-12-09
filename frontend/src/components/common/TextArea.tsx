@@ -7,14 +7,14 @@ const colors = {
   inputBg: '#0d213f',
 };
 
-interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+interface TextAreaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> {
   label?: string;
   error?: string;
   onChange?: (value: string) => void;
 }
 
-export const Input: React.FC<InputProps> = ({ label, error, className, onChange, value, ...rest }) => {
-  const inputStyle: React.CSSProperties = {
+export const TextArea: React.FC<TextAreaProps> = ({ label, error, onChange, value, className, ...rest }) => {
+  const style: React.CSSProperties = {
     width: '100%',
     marginTop: '.2rem',
     background: colors.inputBg,
@@ -23,12 +23,13 @@ export const Input: React.FC<InputProps> = ({ label, error, className, onChange,
     padding: '.45rem .6rem',
     borderRadius: 6,
     fontSize: '.82rem',
+    minHeight: 80,
+    resize: 'vertical',
   };
-
   return (
     <div className={className}>
       {label && <label style={{ fontSize: '.75rem', color: colors.textSec }}>{label}</label>}
-      <input {...rest} value={value as any} onChange={(e) => onChange?.(e.target.value)} style={inputStyle} />
+      <textarea {...rest} value={value as any} onChange={(e) => onChange?.(e.target.value)} style={style} />
       {error && <div style={{ color: '#fecaca', fontSize: '.75rem', marginTop: 4 }}>{error}</div>}
     </div>
   );

@@ -168,13 +168,16 @@ npm run dev
 ### Carlos - Frontend Developer (Parte 1)
 **Responsabilidad:** Services + Páginas principales
 
-**Tareas:**
+**Estado:** ✅ Completado
 - [x] Services (apiClient, authApi, poaApi)
-- [ ] Componentes comunes (Modal, Button, Input)
-- [ ] Login
-- [ ] Dashboard POA
-- [ ] Proyecto POA
-- [ ] MainLayout
+- [x] Componentes comunes (Modal, Button, Input)
+- [x] Login
+- [x] Dashboard POA
+- [x] Proyecto POA (crear/editar)
+- [x] MainLayout
+- [x] Componentes de proyecto (MesesCheckbox, ActividadBlock)
+- [x] Gestión de indicadores
+- [x] Resumen de costos
 
 ### Gaby - Frontend Developer (Parte 2)
 **Responsabilidad:** Páginas de seguimiento
@@ -193,10 +196,10 @@ npm run dev
 | **Backend** | ✅ Completo | 100% |
 | **Frontend - Config** | ✅ Completo | 100% |
 | **Frontend - Services** | ✅ Completo | 100% |
-| **Frontend - Páginas** | 🔄 En progreso | 0% |
-| **Frontend - Componentes** | 🔄 En progreso | 0% |
+| **Frontend - Páginas** | ✅ Completo | 80% |
+| **Frontend - Componentes** | ✅ Completo | 80% |
 
-**Progreso Total:** 40%
+**Progreso Total:** 80%
 
 ---
 

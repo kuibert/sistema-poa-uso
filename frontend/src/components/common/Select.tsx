@@ -7,14 +7,16 @@ const colors = {
   inputBg: '#0d213f',
 };
 
-interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+interface SelectOption { value: string; label: string; }
+interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
   label?: string;
+  options: SelectOption[];
   error?: string;
   onChange?: (value: string) => void;
 }
 
-export const Input: React.FC<InputProps> = ({ label, error, className, onChange, value, ...rest }) => {
-  const inputStyle: React.CSSProperties = {
+export const Select: React.FC<SelectProps> = ({ label, options, error, onChange, value, className, ...rest }) => {
+  const selStyle: React.CSSProperties = {
     width: '100%',
     marginTop: '.2rem',
     background: colors.inputBg,
@@ -28,7 +30,11 @@ export const Input: React.FC<InputProps> = ({ label, error, className, onChange,
   return (
     <div className={className}>
       {label && <label style={{ fontSize: '.75rem', color: colors.textSec }}>{label}</label>}
-      <input {...rest} value={value as any} onChange={(e) => onChange?.(e.target.value)} style={inputStyle} />
+      <select {...rest} value={value as any} onChange={(e) => onChange?.(e.target.value)} style={selStyle}>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
       {error && <div style={{ color: '#fecaca', fontSize: '.75rem', marginTop: 4 }}>{error}</div>}
     </div>
   );

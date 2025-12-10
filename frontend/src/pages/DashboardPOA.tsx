@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
-import './DashboardPrototype.css';
+import { PageHeader, Card, Divider, Grid, Table, Badge } from '../components/common';
+import { KPICard, StatusPill, Status } from '../components/poa';
+import { Button } from '../components/common/Button';
 
 export const DashboardPOA: React.FC = () => {
   // Datos de ejemplo del prototipo (idénticos al HTML)
@@ -45,7 +47,7 @@ export const DashboardPOA: React.FC = () => {
       proyectoNombre: "Gestión de acreditación de la Carrera de Ingeniería Industrial",
       nombre: "Acercamiento y entendimiento con ACAAI",
       responsable: "Carlos Martínez",
-      estado: "I",
+      estado: "I" as Status,
       avanceActividad: 60,
       logroKpiActividad: 40
     },
@@ -54,7 +56,7 @@ export const DashboardPOA: React.FC = () => {
       proyectoNombre: "Gestión de acreditación de la Carrera de Ingeniería Industrial",
       nombre: "Capacitación de actores de la USO",
       responsable: "Equipo de acreditación",
-      estado: "P",
+      estado: "P" as Status,
       avanceActividad: 30,
       logroKpiActividad: 30
     },
@@ -63,7 +65,7 @@ export const DashboardPOA: React.FC = () => {
       proyectoNombre: "Fortalecimiento de laboratorios de Ingeniería Eléctrica",
       nombre: "Adquisición de equipo de medición",
       responsable: "Ing. responsable de laboratorio",
-      estado: "I",
+      estado: "I" as Status,
       avanceActividad: 45,
       logroKpiActividad: 20
     },
@@ -72,7 +74,7 @@ export const DashboardPOA: React.FC = () => {
       proyectoNombre: "Fortalecimiento de laboratorios de Ingeniería Eléctrica",
       nombre: "Capacitación en uso de equipo",
       responsable: "Unidad de capacitación",
-      estado: "P",
+      estado: "P" as Status,
       avanceActividad: 0,
       logroKpiActividad: 0
     },
@@ -81,7 +83,7 @@ export const DashboardPOA: React.FC = () => {
       proyectoNombre: "Programa de vinculación con el sector productivo Agronegocios",
       nombre: "Diseño de talleres con productores",
       responsable: "Equipo Agronegocios",
-      estado: "F",
+      estado: "F" as Status,
       avanceActividad: 100,
       logroKpiActividad: 90
     },
@@ -90,7 +92,7 @@ export const DashboardPOA: React.FC = () => {
       proyectoNombre: "Programa de vinculación con el sector productivo Agronegocios",
       nombre: "Ejecución de jornadas de campo",
       responsable: "Equipo de campo",
-      estado: "I",
+      estado: "I" as Status,
       avanceActividad: 50,
       logroKpiActividad: 40
     }
@@ -98,7 +100,6 @@ export const DashboardPOA: React.FC = () => {
 
   // Helpers y cálculos idénticos al script del HTML
   const formatoDinero = (v: number) => "$ " + v.toLocaleString("es-SV", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const estadoTexto = (estado: string) => estado === 'P' ? 'Pendiente' : estado === 'I' ? 'En proceso' : estado === 'F' ? 'Finalizada' : '-';
 
   const totalProyectos = proyectos.length;
   const totalAprobado = proyectos.reduce((s, p) => s + p.presupuestoAprobado, 0);
@@ -115,188 +116,254 @@ export const DashboardPOA: React.FC = () => {
 
   const urlSeguimiento = 'seguimiento_proyecto.html';
 
-  return (
-    <div className="dashboard-prototype">
-      <header>
-        <div>
-          <div className="brand-title">Universidad de Sonsonate</div>
-          <div className="brand-sub">Dashboard POA - Portafolio de Proyectos</div>
-        </div>
-        <div className="user">
-          Usuario:<br />
-          <strong>Carlos Roberto Martínez Martínez</strong>
-        </div>
-      </header>
+  // Estilos inline
+  const containerStyle: React.CSSProperties = {
+    background: 'var(--fondo-azul)',
+    color: 'var(--texto-claro)',
+    minHeight: '100vh',
+  };
 
-      <main>
-        <section className="card">
+  const mainStyle: React.CSSProperties = {
+    maxWidth: '1150px',
+    margin: '1.5rem auto 0',
+    padding: '0 1rem 1rem',
+  };
+
+  const cardHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '0.8rem',
+  };
+
+  const cardTitleStyle: React.CSSProperties = {
+    fontSize: '1.2rem',
+  };
+
+  const cardSubStyle: React.CSSProperties = {
+    fontSize: '0.85rem',
+    color: 'var(--texto-sec)',
+    marginTop: '0.2rem',
+  };
+
+  const portafolioResumenStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '1rem',
+    marginBottom: '1rem',
+    flexWrap: 'wrap',
+  };
+
+  const portafolioTextoStyle: React.CSSProperties = {
+    fontSize: '0.85rem',
+    color: 'var(--texto-sec)',
+  };
+
+  const sectionTitleStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+    fontSize: '0.95rem',
+    fontWeight: 600,
+  };
+
+  const sectionTitleBeforeStyle: React.CSSProperties = {
+    width: '4px',
+    height: '18px',
+    background: 'var(--verde-hoja)',
+    borderRadius: '10px',
+  };
+
+  const sectionDividerStyle: React.CSSProperties = {
+    height: '1px',
+    background: 'var(--verde-hoja)',
+    opacity: 0.4,
+    margin: '0.4rem 0 0.7rem',
+  };
+
+  const sectionDescStyle: React.CSSProperties = {
+    fontSize: '0.8rem',
+    color: 'var(--texto-sec)',
+  };
+
+  const proyectoLinkStyle: React.CSSProperties = {
+    color: '#9ad7ff',
+    textDecoration: 'none',
+  };
+
+  const actividadLinkStyle: React.CSSProperties = {
+    color: '#72e1ff',
+    textDecoration: 'none',
+  };
+
+  return (
+    <div style={containerStyle}>
+      <PageHeader
+        title="Universidad de Sonsonate"
+        subtitle="Dashboard POA - Portafolio de Proyectos"
+        userName="Carlos Roberto Martínez Martínez"
+      />
+
+      <main style={mainStyle}>
+        <Card>
           {/* CABECERA */}
-          <div className="card-header">
+          <div style={cardHeaderStyle}>
             <div>
-              <h1 className="card-title">Resumen del portafolio de proyectos POA</h1>
-              <p className="card-sub">Visión global del presupuesto, avance y resultados de todos los proyectos activos.</p>
+              <h1 style={cardTitleStyle}>Resumen del portafolio de proyectos POA</h1>
+              <p style={cardSubStyle}>Visión global del presupuesto, avance y resultados de todos los proyectos activos.</p>
             </div>
-            <button className="btn btn-alt" type="button" onClick={() => window.print()}>🖨 Imprimir dashboard</button>
+            <Button variant="alt" type="button" onClick={() => window.print()}>🖨 Imprimir dashboard</Button>
           </div>
 
-          <div className="divider"></div>
+          <Divider variant="gradient" />
 
           {/* PANEL 1: KPI DEL PORTAFOLIO */}
-          <div className="panel-portafolio">
-            <div className="portafolio-resumen">
-              <div className="portafolio-texto">
-                Proyectos activos: <strong id="lbl-total-proyectos">{totalProyectos}</strong><br />
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={portafolioResumenStyle}>
+              <div style={portafolioTextoStyle}>
+                Proyectos activos: <strong>{totalProyectos}</strong><br />
                 Seguimiento por ejecución del plan, logro de indicadores y uso de presupuesto.
               </div>
-              <div className="portafolio-texto">
-                Mes de referencia: <strong id="lbl-mes-ref">Marzo 2025</strong><br />
+              <div style={portafolioTextoStyle}>
+                Mes de referencia: <strong>Marzo 2025</strong><br />
                 Este resumen consolida los datos de todos los proyectos aprobados en el POA.
               </div>
             </div>
 
-            <div className="kpi-grid">
-              {/* Presupuesto del portafolio */}
-              <div className="kpi-card">
-                <div className="kpi-label">Presupuesto del portafolio</div>
-                <div className="kpi-value" id="kpi-pres-disponible-portfolio">{formatoDinero(dispPortafolio)}</div>
-                <div className="kpi-sub">
-                  Aprobado: <span id="kpi-pres-aprobado-portfolio">{formatoDinero(totalAprobado)}</span> · Gastado:
-                  <span id="kpi-pres-gastado-portfolio"> {formatoDinero(totalGastado)}</span>
-                </div>
-                <div className="kpi-bar-bg">
-                  <div className="kpi-bar-fill" id="kpi-pres-bar-portfolio" style={{ width: `${Math.min(pctGastadoPortafolio, 100)}%` }}></div>
-                </div>
-              </div>
+            <Grid columns={4}>
+              <KPICard
+                label="Presupuesto del portafolio"
+                value={formatoDinero(dispPortafolio)}
+                subtitle={`Aprobado: ${formatoDinero(totalAprobado)} · Gastado: ${formatoDinero(totalGastado)}`}
+                progress={pctGastadoPortafolio}
+                showBar={true}
+              />
 
-              {/* Avance operativo */}
-              <div className="kpi-card">
-                <div className="kpi-label">Avance operativo promedio</div>
-                <div className="kpi-value" id="kpi-avance-portfolio">{promAvance}%</div>
-                <div className="kpi-sub">
-                  Calculado a partir de los meses P/I/F de todas las actividades.
-                </div>
-                <div className="kpi-bar-bg">
-                  <div className="kpi-bar-fill" id="kpi-avance-bar-portfolio" style={{ width: `${Math.min(promAvance, 100)}%` }}></div>
-                </div>
-              </div>
+              <KPICard
+                label="Avance operativo promedio"
+                value={`${promAvance}%`}
+                subtitle="Calculado a partir de los meses P/I/F de todas las actividades."
+                progress={promAvance}
+                showBar={true}
+              />
 
-              {/* Logro de indicadores */}
-              <div className="kpi-card">
-                <div className="kpi-label">Logro promedio de indicadores (KPI)</div>
-                <div className="kpi-value" id="kpi-logro-portfolio">{promLogro}%</div>
-                <div className="kpi-sub">
-                  Promedio de cumplimiento de metas de los proyectos.
-                </div>
-                <div className="kpi-bar-bg">
-                  <div className="kpi-bar-fill" id="kpi-logro-bar-portfolio" style={{ width: `${Math.min(promLogro, 100)}%` }}></div>
-                </div>
-              </div>
+              <KPICard
+                label="Logro promedio de indicadores (KPI)"
+                value={`${promLogro}%`}
+                subtitle="Promedio de cumplimiento de metas de los proyectos."
+                progress={promLogro}
+                showBar={true}
+              />
 
-              {/* Actividades del mes */}
-              <div className="kpi-card">
-                <div className="kpi-label">Actividades del mes en todo el portafolio</div>
-                <div className="kpi-value" id="kpi-activ-mes-portfolio">{totalActivMes}</div>
-                <div className="kpi-sub" id="kpi-activ-detalle-portfolio">
-                  Pendientes: {cP} · En proceso: {cI} · Finalizadas: {cF}
-                </div>
-              </div>
-            </div>
+              <KPICard
+                label="Actividades del mes en todo el portafolio"
+                value={totalActivMes}
+                subtitle={`Pendientes: ${cP} · En proceso: ${cI} · Finalizadas: ${cF}`}
+                showBar={false}
+              />
+            </Grid>
           </div>
 
           {/* PANEL 2: LISTADO DE PROYECTOS (TABLA) */}
-          <div className="panel-proyectos">
-            <div className="section-title">Listado de proyectos activos</div>
-            <div className="section-divider"></div>
-            <p className="section-desc">
+          <Card variant="dark" padding="1rem 1rem 1rem" style={{ marginBottom: '1.3rem' }}>
+            <div style={sectionTitleStyle}>
+              <span style={sectionTitleBeforeStyle}></span>
+              Listado de proyectos activos
+            </div>
+            <div style={sectionDividerStyle}></div>
+            <p style={sectionDescStyle}>
               Visión compacta para más de 20 proyectos: por fila se muestra presupuesto y porcentajes clave.
             </p>
 
-            <table className="tabla-proyectos" id="tabla-proyectos">
-              <thead>
-                <tr>
-                  <th style={{ width: '26%' }}>Proyecto</th>
-                  <th style={{ width: '6%' }} className="center">Año</th>
-                  <th style={{ width: '18%' }}>Responsable</th>
-                  <th style={{ width: '10%' }}>Aprobado</th>
-                  <th style={{ width: '10%' }}>Gastado</th>
-                  <th style={{ width: '10%' }}>Disponible</th>
-                  <th style={{ width: '8%' }} className="center">Avance %</th>
-                  <th style={{ width: '8%' }} className="center">Logro %</th>
-                  <th style={{ width: '9%' }} className="center">Act. mes</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <Table.Header>
+                <Table.Row hover={false}>
+                  <Table.Cell header style={{ width: '26%' }}>Proyecto</Table.Cell>
+                  <Table.Cell header center style={{ width: '6%' }}>Año</Table.Cell>
+                  <Table.Cell header style={{ width: '18%' }}>Responsable</Table.Cell>
+                  <Table.Cell header style={{ width: '10%' }}>Aprobado</Table.Cell>
+                  <Table.Cell header style={{ width: '10%' }}>Gastado</Table.Cell>
+                  <Table.Cell header style={{ width: '10%' }}>Disponible</Table.Cell>
+                  <Table.Cell header center style={{ width: '8%' }}>Avance %</Table.Cell>
+                  <Table.Cell header center style={{ width: '8%' }}>Logro %</Table.Cell>
+                  <Table.Cell header center style={{ width: '9%' }}>Act. mes</Table.Cell>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
                 {proyectos.map((p) => {
                   const disp = p.presupuestoAprobado - p.gastado;
                   return (
-                    <tr key={p.id}>
-                      <td>
-                        <a href={`${urlSeguimiento}?proyectoId=${encodeURIComponent(p.id)}`} className="proyecto-link">
+                    <Table.Row key={p.id}>
+                      <Table.Cell>
+                        <a href={`${urlSeguimiento}?proyectoId=${encodeURIComponent(p.id)}`} style={proyectoLinkStyle}>
                           {p.nombre}
                         </a>
-                      </td>
-                      <td className="center">{p.anio}</td>
-                      <td>{p.responsable}</td>
-                      <td>{formatoDinero(p.presupuestoAprobado)}</td>
-                      <td>{formatoDinero(p.gastado)}</td>
-                      <td>{formatoDinero(disp)}</td>
-                      <td className="center">{p.avanceOperativo}%</td>
-                      <td className="center">{p.logroKpi}%</td>
-                      <td className="center">
-                        <span className="badge-activ">{p.actividadesMes}</span>
-                      </td>
-                    </tr>
+                      </Table.Cell>
+                      <Table.Cell center>{p.anio}</Table.Cell>
+                      <Table.Cell>{p.responsable}</Table.Cell>
+                      <Table.Cell>{formatoDinero(p.presupuestoAprobado)}</Table.Cell>
+                      <Table.Cell>{formatoDinero(p.gastado)}</Table.Cell>
+                      <Table.Cell>{formatoDinero(disp)}</Table.Cell>
+                      <Table.Cell center>{p.avanceOperativo}%</Table.Cell>
+                      <Table.Cell center>{p.logroKpi}%</Table.Cell>
+                      <Table.Cell center>
+                        <Badge variant="circle">{p.actividadesMes}</Badge>
+                      </Table.Cell>
+                    </Table.Row>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
+              </Table.Body>
+            </Table>
+          </Card>
 
           {/* PANEL 3: ACTIVIDADES DEL MES (CAJA DIFERENCIADA) */}
-          <div className="panel-actividades">
-            <div className="section-title">Actividades del mes (todos los proyectos)</div>
-            <div className="section-divider"></div>
-            <p className="section-desc">
+          <Card variant="accent" padding="1rem 1rem 1.1rem" style={{ marginTop: '1rem' }}>
+            <div style={{ ...sectionTitleStyle, color: 'var(--texto-actividades)' }}>
+              <span style={sectionTitleBeforeStyle}></span>
+              Actividades del mes (todos los proyectos)
+            </div>
+            <div style={sectionDividerStyle}></div>
+            <p style={{ ...sectionDescStyle, color: 'var(--texto-actividades-sec)' }}>
               Vista consolidada de las actividades que tienen ejecución este mes: proyecto, responsable y estado.
             </p>
 
-            <table className="actividades-tabla" id="tabla-actividades-mes">
-              <thead>
-                <tr>
-                  <th style={{ width: '30%' }}>Actividad</th>
-                  <th style={{ width: '26%' }}>Proyecto</th>
-                  <th style={{ width: '18%' }}>Responsable</th>
-                  <th style={{ width: '9%' }}>Estado</th>
-                  <th style={{ width: '9%' }} className="center">Avance act. %</th>
-                  <th style={{ width: '8%' }} className="center">Logro KPI %</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table variant="activities">
+              <Table.Header>
+                <Table.Row hover={false}>
+                  <Table.Cell header style={{ width: '30%' }}>Actividad</Table.Cell>
+                  <Table.Cell header style={{ width: '26%' }}>Proyecto</Table.Cell>
+                  <Table.Cell header style={{ width: '18%' }}>Responsable</Table.Cell>
+                  <Table.Cell header style={{ width: '9%' }}>Estado</Table.Cell>
+                  <Table.Cell header center style={{ width: '9%' }}>Avance act. %</Table.Cell>
+                  <Table.Cell header center style={{ width: '8%' }}>Logro KPI %</Table.Cell>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
                 {actividadesMes.map((a, idx) => (
-                  <tr key={idx}>
-                    <td>
+                  <Table.Row key={idx}>
+                    <Table.Cell>
                       <a
                         href={`${urlSeguimiento}?proyectoId=${encodeURIComponent(a.proyectoId)}&actividad=${encodeURIComponent(a.nombre)}`}
-                        className="actividad-link"
+                        style={actividadLinkStyle}
                       >
                         {a.nombre}
                       </a>
-                    </td>
-                    <td>{a.proyectoNombre}</td>
-                    <td>{a.responsable}</td>
-                    <td>
-                      <span className={`estado-pill estado-${a.estado}`}>
-                        {estadoTexto(a.estado)}
-                      </span>
-                    </td>
-                    <td className="center">{a.avanceActividad}%</td>
-                    <td className="center">{a.logroKpiActividad}%</td>
-                  </tr>
+                    </Table.Cell>
+                    <Table.Cell>{a.proyectoNombre}</Table.Cell>
+                    <Table.Cell>{a.responsable}</Table.Cell>
+                    <Table.Cell>
+                      <StatusPill status={a.estado} />
+                    </Table.Cell>
+                    <Table.Cell center>{a.avanceActividad}%</Table.Cell>
+                    <Table.Cell center>{a.logroKpiActividad}%</Table.Cell>
+                  </Table.Row>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+              </Table.Body>
+            </Table>
+          </Card>
+        </Card>
       </main>
     </div>
   );

@@ -1,0 +1,73 @@
+/* 
+ * Sistema de Diseño POA - Universidad de Sonsonate
+ * Variables CSS centralizadas para todo el sistema
+ */
+
+:root {
+  /* Colores principales del sistema */
+  --banner-azul: #002b5c;
+  --fondo-azul: #0b2447;
+  --tarjeta-azul: #142d52;
+  
+  /* Paneles diferenciados */
+  --panel-kpi: #163566;           /* Tarjetas de indicadores */
+  --panel-proyectos: #071730;     /* Caja de proyectos (más oscura) */
+  --panel-actividades: #052a35;   /* Caja de actividades del mes (más verdosa/azulada) */
+  
+  /* Colores de texto */
+  --texto-claro: #e9edf3;
+  --texto-sec: #bfc7d1;
+  --texto-secundario: #bfc7d1;    /* Alias para compatibilidad */
+  --texto-actividades: #d0f4ff;   /* texto principal en actividades del mes */
+  --texto-actividades-sec: #9fd0de;
+  
+  /* Color de acento */
+  --verde-hoja: #3fa65b;
+  
+  /* Bordes y fondos */
+  --borde: rgba(255, 255, 255, 0.08);
+  --input-bg: #0d213f;
+  --input-readonly-bg: #08152a;
+  
+  /* Estados */
+  --estado-P: #a93226;  /* Pendiente - Rojo */
+  --estado-I: #a5673f;  /* En proceso - Naranja */
+  --estado-F: #2ecc71;  /* Finalizada - Verde */
+  
+  /* Colores de error */
+  --error-bg: #fee2e2;
+  --error-border: #fecaca;
+  --error-text: #dc2626;
+  
+  /* Login específico */
+  --login-gradient-start: #667eea;
+  --login-gradient-end: #764ba2;
+  
+  /* Tipografía */
+  --font-family: "Segoe UI", system-ui, sans-serif;
+  
+  /* Espaciado */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Bordes redondeados */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-full: 999px;
+  
+  /* Sombras */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.25);
+  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.3);
+  
+  /* Transiciones */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+}

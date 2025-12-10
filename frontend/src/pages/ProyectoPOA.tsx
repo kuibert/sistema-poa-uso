@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import './ProyectoPrototype.css';
+import { PageHeader, Card, Divider, Grid, Section, Label, Button } from '../components/common';
 
 // Tipos auxiliares
 type Activity = {
@@ -151,131 +151,232 @@ export const ProyectoPOA: React.FC = () => {
   const totalFijos = fijosRows.reduce((s, r) => s + rowTotal(r), 0);
   const totalGeneral = totalVariables + totalFijos;
 
-  return (
-    <div className="proyecto-prototype">
-      <header>
-        <div>
-          <div className="brand-title">Universidad de Sonsonate</div>
-          <div className="brand-sub">Sistema de Gestión POA</div>
-        </div>
-        <div className="user">
-          Usuario:<br />
-          <strong>Carlos Roberto Martínez Martínez</strong>
-        </div>
-      </header>
+  // Estilos inline
+  const containerStyle: React.CSSProperties = {
+    background: 'var(--fondo-azul)',
+    color: 'var(--texto-claro)',
+    minHeight: '100vh',
+  };
 
-      <main>
-        <section className="card">
-          <div className="card-header">
+  const mainStyle: React.CSSProperties = {
+    maxWidth: '1100px',
+    margin: '1.5rem auto 0',
+    padding: '0 1rem 1.2rem',
+  };
+
+  const cardHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '0.8rem',
+  };
+
+  const cardTitleStyle: React.CSSProperties = {
+    fontSize: '1.2rem',
+  };
+
+  const cardSubStyle: React.CSSProperties = {
+    color: 'var(--texto-secundario)',
+    fontSize: '0.9rem',
+    marginTop: '0.2rem',
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    marginTop: '0.2rem',
+    background: 'var(--input-bg)',
+    border: '1px solid var(--borde)',
+    color: 'var(--texto-claro)',
+    padding: '0.45rem 0.6rem',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '0.82rem',
+  };
+
+  const textareaStyle: React.CSSProperties = {
+    ...inputStyle,
+    resize: 'vertical' as const,
+    minHeight: '80px',
+  };
+
+  const readonlyInputStyle: React.CSSProperties = {
+    ...inputStyle,
+    background: 'var(--input-readonly-bg)',
+  };
+
+  const tableStyle: React.CSSProperties = {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '0.8rem',
+    marginTop: '0.3rem',
+  };
+
+  const thTdStyle: React.CSSProperties = {
+    padding: '0.35rem',
+    borderBottom: '1px solid var(--borde)',
+    verticalAlign: 'middle',
+  };
+
+  const thStyle: React.CSSProperties = {
+    ...thTdStyle,
+    textAlign: 'left',
+    color: 'var(--texto-secundario)',
+  };
+
+  const actividadHeaderStyle: React.CSSProperties = {
+    color: 'var(--verde-hoja)',
+    fontWeight: 700,
+    fontSize: '0.95rem',
+    marginBottom: '0.2rem',
+  };
+
+  const actividadNombreTdStyle: React.CSSProperties = {
+    background: 'rgba(0, 0, 0, 0.06)',
+  };
+
+  const actividadIndentStyle: React.CSSProperties = {
+    paddingLeft: '1.6rem',
+  };
+
+  const actividadDividerStyle: React.CSSProperties = {
+    height: '3px',
+    background: 'var(--verde-hoja)',
+    opacity: 0.85,
+    margin: '0.8rem 0 0.9rem',
+    borderRadius: '999px',
+  };
+
+  const tablaMesesStyle: React.CSSProperties = {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '0.75rem',
+  };
+
+  const tablaMesesThTdStyle: React.CSSProperties = {
+    borderBottom: 'none',
+    padding: '0.2rem 0.25rem',
+    textAlign: 'center',
+  };
+
+  const kpiGridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '0.7rem',
+  };
+
+  return (
+    <div style={containerStyle}>
+      <PageHeader
+        title="Universidad de Sonsonate"
+        subtitle="Sistema de Gestión POA"
+        userName="Carlos Roberto Martínez Martínez"
+      />
+
+      <main style={mainStyle}>
+        <Card padding="1.8rem">
+          <div style={cardHeaderStyle}>
             <div>
-              <h1 className="card-title">Registro de Proyecto POA</h1>
-              <p className="card-sub">Información estratégica, actividades, indicadores y presupuesto.</p>
+              <h1 style={cardTitleStyle}>Registro de Proyecto POA</h1>
+              <p style={cardSubStyle}>Información estratégica, actividades, indicadores y presupuesto.</p>
             </div>
 
             <div>
-              <button className="btn btn-alt" type="button">💾 Guardar</button>
-              <button className="btn btn-main" type="button" onClick={() => window.print()}>🖨 Imprimir PDF</button>
+              <Button variant="alt" type="button" style={{ marginRight: '0.5rem' }}>💾 Guardar</Button>
+              <Button variant="main" type="button" onClick={() => window.print()}>🖨 Imprimir PDF</Button>
             </div>
           </div>
 
-          <div className="divider"></div>
+          <Divider variant="gradient" />
 
           <form>
             {/* ESTRATÉGICO */}
-            <div className="section">
-              <h2 className="section-title">Información estratégica</h2>
-              <p className="section-desc">Vinculación con el plan institucional.</p>
-              <div className="section-divider"></div>
+            <Section title="Información estratégica" description="Vinculación con el plan institucional.">
+              <Grid columns={3}>
+                <div>
+                  <Label>Año</Label>
+                  <input type="number" style={inputStyle} />
+                </div>
+                <div>
+                  <Label>Unidad / Facultad</Label>
+                  <input type="text" placeholder="Facultad de Ingeniería y Ciencias Naturales" style={inputStyle} />
+                </div>
+                <div>
+                  <Label>Línea estratégica</Label>
+                  <input type="text" placeholder="1. Mejora continua de la docencia" style={inputStyle} />
+                </div>
+              </Grid>
 
-              <div className="grid-3">
+              <Grid columns={2} style={{ marginTop: '1rem' }}>
                 <div>
-                  <label>Año</label>
-                  <input type="number" />
+                  <Label>Objetivo estratégico</Label>
+                  <textarea placeholder="Promover la excelencia académica mediante..." style={textareaStyle}></textarea>
                 </div>
                 <div>
-                  <label>Unidad / Facultad</label>
-                  <input type="text" placeholder="Facultad de Ingeniería y Ciencias Naturales" />
+                  <Label>Acción / Actividad estratégica</Label>
+                  <textarea placeholder="Participar en procesos de acreditación..." style={textareaStyle}></textarea>
                 </div>
-                <div>
-                  <label>Línea estratégica</label>
-                  <input type="text" placeholder="1. Mejora continua de la docencia" />
-                </div>
-              </div>
-
-              <div className="grid-2" style={{ marginTop: '1rem' }}>
-                <div>
-                  <label>Objetivo estratégico</label>
-                  <textarea placeholder="Promover la excelencia académica mediante..."></textarea>
-                </div>
-                <div>
-                  <label>Acción / Actividad estratégica</label>
-                  <textarea placeholder="Participar en procesos de acreditación..."></textarea>
-                </div>
-              </div>
-            </div>
+              </Grid>
+            </Section>
 
             {/* PROYECTO */}
-            <div className="section">
-              <h2 className="section-title">Datos del proyecto</h2>
-              <div className="section-divider"></div>
+            <Section title="Datos del proyecto">
+              <Grid columns={2}>
+                <div>
+                  <Label>Nombre del proyecto</Label>
+                  <input type="text" placeholder="Gestión de acreditación de la Carrera de Ingeniería Industrial" style={inputStyle} />
+                </div>
+                <div>
+                  <Label>Responsable</Label>
+                  <input type="text" placeholder="Nombre y cargo del responsable" style={inputStyle} />
+                </div>
+              </Grid>
 
-              <div className="grid-2">
-                <div>
-                  <label>Nombre del proyecto</label>
-                  <input type="text" placeholder="Gestión de acreditación de la Carrera de Ingeniería Industrial" />
-                </div>
-                <div>
-                  <label>Responsable</label>
-                  <input type="text" placeholder="Nombre y cargo del responsable" />
-                </div>
+              <div style={{ marginTop: '0.6rem' }}>
+                <Label>Objetivo del proyecto</Label>
+                <textarea placeholder="Describir qué se quiere lograr, cómo y para qué..." style={textareaStyle}></textarea>
               </div>
-
-              <label style={{ marginTop: '.6rem' }}>Objetivo del proyecto</label>
-              <textarea placeholder="Describir qué se quiere lograr, cómo y para qué..."></textarea>
-            </div>
+            </Section>
 
             {/* ACTIVIDADES + BLOQUES */}
-            <div className="section">
-              <h2 className="section-title">Actividades, meses de ejecución e indicadores de logro</h2>
-              <p className="section-desc">
-                Cada actividad tiene su nombre, meses de ejecución, indicador de logro y evidencias asociadas.
-              </p>
-              <div className="section-divider"></div>
-
-              <table id="tabla-actividades">
+            <Section
+              title="Actividades, meses de ejecución e indicadores de logro"
+              description="Cada actividad tiene su nombre, meses de ejecución, indicador de logro y evidencias asociadas."
+            >
+              <table style={tableStyle}>
                 <tbody>
                   {activities.map((a) => (
                     <React.Fragment key={a.id}>
                       {/* BLOQUE: nombre */}
-                      <tr className="actividad-nombre" data-group={a.id}>
-                        <td>
-                          <div className="actividad-header">{a.header}</div>
+                      <tr>
+                        <td style={actividadNombreTdStyle}>
+                          <div style={actividadHeaderStyle}>{a.header}</div>
                           <input
                             type="text"
                             placeholder={a.name}
                             value={a.name}
                             onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, name: e.target.value } : x))}
+                            style={{ ...inputStyle, fontWeight: 600 }}
                           />
                         </td>
-                        <td className="mes-col">
-                          <button type="button" className="btn btn-mini btn-alt" onClick={() => removeActivity(a.id)}>✖</button>
+                        <td style={{ textAlign: 'center' }}>
+                          <Button variant="alt" size="sm" type="button" onClick={() => removeActivity(a.id)}>✖</Button>
                         </td>
                       </tr>
 
                       {/* BLOQUE: meses */}
-                      <tr className="actividad-meses" data-group={a.id}>
-                        <td colSpan={2}>
-                          <table className="tabla-meses" aria-label="Meses de ejecución">
+                      <tr>
+                        <td colSpan={2} style={actividadIndentStyle}>
+                          <table style={tablaMesesStyle} aria-label="Meses de ejecución">
                             <thead>
                               <tr>
-                                <th>Ene</th><th>Feb</th><th>Mar</th><th>Abr</th><th>May</th><th>Jun</th>
-                                <th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th>
+                                <th style={tablaMesesThTdStyle}>Ene</th><th style={tablaMesesThTdStyle}>Feb</th><th style={tablaMesesThTdStyle}>Mar</th><th style={tablaMesesThTdStyle}>Abr</th><th style={tablaMesesThTdStyle}>May</th><th style={tablaMesesThTdStyle}>Jun</th>
+                                <th style={tablaMesesThTdStyle}>Jul</th><th style={tablaMesesThTdStyle}>Ago</th><th style={tablaMesesThTdStyle}>Sep</th><th style={tablaMesesThTdStyle}>Oct</th><th style={tablaMesesThTdStyle}>Nov</th><th style={tablaMesesThTdStyle}>Dic</th>
                               </tr>
                             </thead>
                             <tbody>
                               <tr>
                                 {a.months.map((checked, idx) => (
-                                  <td key={idx}>
+                                  <td key={idx} style={tablaMesesThTdStyle}>
                                     <input
                                       type="checkbox"
                                       checked={checked}
@@ -290,14 +391,15 @@ export const ProyectoPOA: React.FC = () => {
                       </tr>
 
                       {/* BLOQUE: KPI */}
-                      <tr className="actividad-kpi" data-group={a.id}>
-                        <td colSpan={2}>
-                          <div className="actividad-kpi-inner">
+                      <tr>
+                        <td colSpan={2} style={actividadIndentStyle}>
+                          <div style={kpiGridStyle}>
                             <div>
-                              <label>Indicador de logro (categoría)</label>
+                              <Label>Indicador de logro (categoría)</Label>
                               <select
                                 value={a.kpi.categoria}
                                 onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, kpi: { ...x.kpi, categoria: e.target.value } } : x))}
+                                style={inputStyle}
                               >
                                 <option value="">Seleccione...</option>
                                 <option>% de actividades ejecutadas</option>
@@ -308,39 +410,43 @@ export const ProyectoPOA: React.FC = () => {
                               </select>
                             </div>
                             <div>
-                              <label>Descripción específica</label>
+                              <Label>Descripción específica</Label>
                               <input
                                 type="text"
                                 placeholder="Descripción del indicador de la actividad"
                                 value={a.kpi.descripcion}
                                 onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, kpi: { ...x.kpi, descripcion: e.target.value } } : x))}
+                                style={inputStyle}
                               />
                             </div>
                             <div>
-                              <label>Meta</label>
+                              <Label>Meta</Label>
                               <input
                                 type="number"
                                 placeholder="Meta"
                                 value={a.kpi.meta}
                                 onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, kpi: { ...x.kpi, meta: e.target.value } } : x))}
+                                style={inputStyle}
                               />
                             </div>
                             <div>
-                              <label>Unidad</label>
+                              <Label>Unidad</Label>
                               <input
                                 type="text"
                                 placeholder="Unidad"
                                 value={a.kpi.unidad}
                                 onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, kpi: { ...x.kpi, unidad: e.target.value } } : x))}
+                                style={inputStyle}
                               />
                             </div>
                             <div>
-                              <label>Beneficiarios</label>
+                              <Label>Beneficiarios</Label>
                               <input
                                 type="text"
                                 placeholder="Grupo beneficiado"
                                 value={a.kpi.beneficiarios}
                                 onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, kpi: { ...x.kpi, beneficiarios: e.target.value } } : x))}
+                                style={inputStyle}
                               />
                             </div>
                           </div>
@@ -348,21 +454,22 @@ export const ProyectoPOA: React.FC = () => {
                       </tr>
 
                       {/* BLOQUE: Evidencias */}
-                      <tr className="actividad-evidencia" data-group={a.id}>
-                        <td colSpan={2}>
-                          <label>Evidencias</label>
+                      <tr>
+                        <td colSpan={2} style={actividadIndentStyle}>
+                          <Label>Evidencias</Label>
                           <textarea
                             placeholder="Actas, minutas, correos, acuerdos..."
                             value={a.evidencias}
                             onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, evidencias: e.target.value } : x))}
+                            style={textareaStyle}
                           ></textarea>
                         </td>
                       </tr>
 
                       {/* Separador */}
-                      <tr className="actividad-separador" data-group={a.id}>
+                      <tr>
                         <td colSpan={2}>
-                          <div className="actividad-divider"></div>
+                          <div style={actividadDividerStyle}></div>
                         </td>
                       </tr>
                     </React.Fragment>
@@ -370,124 +477,118 @@ export const ProyectoPOA: React.FC = () => {
                 </tbody>
               </table>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.3rem' }}>
-                <span className="note">&nbsp;</span>
-                <button className="btn btn-mini btn-main" type="button" onClick={addActivity}>➕ Agregar actividad</button>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <Button variant="main" size="sm" type="button" onClick={addActivity}>➕ Agregar actividad</Button>
               </div>
-            </div>
+            </Section>
 
             {/* PRESUPUESTO: COSTOS VARIABLES */}
-            <div className="section">
-              <h2 className="section-title">Presupuesto - Costos variables</h2>
-              <p className="section-desc">Gastos directamente asociados a actividades (inscripción, viáticos, servicios, etc.).</p>
-              <div className="section-divider"></div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '.3rem' }}>
-                <button className="btn btn-mini btn-main" type="button" onClick={() => addCostRow('variables')}>➕ Agregar costo variable</button>
+            <Section
+              title="Presupuesto - Costos variables"
+              description="Gastos directamente asociados a actividades (inscripción, viáticos, servicios, etc.)."
+            >
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.3rem' }}>
+                <Button variant="main" size="sm" type="button" onClick={() => addCostRow('variables')}>➕ Agregar costo variable</Button>
               </div>
 
-              <table id="tabla-variables">
+              <table style={tableStyle}>
                 <thead>
                   <tr>
-                    <th style={{ width: '36%' }}>Descripción</th>
-                    <th>Cantidad</th>
-                    <th>Unidad</th>
-                    <th>Precio unitario ($)</th>
-                    <th>Costo total ($)</th>
-                    <th style={{ width: '3%' }}></th>
+                    <th style={{ ...thStyle, width: '36%' }}>Descripción</th>
+                    <th style={thStyle}>Cantidad</th>
+                    <th style={thStyle}>Unidad</th>
+                    <th style={thStyle}>Precio unitario ($)</th>
+                    <th style={thStyle}>Costo total ($)</th>
+                    <th style={{ ...thStyle, width: '3%' }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {variablesRows.map((r, idx) => (
                     <tr key={idx}>
-                      <td><input type="text" placeholder="Nuevo costo" value={r.descripcion} onChange={(e) => updateCostRow('variables', idx, 'descripcion', e.target.value)} /></td>
-                      <td><input type="number" className="qty" min={0} step={1} value={r.qty} onChange={(e) => updateCostRow('variables', idx, 'qty', e.target.value)} /></td>
-                      <td><input type="text" placeholder="Unidad" value={r.unidad} onChange={(e) => updateCostRow('variables', idx, 'unidad', e.target.value)} /></td>
-                      <td><input type="number" className="unit" min={0} step={0.01} value={r.unit} onChange={(e) => updateCostRow('variables', idx, 'unit', e.target.value)} /></td>
-                      <td><input type="number" className="total" readOnly value={rowTotal(r) ? rowTotal(r).toFixed(2) : ''} /></td>
-                      <td className="mes-col">
-                        <button type="button" className="btn btn-mini btn-alt" onClick={() => removeCostRow('variables', idx)}>✖</button>
+                      <td style={thTdStyle}><input type="text" placeholder="Nuevo costo" value={r.descripcion} onChange={(e) => updateCostRow('variables', idx, 'descripcion', e.target.value)} style={inputStyle} /></td>
+                      <td style={thTdStyle}><input type="number" min={0} step={1} value={r.qty} onChange={(e) => updateCostRow('variables', idx, 'qty', e.target.value)} style={inputStyle} /></td>
+                      <td style={thTdStyle}><input type="text" placeholder="Unidad" value={r.unidad} onChange={(e) => updateCostRow('variables', idx, 'unidad', e.target.value)} style={inputStyle} /></td>
+                      <td style={thTdStyle}><input type="number" min={0} step={0.01} value={r.unit} onChange={(e) => updateCostRow('variables', idx, 'unit', e.target.value)} style={inputStyle} /></td>
+                      <td style={thTdStyle}><input type="number" readOnly value={rowTotal(r) ? rowTotal(r).toFixed(2) : ''} style={readonlyInputStyle} /></td>
+                      <td style={{ ...thTdStyle, textAlign: 'center' }}>
+                        <Button variant="alt" size="sm" type="button" onClick={() => removeCostRow('variables', idx)}>✖</Button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'right' }}>Total costos variables ($):</td>
-                    <td><input type="number" id="total-variables" readOnly value={totalVariables ? totalVariables.toFixed(2) : ''} /></td>
+                    <td colSpan={4} style={{ ...thTdStyle, textAlign: 'right' }}>Total costos variables ($):</td>
+                    <td style={thTdStyle}><input type="number" readOnly value={totalVariables ? totalVariables.toFixed(2) : ''} style={readonlyInputStyle} /></td>
                     <td></td>
                   </tr>
                 </tfoot>
               </table>
-            </div>
+            </Section>
 
             {/* PRESUPUESTO: COSTOS FIJOS */}
-            <div className="section">
-              <h2 className="section-title">Presupuesto - Costos fijos</h2>
-              <p className="section-desc">Costos de personal u otros que se mantienen durante el año.</p>
-              <div className="section-divider"></div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '.3rem' }}>
-                <button className="btn btn-mini btn-main" type="button" onClick={() => addCostRow('fijos')}>➕ Agregar costo fijo</button>
+            <Section
+              title="Presupuesto - Costos fijos"
+              description="Costos de personal u otros que se mantienen durante el año."
+            >
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.3rem' }}>
+                <Button variant="main" size="sm" type="button" onClick={() => addCostRow('fijos')}>➕ Agregar costo fijo</Button>
               </div>
 
-              <table id="tabla-fijos">
+              <table style={tableStyle}>
                 <thead>
                   <tr>
-                    <th style={{ width: '36%' }}>Descripción</th>
-                    <th>Cantidad</th>
-                    <th>Unidad</th>
-                    <th>Precio unitario ($)</th>
-                    <th>Costo total ($)</th>
-                    <th style={{ width: '3%' }}></th>
+                    <th style={{ ...thStyle, width: '36%' }}>Descripción</th>
+                    <th style={thStyle}>Cantidad</th>
+                    <th style={thStyle}>Unidad</th>
+                    <th style={thStyle}>Precio unitario ($)</th>
+                    <th style={thStyle}>Costo total ($)</th>
+                    <th style={{ ...thStyle, width: '3%' }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {fijosRows.map((r, idx) => (
                     <tr key={idx}>
-                      <td><input type="text" placeholder="Nuevo costo" value={r.descripcion} onChange={(e) => updateCostRow('fijos', idx, 'descripcion', e.target.value)} /></td>
-                      <td><input type="number" className="qty" min={0} step={1} value={r.qty} onChange={(e) => updateCostRow('fijos', idx, 'qty', e.target.value)} /></td>
-                      <td><input type="text" placeholder="Meses" value={r.unidad} onChange={(e) => updateCostRow('fijos', idx, 'unidad', e.target.value)} /></td>
-                      <td><input type="number" className="unit" min={0} step={0.01} value={r.unit} onChange={(e) => updateCostRow('fijos', idx, 'unit', e.target.value)} /></td>
-                      <td><input type="number" className="total" readOnly value={rowTotal(r) ? rowTotal(r).toFixed(2) : ''} /></td>
-                      <td className="mes-col">
-                        <button type="button" className="btn btn-mini btn-alt" onClick={() => removeCostRow('fijos', idx)}>✖</button>
+                      <td style={thTdStyle}><input type="text" placeholder="Nuevo costo" value={r.descripcion} onChange={(e) => updateCostRow('fijos', idx, 'descripcion', e.target.value)} style={inputStyle} /></td>
+                      <td style={thTdStyle}><input type="number" min={0} step={1} value={r.qty} onChange={(e) => updateCostRow('fijos', idx, 'qty', e.target.value)} style={inputStyle} /></td>
+                      <td style={thTdStyle}><input type="text" placeholder="Meses" value={r.unidad} onChange={(e) => updateCostRow('fijos', idx, 'unidad', e.target.value)} style={inputStyle} /></td>
+                      <td style={thTdStyle}><input type="number" min={0} step={0.01} value={r.unit} onChange={(e) => updateCostRow('fijos', idx, 'unit', e.target.value)} style={inputStyle} /></td>
+                      <td style={thTdStyle}><input type="number" readOnly value={rowTotal(r) ? rowTotal(r).toFixed(2) : ''} style={readonlyInputStyle} /></td>
+                      <td style={{ ...thTdStyle, textAlign: 'center' }}>
+                        <Button variant="alt" size="sm" type="button" onClick={() => removeCostRow('fijos', idx)}>✖</Button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'right' }}>Total costos fijos ($):</td>
-                    <td><input type="number" id="total-fijos" readOnly value={totalFijos ? totalFijos.toFixed(2) : ''} /></td>
+                    <td colSpan={4} style={{ ...thTdStyle, textAlign: 'right' }}>Total costos fijos ($):</td>
+                    <td style={thTdStyle}><input type="number" readOnly value={totalFijos ? totalFijos.toFixed(2) : ''} style={readonlyInputStyle} /></td>
                     <td></td>
                   </tr>
                 </tfoot>
               </table>
-            </div>
+            </Section>
 
             {/* TOTAL GENERAL */}
-            <div className="section">
-              <h2 className="section-title">Costo total del proyecto</h2>
-              <div className="section-divider"></div>
-
-              <div className="grid-3">
+            <Section title="Costo total del proyecto">
+              <Grid columns={3}>
                 <div>
-                  <label>Total costos variables ($)</label>
-                  <input type="number" id="total-variables-copy" readOnly value={totalVariables ? totalVariables.toFixed(2) : ''} />
+                  <Label>Total costos variables ($)</Label>
+                  <input type="number" readOnly value={totalVariables ? totalVariables.toFixed(2) : ''} style={readonlyInputStyle} />
                 </div>
                 <div>
-                  <label>Total costos fijos ($)</label>
-                  <input type="number" id="total-fijos-copy" readOnly value={totalFijos ? totalFijos.toFixed(2) : ''} />
+                  <Label>Total costos fijos ($)</Label>
+                  <input type="number" readOnly value={totalFijos ? totalFijos.toFixed(2) : ''} style={readonlyInputStyle} />
                 </div>
                 <div>
-                  <label>Total general del proyecto ($)</label>
-                  <input type="number" id="total-general" readOnly value={totalGeneral ? totalGeneral.toFixed(2) : ''} />
+                  <Label>Total general del proyecto ($)</Label>
+                  <input type="number" readOnly value={totalGeneral ? totalGeneral.toFixed(2) : ''} style={readonlyInputStyle} />
                 </div>
-              </div>
-            </div>
+              </Grid>
+            </Section>
           </form>
-        </section>
+        </Card>
       </main>
     </div>
   );

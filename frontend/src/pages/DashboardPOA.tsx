@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { PageHeader, Card, Divider, Grid, Table, Badge } from '../components/common';
 import { KPICard, StatusPill, Status } from '../components/poa';
 import { Button } from '../components/common/Button';
+import { authApi } from '../services/authApi';
 
 export const DashboardPOA: React.FC = () => {
   // Datos de ejemplo del prototipo (idénticos al HTML)
@@ -204,6 +205,7 @@ export const DashboardPOA: React.FC = () => {
         title="Universidad de Sonsonate"
         subtitle="Dashboard POA - Portafolio de Proyectos"
         userName="Carlos Roberto Martínez Martínez"
+        onLogout={authApi.logout}
       />
 
       <main style={mainStyle}>

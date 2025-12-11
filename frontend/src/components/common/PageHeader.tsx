@@ -4,9 +4,10 @@ interface PageHeaderProps {
     title: string;
     subtitle: string;
     userName?: string;
+    onLogout?: () => void;
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, userName }) => {
+export const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, userName, onLogout }) => {
     const headerStyle: React.CSSProperties = {
         background: 'var(--banner-azul)',
         padding: '1rem 2rem',
@@ -42,6 +43,24 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, userNam
                 <div style={userStyle}>
                     Usuario:<br />
                     <strong>{userName}</strong>
+                    {onLogout && (
+                        <div style={{ marginTop: '4px' }}>
+                            <button
+                                onClick={onLogout}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#ff8a8a',
+                                    cursor: 'pointer',
+                                    fontSize: '0.75rem',
+                                    textDecoration: 'underline',
+                                    padding: 0
+                                }}
+                            >
+                                Cerrar Sesión
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </header>

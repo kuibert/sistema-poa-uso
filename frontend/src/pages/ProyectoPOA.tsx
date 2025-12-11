@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { PageHeader, Card, Divider, Grid, Section, Label, Button } from '../components/common';
+import { authApi } from '../services/authApi';
 
 // Tipos auxiliares
 type Activity = {
@@ -270,6 +271,7 @@ export const ProyectoPOA: React.FC = () => {
         title="Universidad de Sonsonate"
         subtitle="Sistema de Gestión POA"
         userName="Carlos Roberto Martínez Martínez"
+        onLogout={authApi.logout}
       />
 
       <main style={mainStyle}>

@@ -1,32 +1,334 @@
+/* ============================================================
+   VARIABLES DE COLOR (NO MODIFICAR)
+============================================================ */
 :root {
-  --banner-azul: #002b5c;
-  --fondo-azul: #0b2447;
-  --tarjeta-azul: #142d52;
-  --panel-kpi: #163566;
-  --panel-proyectos: #071730;
-  --panel-actividades: #052a35;
-  --texto-claro: #e9edf3;
-  --texto-sec: #bfc7d1;
-  --verde-hoja: #3fa65b;
-  --borde: rgba(255,255,255,0.08);
-  --estado-P: #a93226;
-  --estado-I: #a5673f;
-  --estado-F: #2ecc71;
+  --banner-azul:#002b5c;
+  --fondo-azul:#0b2447;
+  --tarjeta-azul:#142d52;
+  --tarjeta-verde:#14524764;
+
+  --panel-kpi:#163566;
+  --panel-proyectos:#071730;
+  --panel-actividades:#052a35;
+
+  --texto-claro:#e9edf3;
+  --texto-sec:#bfc7d1;
+
+  --verde:#3fa65b;
+  --borde:rgba(255,255,255,0.08);
+
+  --estado-P:#a93226;
+  --estado-I:#a5673f;
+  --estado-F:#2ecc71;
 }
 
+/* ============================================================
+   RESET & BASE
+============================================================ */
 * {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  font-family:"Segoe UI", system-ui, sans-serif;
 }
 
 body {
-  background: var(--fondo-azul);
-  color: var(--texto-claro);
-  line-height: 1.45;
+  background:var(--fondo-azul);
+  color:var(--texto-claro);
+  line-height:1.45;
 }
 
-.app {
-  padding: 2rem;
+/* ============================================================
+   HEADER SUPERIOR
+============================================================ */
+.header-banner {
+  background:var(--banner-azul);
+  padding:16px 26px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid var(--borde);
 }
+
+.header-banner .titulo {
+  font-size:1.15rem;
+  font-weight:bold;
+}
+
+.header-banner .subtitulo {
+  font-size:0.85rem;
+  color:var(--texto-sec);
+}
+
+.header-banner .usuario {
+  font-size:0.85rem;
+  text-align:right;
+}
+
+/* ============================================================
+   NAVBAR
+============================================================ */
+.navbar {
+  background:#022d63;
+  padding:8px 15px;
+  display:flex;
+  gap:30px;
+  font-size:1rem;
+}
+
+.navbar a {
+  color:white;
+  text-decoration:none;
+  font-weight:600;
+}
+.navbar a:hover { color:var(--verde); }
+
+/* ============================================================
+   CONTENEDOR GENERAL
+============================================================ */
+.dashboard-container {
+  padding:26px;
+}
+
+/* ============================================================
+   TARJETAS
+============================================================ */
+.card {
+  background:var(--tarjeta-azul);
+  padding:26px;
+  border-radius:14px;
+  border:1px solid var(--borde);
+  box-shadow:0 8px 20px rgba(0,0,0,0.25);
+  margin-bottom:30px;
+}
+
+/* Tarjeta principal */
+.dashboard-main-card { padding:32px; }
+
+/* ============================================================
+   BOTONES DEL PROTOTIPO
+============================================================ */
+.btn-green-outline {
+  background:rgba(63,166,91,.15);
+  color:var(--verde);
+  border:1px solid var(--verde);
+  padding:8px 16px;
+  border-radius:8px;
+  font-size:0.9rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:0.25s;
+}
+.btn-green-outline:hover {
+  background:var(--verde);
+  color:white;
+}
+
+/* Botón verde sólido */
+.btn-save {
+  background:var(--verde);
+  color:white;
+  border:none;
+  padding:10px 18px;
+  border-radius:8px;
+  font-weight:bold;
+  cursor:pointer;
+}
+.btn-save:hover { background:#49c46b; }
+
+/* ============================================================
+   DIVISORES Y TÍTULOS
+============================================================ */
+.section-title {
+  margin-top:20px;
+  margin-bottom:14px;
+  font-size:1.3rem;
+  font-weight:bold;
+}
+.section-title span {
+  color:var(--verde);
+  margin-right:8px;
+}
+
+.divider-green {
+  height:2px;
+  background:linear-gradient(90deg, transparent, var(--verde), transparent);
+  margin:18px 0;
+}
+
+.texto-sec { color:var(--texto-sec); }
+
+/* ============================================================
+   TABLAS
+============================================================ */
+table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:0.85rem;
+}
+
+thead {
+  background:rgba(255,255,255,.12);
+}
+
+th, td {
+  padding:10px;
+  border-bottom:1px solid rgba(255,255,255,.12);
+}
+
+tr:nth-child(even) {
+  background:rgba(255,255,255,.03);
+}
+
+.center { text-align:center; }
+
+.badge {
+  padding:4px 10px;
+  border-radius:20px;
+  border:1px solid white;
+}
+
+/* ============================================================
+   KPI PANELS (Dashboard)
+============================================================ */
+.kpi-card {
+  background:var(--panel-kpi);
+  padding:18px;
+  border-radius:12px;
+  border:1px solid var(--borde);
+}
+
+.kpi-title { font-size:0.9rem; color:var(--texto-sec); }
+.kpi-value { font-size:1.8rem; font-weight:bold; }
+.kpi-sub { font-size:0.8rem; color:var(--texto-sec); }
+
+.kpi-bar-bg {
+  background:rgba(255,255,255,.12);
+  height:6px; border-radius:999px; overflow:hidden;
+}
+.kpi-bar-fill {
+  height:100%;
+  background:var(--verde);
+}
+
+/* ============================================================
+   FORMULARIOS — INPUTS EXACTOS AL PROTOTIPO
+============================================================ */
+input, textarea, select {
+  width:100%;
+  background:#0d213f;
+  border:1px solid var(--borde);
+  color:var(--texto-claro);
+  padding:10px 12px;
+  border-radius:8px;
+  font-size:0.9rem;
+}
+
+textarea { min-height:75px; resize:vertical; }
+
+label {
+  display:block;
+  margin-bottom:4px;
+  font-size:0.85rem;
+  color:var(--texto-sec);
+}
+
+/* GRID */
+.form-grid-3 {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+.form-grid-2 {
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+}
+
+/* ============================================================
+   ACTIVIDADES — ESTILO OFICIAL
+============================================================ */
+.actividad-box {
+  background:var(--panel-actividades);
+  border-radius:12px;
+  border:1px solid var(--borde);
+  padding:22px;
+  margin-bottom:26px;
+}
+
+.actividad-title {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+}
+
+.btn-delete-mini {
+  background:rgba(255,0,0,.15);
+  border:1px solid #c0392b;
+  color:#e74c3c;
+  padding:6px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  transition:0.2s;
+}
+.btn-delete-mini:hover { background:#e74c3c; color:white; }
+
+/* Meses */
+.meses-grid {
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:12px;
+  margin:18px 0;
+}
+
+.mes-check {
+  text-align:center;
+  font-size:0.75rem;
+}
+
+.mes-check input {
+  transform:scale(1.2);
+  accent-color:var(--verde);
+}
+
+/* Botón agregar actividad */
+.btn-add-actividad {
+  background:rgba(63,166,91,.2);
+  color:var(--verde);
+  border:1px solid var(--verde);
+  padding:12px 20px;
+  border-radius:10px;
+  font-size:1rem;
+  font-weight:bold;
+}
+.btn-add-actividad:hover {
+  background:var(--verde);
+  color:white;
+}
+
+.navbar .nav-link {
+  padding: 3px;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.navbar .nav-link.active {
+  background: var(--verde);
+  color: #fff;
+}
+
+.progreso-container{
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.container-gasto{
+  display: flex;
+  justify-content: space-between;
+
+  width: 100%;
+}
+

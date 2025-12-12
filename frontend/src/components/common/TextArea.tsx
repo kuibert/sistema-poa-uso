@@ -1,36 +1,52 @@
 import React from 'react';
 
-const colors = {
-  border: 'var(--borde, rgba(255,255,255,0.08))',
-  text: 'var(--texto-claro, #e9edf3)',
-  textSec: 'var(--texto-sec, #bfc7d1)',
-  inputBg: '#0d213f',
+type TextAreaProps = {
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  readOnly?: boolean;
+  rows?: number;
+  style?: React.CSSProperties;
 };
 
-interface TextAreaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> {
-  label?: string;
-  error?: string;
-  onChange?: (value: string) => void;
-}
-
-export const TextArea: React.FC<TextAreaProps> = ({ label, error, onChange, value, className, ...rest }) => {
-  const style: React.CSSProperties = {
+export const TextArea: React.FC<TextAreaProps> = ({
+  value,
+  onChange,
+  placeholder,
+  required = false,
+  disabled = false,
+  readOnly = false,
+  rows = 4,
+  style,
+}) => {
+  const baseStyle: React.CSSProperties = {
     width: '100%',
-    marginTop: '.2rem',
-    background: colors.inputBg,
-    border: `1px solid ${colors.border}`,
-    color: colors.text,
-    padding: '.45rem .6rem',
-    borderRadius: 6,
-    fontSize: '.82rem',
-    minHeight: 80,
-    resize: 'vertical',
+    padding: '12px 16px',
+    border: '1px solid var(--borde, #d1d5db)',
+    borderRadius: '8px',
+    fontSize: '1rem',
+    transition: 'all 0.2s',
+    boxSizing: 'border-box',
+    resize: 'vertical' as const,
+    minHeight: '80px',
+    backgroundColor: readOnly ? 'var(--input-readonly-bg, #f3f4f6)' : 'var(--input-bg, white)',
+    color: 'var(--texto-claro, #1f2937)',
+    fontFamily: 'inherit',
+    ...style,
   };
+
   return (
-    <div className={className}>
-      {label && <label style={{ fontSize: '.75rem', color: colors.textSec }}>{label}</label>}
-      <textarea {...rest} value={value as any} onChange={(e) => onChange?.(e.target.value)} style={style} />
-      {error && <div style={{ color: '#fecaca', fontSize: '.75rem', marginTop: 4 }}>{error}</div>}
-    </div>
+    <textarea
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      required={required}
+      disabled={disabled}
+      readOnly={readOnly}
+      rows={rows}
+      style={baseStyle}
+    />
   );
 };

@@ -1,35 +1,45 @@
 import express from 'express';
 import cors from 'cors';
-import { config } from './config';
-import { pool } from './db';
-import routes from './routes';
-import { errorHandler } from './middleware/errorHandler';
+import authRoutes from './routes/auth.routes';
+import proyectosRoutes from './routes/proyectos.routes';
+import gastosRoutes from './routes/gastos.routes';
+import evidenciasRoutes from './routes/evidencias.routes';
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
+// Middlewares
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Ruta de prueba
 app.get('/', (req, res) => {
   res.json({
     message: 'API POA - Universidad de Sonsonate',
     status: 'funcionando',
-    version: '2.0.0',
-    typescript: true,
+    version: '1.0.0'
   });
 });
 
-app.use(routes);
-app.use(errorHandler);
+// Rutas de la API
+app.use('/api/auth', authRoutes);
+app.use('/api/proyectos', proyectosRoutes);
+app.use('/api', gastosRoutes);  // Ya incluye /actividades/:id/gastos
+app.use('/api', evidenciasRoutes);  // Ya incluye /actividades/:id/evidencias
 
-app.listen(config.port, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${config.port}`);
-  console.log(`📡 API disponible en http://localhost:${config.port}`);
-  console.log(`🔷 TypeScript habilitado`);
+// Manejo de errores
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    error: err.message || 'Error en el servidor',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
 });
 
-process.on('SIGTERM', () => {
-  pool.end();
-  process.exit(0);
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`📊 API disponible en http://localhost:${PORT}/api`);
 });
+
+export default app;

@@ -1,27 +1,45 @@
 import React from 'react';
 
-const colors = {
-  text: 'var(--texto-claro, #e9edf3)',
+type CheckboxProps = {
+  checked?: boolean;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  label?: string;
+  disabled?: boolean;
+  style?: React.CSSProperties;
 };
 
-interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'type'> {
-  label?: string;
-  onChange?: (checked: boolean) => void;
-  size?: 'sm' | 'md';
-}
+export const Checkbox: React.FC<CheckboxProps> = ({
+  checked = false,
+  onChange,
+  label,
+  disabled = false,
+  style,
+}) => {
+  const containerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '0.5rem',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    ...style,
+  };
 
-export const Checkbox: React.FC<CheckboxProps> = ({ label, onChange, checked, size = 'md', className, ...rest }) => {
-  const boxSize = size === 'sm' ? 14 : 16;
+  const inputStyle: React.CSSProperties = {
+    marginRight: label ? '0.5rem' : 0,
+    width: '1.2rem',
+    height: '1.2rem',
+    cursor: 'pointer',
+  };
+
   return (
-    <label className={className} style={{ display: 'inline-flex', gap: 8, alignItems: 'center', color: colors.text }}>
+    <div style={style && !label ? style : containerStyle}>
       <input
-        {...rest}
         type="checkbox"
-        checked={!!checked}
-        onChange={(e) => onChange?.(e.target.checked)}
-        style={{ width: boxSize, height: boxSize }}
+        checked={checked}
+        onChange={onChange}
+        disabled={disabled}
+        style={inputStyle}
       />
-      {label && <span style={{ fontSize: '.85rem' }}>{label}</span>}
-    </label>
+      {label && <span>{label}</span>}
+    </div>
   );
 };

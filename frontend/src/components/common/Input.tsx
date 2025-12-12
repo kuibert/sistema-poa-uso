@@ -1,35 +1,58 @@
 import React from 'react';
 
-const colors = {
-  border: 'var(--borde, rgba(255,255,255,0.08))',
-  text: 'var(--texto-claro, #e9edf3)',
-  textSec: 'var(--texto-sec, #bfc7d1)',
-  inputBg: '#0d213f',
+type InputProps = {
+  type?: 'text' | 'email' | 'password' | 'number' | 'date';
+  value?: string | number;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  readOnly?: boolean;
+  min?: number;
+  max?: number;
+  step?: number | string;
+  style?: React.CSSProperties;
 };
 
-interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
-  label?: string;
-  error?: string;
-  onChange?: (value: string) => void;
-}
-
-export const Input: React.FC<InputProps> = ({ label, error, className, onChange, value, ...rest }) => {
-  const inputStyle: React.CSSProperties = {
+export const Input: React.FC<InputProps> = ({
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
+  required = false,
+  disabled = false,
+  readOnly = false,
+  min,
+  max,
+  step,
+  style,
+}) => {
+  const baseStyle: React.CSSProperties = {
     width: '100%',
-    marginTop: '.2rem',
-    background: colors.inputBg,
-    border: `1px solid ${colors.border}`,
-    color: colors.text,
-    padding: '.45rem .6rem',
-    borderRadius: 6,
-    fontSize: '.82rem',
+    padding: '12px 16px',
+    border: '1px solid var(--borde, #d1d5db)',
+    borderRadius: '8px',
+    fontSize: '1rem',
+    transition: 'all 0.2s',
+    boxSizing: 'border-box',
+    backgroundColor: readOnly ? 'var(--input-readonly-bg, #f3f4f6)' : 'var(--input-bg, white)',
+    color: 'var(--texto-claro, #1f2937)',
+    ...style,
   };
 
   return (
-    <div className={className}>
-      {label && <label style={{ fontSize: '.75rem', color: colors.textSec }}>{label}</label>}
-      <input {...rest} value={value as any} onChange={(e) => onChange?.(e.target.value)} style={inputStyle} />
-      {error && <div style={{ color: '#fecaca', fontSize: '.75rem', marginTop: 4 }}>{error}</div>}
-    </div>
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      required={required}
+      disabled={disabled}
+      readOnly={readOnly}
+      min={min}
+      max={max}
+      step={step}
+      style={baseStyle}
+    />
   );
 };

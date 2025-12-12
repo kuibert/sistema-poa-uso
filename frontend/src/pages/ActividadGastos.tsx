@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from "react";
-<<<<<<< HEAD
-import "../styles/global.css"; // estilos generales si los tienes
-=======
-import "../assets/styles/global.css"; // estilos generales si los tienes
->>>>>>> origin/DevGabriela
+import { useParams, useNavigate } from 'react-router-dom';
+import { NavBar, Card, Divider, Grid, Section, Label, Button, LoadingSpinner, ErrorMessage, Input } from '../components/common';
+import { Table } from '../components/common/Table';
+import apiClient from '../services/apiClient';
+
+type Gasto = {
+  id_gasto?: number;
+  fecha: string;
+  descripcion: string;
+  monto: number;
+};
 
 export default function ActividadGastos() {
-  // Valores iniciales (simulados igual que tu HTML)
-  const [proyecto] = useState(
-    "Gestión de acreditación de la Carrera de Ingeniería Industrial"
-  );
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  // Valores iniciales
+  const [proyecto] = useState("Gestión de acreditación de la Carrera de Ingeniería Industrial");
   const [actividad] = useState("Acercamiento y entendimiento con ACAAI");
 
   // Totales
@@ -18,209 +25,316 @@ export default function ActividadGastos() {
   const [montoDisponible, setMontoDisponible] = useState<number>(0);
 
   // Lista de gastos
-  const [gastos, setGastos] = useState<
-    { fecha: string; descripcion: string; monto: number }[]
-  >([
-    // Arranca vacío, el usuario puede agregar filas como en el HTML
-    { fecha: "", descripcion: "", monto: 0 },
-  ]);
+  const [gastos, setGastos] = useState<Gasto[]>([]);
+
+  // Estados de UI
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Cargar gastos al montar el componente
+  useEffect(() => {
+    if (id) {
+      loadGastos();
+    }
+  }, [id]);
 
   // Recalcular totales cuando cambian los gastos o el monto asignado
   useEffect(() => {
-    const total = gastos.reduce(
-      (sum, g) => sum + (g.monto ? Number(g.monto) : 0),
-      0
-    );
+    const total = gastos.reduce((sum, g) => sum + (g.monto ? Number(g.monto) : 0), 0);
     setMontoGastado(total);
     setMontoDisponible(montoAsignado - total);
   }, [gastos, montoAsignado]);
 
-  // Agregar fila
+  const loadGastos = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.get(`/actividades/${id}/gastos`);
+
+      // Transformar datos del backend al formato del componente
+      const gastosTransformados = response.data.map((g: any) => ({
+        id_gasto: g.id_gasto,
+        fecha: g.fecha_gasto,
+        descripcion: g.descripcion,
+        monto: g.monto
+      }));
+
+      setGastos(gastosTransformados);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al cargar los gastos');
+      console.error('Error cargando gastos:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Agregar fila vacía para nuevo gasto
   const agregarFila = () => {
     setGastos([...gastos, { fecha: "", descripcion: "", monto: 0 }]);
   };
 
-  // Eliminar fila
-  const eliminarFila = (index: number) => {
-    setGastos(gastos.filter((_, i) => i !== index));
+  // Eliminar gasto
+  const eliminarGasto = async (index: number) => {
+    const gasto = gastos[index];
+
+    // Si el gasto tiene ID, eliminarlo del backend
+    if (gasto.id_gasto) {
+      try {
+        setSaving(true);
+        await apiClient.delete(`/gastos/${gasto.id_gasto}`);
+        setGastos(gastos.filter((_, i) => i !== index));
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Error al eliminar el gasto');
+        console.error('Error eliminando gasto:', err);
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      // Si no tiene ID, solo quitarlo del array local
+      setGastos(gastos.filter((_, i) => i !== index));
+    }
   };
 
-  // Editar fila
-  const actualizarFila = (
-    index: number,
-    campo: "fecha" | "descripcion" | "monto",
-    valor: string | number
-  ) => {
+  // Actualizar campo de gasto
+  const actualizarFila = (index: number, campo: keyof Gasto, valor: string | number) => {
     const copia = [...gastos];
     (copia[index] as any)[campo] = valor;
     setGastos(copia);
   };
 
-  return (
+  // Guardar nuevo gasto en el backend
+  const guardarGasto = async (index: number) => {
+    const gasto = gastos[index];
 
-    <div className="dashboard-container">
-      <div className="dashboard-inner">
+    // Validar que tenga datos
+    if (!gasto.fecha || !gasto.descripcion || !gasto.monto) {
+      setError('Por favor completa todos los campos del gasto');
+      return;
+    }
 
-        {/* CARD PRINCIPAL */}
-        <div className="dashboard-main-card">
+    // Si ya tiene ID, no hacer nada (ya está guardado)
+    if (gasto.id_gasto) {
+      return;
+    }
 
-          <div>
-            <div className="header-row">
-              <h1>Gastos de la actividad: Acercamiento y entendimiento con ACAAI.</h1>
+    try {
+      setSaving(true);
+      setError(null);
 
-              <button className="btn-green-outline">
-                🖨 Imprimir dashboard
-              </button>
-            </div>
+      const response = await apiClient.post(`/actividades/${id}/gastos`, {
+        fecha_gasto: gasto.fecha,
+        descripcion: gasto.descripcion,
+        monto: Number(gasto.monto)
+      });
 
-            <p className="texto-sec">
-              Fecha, descripcion y monto, actualizando el disponible de la actividad.
+      // Actualizar el gasto con el ID del backend
+      const copia = [...gastos];
+      copia[index] = {
+        ...gasto,
+        id_gasto: response.data.id_gasto
+      };
+      setGastos(copia);
+
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al guardar el gasto');
+      console.error('Error guardando gasto:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Estilos inline
+  const containerStyle: React.CSSProperties = {
+    background: 'var(--fondo-azul)',
+    color: 'var(--texto-claro)',
+    minHeight: '100vh',
+  };
+
+  const mainStyle: React.CSSProperties = {
+    maxWidth: '1150px',
+    margin: '1.5rem auto 0',
+    padding: '0 1rem 1rem',
+  };
+
+
+
+  if (!id) {
+    return (
+      <div style={containerStyle}>
+        <NavBar />
+        <main style={mainStyle}>
+          <Card padding="1.8rem">
+            <h1 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Gestión de Gastos</h1>
+            <p style={{ color: 'var(--texto-sec)', marginBottom: '1.5rem' }}>
+              Para gestionar los gastos de una actividad, necesitas acceder desde el seguimiento del proyecto.
             </p>
+            <p style={{ color: 'var(--texto-sec)', marginBottom: '1.5rem' }}>
+              💡 <strong>Tip:</strong> Navega a Seguimiento → Selecciona un proyecto → Haz clic en "Gastos" de una actividad
+            </p>
+            <Button variant="main" onClick={() => navigate('/seguimiento')}>
+              Ir a Seguimiento
+            </Button>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
-            <div className="divider-green-difuminado"></div>
+  return (
+    <div style={containerStyle}>
+      <NavBar userName="Carlos Roberto Martínez Martínez" />
 
-            <div className="container-gasto">
-              {/* INFO INICIAL */}
-              <div style={{ marginBottom: "1rem", width: "60%", padding: "10px", }}>
-                <label>Proyecto</label>
-                <input type="text" value={proyecto} readOnly />
+      <main style={mainStyle}>
+        <Card padding="1.8rem">
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div>
+              <h1 style={{ fontSize: '1.2rem', margin: 0 }}>
+                Gastos de la actividad: {actividad}
+              </h1>
+              <p style={{ color: 'var(--texto-sec)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
+                Fecha, descripción y monto, actualizando el disponible de la actividad.
+              </p>
+            </div>
+            <Button variant="alt" type="button" onClick={() => window.print()}>
+              🖨 Imprimir
+            </Button>
+          </div>
 
-                <label style={{ marginTop: ".6rem" }}>Nombre de la actividad</label>
-                <input type="text" value={actividad} readOnly />
-              </div>
+          <Divider variant="gradient" />
 
-              {/* RESUMEN FINANCIERO */}
-              <div
-                style={{
-                  background: "#101f3b",
-                  padding: "10px",
-                  borderRadius: "10px",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  marginBottom: "1rem",
-                  width: "40%",
-                  alignSelf: ""
-                }}
-              >
-                <div style={{ display: "flex", flexDirection: "column"}}>
+          {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
+
+          {loading ? (
+            <LoadingSpinner size="lg" fullScreen={false} />
+          ) : (
+            <>
+              {/* Información del proyecto y actividad */}
+              <Grid columns={2} style={{ marginBottom: '1.5rem' }}>
+                <div>
+                  <Label>Proyecto</Label>
+                  <Input type="text" value={proyecto} readOnly />
+                </div>
+                <div>
+                  <Label>Nombre de la actividad</Label>
+                  <Input type="text" value={actividad} readOnly />
+                </div>
+              </Grid>
+
+              {/* Resumen Financiero */}
+              <Section title="Resumen Financiero" description="Montos asignados, gastados y disponibles">
+                <Grid columns={3}>
                   <div>
-                    <label>Monto asignado a la actividad ($)</label>
-                    <input
+                    <Label>Monto asignado a la actividad ($)</Label>
+                    <Input
                       type="number"
                       value={montoAsignado}
                       onChange={(e) => setMontoAsignado(Number(e.target.value))}
+                      step="0.01"
                     />
                   </div>
-                <br />
                   <div>
-                    <label>Total gastado ($)</label>
-                    <input type="number" value={montoGastado} readOnly />
+                    <Label>Total gastado ($)</Label>
+                    <Input type="number" value={montoGastado.toFixed(2)} readOnly />
                   </div>
-                <br />
                   <div>
-                    <label>Disponible ($)</label>
-                    <input type="number" value={montoDisponible} readOnly />
+                    <Label>Disponible ($)</Label>
+                    <Input type="number" value={montoDisponible.toFixed(2)} readOnly />
                   </div>
-                </div>
-              </div>
-            </div>
+                </Grid>
+              </Section>
 
-
-
-            {/* TABLA DE GASTOS */}
-            <div
-              style={{
-                background: "#101f3b",
-                padding: "1rem",
-                borderRadius: "10px",
-                border: "1px solid rgba(255,255,255,0.1)",
-              }}
-            >
-              <div
-                style={{
-                  marginBottom: "0.5rem",
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
+              {/* Tabla de Gastos */}
+              <Section
+                title="Lista de Gastos"
+                description="Registro detallado de gastos: fecha, descripción y monto."
               >
-                <span style={{ color: "#bfc7d1" }}>
-                  Lista simple de gastos: fecha, descripción y monto.
-                </span>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+                  <Button variant="main" size="sm" type="button" onClick={agregarFila} disabled={saving}>
+                    ➕ Agregar gasto
+                  </Button>
+                </div>
 
-                <button
-                  className="btn-green-outline"
-                  onClick={agregarFila}
-                  style={{ padding: ".25rem .6rem" }}
-                >
-                  ➕ Agregar gasto
-                </button>
-              </div>
+                <Card variant="dark" padding="1rem">
+                  <Table>
+                    <Table.Header>
+                      <Table.Row hover={false}>
+                        <Table.Cell header style={{ width: '20%' }}>Fecha</Table.Cell>
+                        <Table.Cell header style={{ width: '45%' }}>Descripción</Table.Cell>
+                        <Table.Cell header style={{ width: '20%' }}>Monto ($)</Table.Cell>
+                        <Table.Cell header center style={{ width: '15%' }}>Acción</Table.Cell>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                      {gastos.map((g, i) => (
+                        <Table.Row key={i}>
+                          <Table.Cell>
+                            <Input
+                              type="date"
+                              value={g.fecha}
+                              onChange={(e) => actualizarFila(i, "fecha", e.target.value)}
+                              disabled={saving}
+                            />
+                          </Table.Cell>
+                          <Table.Cell>
+                            <Input
+                              type="text"
+                              placeholder="Detalle del gasto"
+                              value={g.descripcion}
+                              onChange={(e) => actualizarFila(i, "descripcion", e.target.value)}
+                              disabled={saving}
+                            />
+                          </Table.Cell>
+                          <Table.Cell>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={g.monto}
+                              onChange={(e) => actualizarFila(i, "monto", Number(e.target.value))}
+                              disabled={saving}
+                            />
+                          </Table.Cell>
+                          <Table.Cell center>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                              {!g.id_gasto && (
+                                <Button
+                                  variant="main"
+                                  size="sm"
+                                  type="button"
+                                  onClick={() => guardarGasto(i)}
+                                  disabled={saving}
+                                >
+                                  💾
+                                </Button>
+                              )}
+                              <Button
+                                variant="alt"
+                                size="sm"
+                                type="button"
+                                onClick={() => eliminarGasto(i)}
+                                disabled={saving}
+                              >
+                                ✖
+                              </Button>
+                            </div>
+                          </Table.Cell>
+                        </Table.Row>
+                      ))}
+                    </Table.Body>
+                  </Table>
 
-              <table className="tabla-gastos">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Descripción</th>
-                    <th>Monto ($)</th>
-                    <th className="center">Acción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {gastos.map((g, i) => (
-                    <tr key={i}>
-                      <td>
-                        <input
-                          type="date"
-                          value={g.fecha}
-                          onChange={(e) => actualizarFila(i, "fecha", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          placeholder="Detalle del gasto"
-                          value={g.descripcion}
-                          onChange={(e) =>
-                            actualizarFila(i, "descripcion", e.target.value)
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={g.monto}
-                          onChange={(e) =>
-                            actualizarFila(i, "monto", Number(e.target.value))
-                          }
-                        />
-                      </td>
-                      <td className="center">
-                        <button
-                          className="btn-green-outline"
-                          onClick={() => eliminarFila(i)}
-                        >
-                          ✖
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* BOTÓN GUARDAR SIMULADO */}
-              <div style={{ marginTop: "1rem", textAlign: "right" }}>
-                <button
-                  className="btn-green-outline"
-                  onClick={() => alert("Simulación: gastos guardados")}
-                >
-                  💾 Guardar (simulado)
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+                  {gastos.length === 0 && (
+                    <p style={{ textAlign: 'center', color: 'var(--texto-sec)', padding: '2rem' }}>
+                      No hay gastos registrados. Haz clic en "Agregar gasto" para comenzar.
+                    </p>
+                  )}
+                </Card>
+              </Section>
+            </>
+          )}
+        </Card>
+      </main>
     </div>
-
   );
 }

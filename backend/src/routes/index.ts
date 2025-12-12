@@ -6,7 +6,7 @@ import evidenciasRoutes from './evidencias.routes';
 
 const router = Router();
 
-router.use('/auth', authRoutes);
+router.use('/api/auth', authRoutes);
 router.use('/api/proyectos', proyectosRoutes);
 router.use('/api', gastosRoutes);
 router.use('/api', evidenciasRoutes);

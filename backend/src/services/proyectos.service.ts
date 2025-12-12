@@ -2,10 +2,10 @@ import { query } from '../db';
 
 export const proyectosService = {
   // Dashboard (Page0)
-async getDashboard(anio: number) {
-  // 1. Proyectos con presupuesto y gasto
-  const proyectosResult = await query(
-    `
+  async getDashboard(anio: number) {
+    // 1. Proyectos con presupuesto y gasto
+    const proyectosResult = await query(
+      `
     SELECT 
       p.id,
       p.nombre,
@@ -22,12 +22,12 @@ async getDashboard(anio: number) {
     GROUP BY p.id, u.nombre_completo
     ORDER BY p.created_at DESC
     `,
-    [anio]
-  );
+      [anio]
+    );
 
-  // 2. Actividades del año con seguimiento + KPI
-  const actividadesResult = await query(
-    `
+    // 2. Actividades del año con seguimiento + KPI
+    const actividadesResult = await query(
+      `
     SELECT 
       a.id,
       a.nombre,
@@ -51,42 +51,42 @@ async getDashboard(anio: number) {
     LEFT JOIN indicador_actividad ia ON ia.id_actividad = a.id
     WHERE EXTRACT(YEAR FROM a.created_at) = $1
     `,
-    [anio]
-  );
+      [anio]
+    );
 
-  // 3. Cálculo por proyecto
-  const proyectos = proyectosResult.rows.map((p: any) => {
-    const actividades = actividadesResult.rows.filter((a: any) => a.proyectoId === p.id);
+    // 3. Cálculo por proyecto
+    const proyectos = proyectosResult.rows.map((p: any) => {
+      const actividades = actividadesResult.rows.filter((a: any) => a.proyectoId === p.id);
 
-    const avanceOperativo = actividades.length
-      ? Math.round(
+      const avanceOperativo = actividades.length
+        ? Math.round(
           actividades.reduce((sum: number, a: any) => sum + a.avanceActividad, 0) /
           actividades.length
         )
-      : 0;
+        : 0;
 
-    const logroKpi = actividades.length
-      ? Math.round(
+      const logroKpi = actividades.length
+        ? Math.round(
           actividades.reduce(
             (sum: number, a: any) => sum + (a.logroKpiActividad || 0),
             0
           ) / actividades.length
         )
-      : 0;
+        : 0;
 
-    return { ...p, avanceOperativo, logroKpi };
-  });
+      return { ...p, avanceOperativo, logroKpi };
+    });
 
-  return {
-    proyectos,
-    actividadesMes: actividadesResult.rows
-  };
-},
+    return {
+      proyectos,
+      actividadesMes: actividadesResult.rows
+    };
+  },
 
 
   async getProyectos(anio: number) {
     const result = await query(
-      'SELECT p.*, u.nombre as responsable_nombre FROM proyecto p LEFT JOIN usuario u ON p.id_responsable = u.id_usuario WHERE p.anio = $1 ORDER BY p.fecha_creacion DESC',
+      'SELECT p.*, u.nombre_completo as responsable_nombre FROM proyecto p LEFT JOIN usuario u ON p.id_responsable = u.id WHERE p.anio = $1 ORDER BY p.created_at DESC',
       [anio]
     );
     return result.rows;
@@ -104,14 +104,14 @@ async getDashboard(anio: number) {
 
     await query(
       'INSERT INTO proyecto_usuario_rol (id_proyecto, id_usuario, rol) VALUES ($1, $2, $3)',
-      [proyecto.id_proyecto, userId, 'OWNER']
+      [proyecto.id, userId, 'OWNER']
     );
 
     return proyecto;
   },
 
   async getProyecto(id: number) {
-    const result = await query('SELECT * FROM proyecto WHERE id_proyecto = $1', [id]);
+    const result = await query('SELECT * FROM proyecto WHERE id = $1', [id]);
     if (result.rows.length === 0) throw { statusCode: 404, message: 'Proyecto no encontrado' };
     return result.rows[0];
   },
@@ -120,7 +120,7 @@ async getDashboard(anio: number) {
     const result = await query(
       `UPDATE proyecto SET nombre = $1, objetivo = $2, unidad_responsable = $3, id_responsable = $4, 
        fecha_inicio = $5, fecha_fin = $6, presupuesto_total = $7, estado = $8 
-       WHERE id_proyecto = $9 RETURNING *`,
+       WHERE id = $9 RETURNING *`,
       [data.nombre, data.objetivo, data.unidad_responsable, data.id_responsable, data.fecha_inicio, data.fecha_fin, data.presupuesto_total, data.estado, id]
     );
     return result.rows[0];
@@ -161,24 +161,51 @@ async getDashboard(anio: number) {
 
   // Seguimiento (Page2)
   async getSeguimientoProyecto(proyectoId: number) {
-    const actividades = await query(
-      `SELECT a.*, u.nombre as responsable_nombre,
-        (SELECT json_agg(json_build_object('mes', mes, 'planificado', planificado)) 
-         FROM actividad_mes_plan WHERE id_actividad = a.id_actividad) as plan_mensual,
-        (SELECT json_agg(json_build_object('mes', mes, 'estado', estado, 'comentario', comentario)) 
-         FROM actividad_mes_seguimiento WHERE id_actividad = a.id_actividad) as seguimiento_mensual,
-        (SELECT json_agg(i.*) FROM indicador_actividad i WHERE i.id_actividad = a.id_actividad) as indicadores,
-        COALESCE(SUM(g.monto), 0) as total_gastado
-       FROM actividad a
-       LEFT JOIN usuario u ON a.id_responsable = u.id_usuario
-       LEFT JOIN gasto_actividad g ON a.id_actividad = g.id_actividad
-       WHERE a.id_proyecto = $1
-       GROUP BY a.id_actividad, u.nombre
-       ORDER BY a.orden`,
+    // Obtener información del proyecto
+    const proyectoResult = await query(
+      'SELECT id, nombre, anio FROM proyecto WHERE id = $1',
       [proyectoId]
     );
 
-    return actividades.rows;
+    if (proyectoResult.rows.length === 0) {
+      throw { statusCode: 404, message: 'Proyecto no encontrado' };
+    }
+
+    const proyecto = proyectoResult.rows[0];
+
+    // Obtener actividades con sus datos relacionados
+    const actividades = await query(
+      `SELECT a.id as id_actividad, a.nombre, a.presupuesto_asignado, 
+        u.nombre_completo as responsable_nombre,
+        (SELECT json_agg(json_build_object('mes', mes, 'planificado', planificado)) 
+         FROM actividad_mes_plan WHERE id_actividad = a.id) as plan_mensual,
+        (SELECT json_agg(json_build_object('mes', mes, 'estado', estado, 'comentario', comentario)) 
+         FROM actividad_mes_seguimiento WHERE id_actividad = a.id) as seguimiento_mensual,
+        (SELECT json_agg(json_build_object(
+          'id_indicador', i.id,
+          'nombre', i.descripcion_especifica,
+          'unidad_medida', i.unidad_medida,
+          'meta', i.meta_valor,
+          'valor_logrado', i.valor_logrado,
+          'porcentaje_cumplimiento', i.porcentaje_cumplimiento
+        )) FROM indicador_actividad i WHERE i.id_actividad = a.id) as indicadores,
+        COALESCE(SUM(g.monto), 0) as total_gastado
+       FROM actividad a
+       LEFT JOIN usuario u ON a.id_responsable = u.id
+       LEFT JOIN gasto_actividad g ON a.id = g.id_actividad
+       WHERE a.id_proyecto = $1
+       GROUP BY a.id, u.nombre_completo
+       ORDER BY a.created_at`,
+      [proyectoId]
+    );
+
+    // Retornar en el formato esperado por el frontend
+    return {
+      id_proyecto: proyecto.id,
+      nombre: proyecto.nombre,
+      anio: proyecto.anio,
+      actividades: actividades.rows
+    };
   },
 
   async updateSeguimientoMensual(actividadId: number, seguimiento: any[]) {

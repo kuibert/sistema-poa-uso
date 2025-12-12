@@ -1,41 +1,45 @@
 import React from 'react';
 
-const colors = {
-  border: 'var(--borde, rgba(255,255,255,0.08))',
-  text: 'var(--texto-claro, #e9edf3)',
-  textSec: 'var(--texto-sec, #bfc7d1)',
-  inputBg: '#0d213f',
+type SelectProps = {
+  value?: string | number;
+  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  disabled?: boolean;
+  required?: boolean;
+  children: React.ReactNode;
+  style?: React.CSSProperties;
 };
 
-interface SelectOption { value: string; label: string; }
-interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
-  label?: string;
-  options: SelectOption[];
-  error?: string;
-  onChange?: (value: string) => void;
-}
-
-export const Select: React.FC<SelectProps> = ({ label, options, error, onChange, value, className, ...rest }) => {
-  const selStyle: React.CSSProperties = {
+export const Select: React.FC<SelectProps> = ({
+  value,
+  onChange,
+  disabled = false,
+  required = false,
+  children,
+  style,
+}) => {
+  const baseStyle: React.CSSProperties = {
     width: '100%',
-    marginTop: '.2rem',
-    background: colors.inputBg,
-    border: `1px solid ${colors.border}`,
-    color: colors.text,
-    padding: '.45rem .6rem',
-    borderRadius: 6,
-    fontSize: '.82rem',
+    padding: '12px 16px',
+    border: '1px solid var(--borde, #d1d5db)',
+    borderRadius: '8px',
+    fontSize: '1rem',
+    transition: 'all 0.2s',
+    boxSizing: 'border-box',
+    backgroundColor: 'var(--input-bg, white)',
+    color: 'var(--texto-claro, #1f2937)',
+    cursor: 'pointer',
+    ...style,
   };
 
   return (
-    <div className={className}>
-      {label && <label style={{ fontSize: '.75rem', color: colors.textSec }}>{label}</label>}
-      <select {...rest} value={value as any} onChange={(e) => onChange?.(e.target.value)} style={selStyle}>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-      {error && <div style={{ color: '#fecaca', fontSize: '.75rem', marginTop: 4 }}>{error}</div>}
-    </div>
+    <select
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      required={required}
+      style={baseStyle}
+    >
+      {children}
+    </select>
   );
 };

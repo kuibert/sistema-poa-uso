@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { DashboardPOA } from './pages/DashboardPOA';
 import { ProyectoPOA } from './pages/ProyectoPOA';
+import { SeguimientoPage } from './pages/SeguimientoPage';
+import ActividadGastos from './pages/ActividadGastos';
+import ActividadEvidencias from './pages/ActividadEvidencias';
 import { authApi } from './services/authApi';
 
 // Componente para proteger rutas
@@ -15,11 +18,31 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+
+        {/* Dashboard */}
         <Route
           path="/"
           element={
             <ProtectedRoute>
               <DashboardPOA />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPOA />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Registrar Proyecto */}
+        <Route
+          path="/proyecto"
+          element={
+            <ProtectedRoute>
+              <ProyectoPOA />
             </ProtectedRoute>
           }
         />
@@ -39,10 +62,70 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Rutas para Gaby - Seguimiento, Gastos, Evidencias */}
-        {/* <Route path="/proyectos/:id/seguimiento" element={...} /> */}
-        {/* <Route path="/actividades/:id/gastos" element={...} /> */}
-        {/* <Route path="/actividades/:id/evidencias" element={...} /> */}
+
+        {/* Seguimiento */}
+        <Route
+          path="/seguimiento"
+          element={
+            <ProtectedRoute>
+              <SeguimientoPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Gastos - con y sin ID */}
+        <Route
+          path="/gastos"
+          element={
+            <ProtectedRoute>
+              <ActividadGastos />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/actividades/:id/gastos"
+          element={
+            <ProtectedRoute>
+              <ActividadGastos />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/actividad/:id/gastos"
+          element={
+            <ProtectedRoute>
+              <ActividadGastos />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Evidencias - con y sin ID */}
+        <Route
+          path="/evidencias"
+          element={
+            <ProtectedRoute>
+              <ActividadEvidencias />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/actividades/:id/evidencias"
+          element={
+            <ProtectedRoute>
+              <ActividadEvidencias />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/actividad/:id/evidencias"
+          element={
+            <ProtectedRoute>
+              <ActividadEvidencias />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

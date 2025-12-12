@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { PageHeader, Card, Divider, Grid, Table, Badge } from '../components/common';
+import { NavBar, Card, Divider, Grid, Table, Badge } from '../components/common';
 import { KPICard, StatusPill, Status } from '../components/poa';
 import { Button } from '../components/common/Button';
-import { authApi } from '../services/authApi';
 import apiClient from '../services/apiClient';
 
 export const DashboardPOA: React.FC = () => {
@@ -17,8 +16,10 @@ export const DashboardPOA: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
+        setLoading(true);
         // 🚀 AQUÍ SE ARREGLA EL ERROR
-        const { data } = await apiClient.get(`/api/proyectos/dashboard?anio=2025`);
+        const year = new Date().getFullYear();
+        const { data } = await apiClient.get(`/proyectos/dashboard?anio=${year}`);
 
         setProyectos(data.proyectos || []);
         setActividadesMes(data.actividadesMes || []);
@@ -36,77 +37,74 @@ export const DashboardPOA: React.FC = () => {
   }
 
 
-// ============================
-//  CÁLCULOS
-// ============================
-const formatoDinero = (v: number) =>
-  "$ " + Number(v).toLocaleString("es-SV", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // ============================
+  //  CÁLCULOS
+  // ============================
+  const formatoDinero = (v: number) =>
+    "$ " + Number(v).toLocaleString("es-SV", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-// Normalizar números (evitar NaN)
-const fixNum = (v: any) => Number(v ?? 0);
+  // Normalizar números (evitar NaN)
+  const fixNum = (v: any) => Number(v ?? 0);
 
-// ----------------------------
-// Valores base
-// ----------------------------
-const totalProyectos = proyectos.length;
+  // ----------------------------
+  // Valores base
+  // ----------------------------
+  const totalProyectos = proyectos.length;
 
-const totalAprobado = proyectos.reduce(
-  (s, p) => s + fixNum(p.presupuestoAprobado),
-  0
-);
+  const totalAprobado = proyectos.reduce(
+    (s, p) => s + fixNum(p.presupuestoAprobado),
+    0
+  );
 
-const totalGastado = proyectos.reduce(
-  (s, p) => s + fixNum(p.gastado),
-  0
-);
+  const totalGastado = proyectos.reduce(
+    (s, p) => s + fixNum(p.gastado),
+    0
+  );
 
-const dispPortafolio = totalAprobado - totalGastado;
+  const dispPortafolio = totalAprobado - totalGastado;
 
-// ----------------------------
-// Porcentajes
-// ----------------------------
-const pctDisponible =
-  totalAprobado > 0 ? (dispPortafolio / totalAprobado) * 100 : 0;
+  // ----------------------------
+  // Porcentajes
+  // ----------------------------
+  const pctGastadoPortafolio =
+    totalAprobado > 0 ? (totalGastado / totalAprobado) * 100 : 0;
 
-const pctGastadoPortafolio =
-  totalAprobado > 0 ? (totalGastado / totalAprobado) * 100 : 0;
-
-// ----------------------------
-// Promedios
-// ----------------------------
-const promAvance =
-  totalProyectos > 0
-    ? Math.round(
+  // ----------------------------
+  // Promedios
+  // ----------------------------
+  const promAvance =
+    totalProyectos > 0
+      ? Math.round(
         proyectos.reduce(
           (s, p) => s + fixNum(p.avanceOperativo),
           0
         ) / totalProyectos
       )
-    : 0;
+      : 0;
 
-const promLogro =
-  totalProyectos > 0
-    ? Math.round(
+  const promLogro =
+    totalProyectos > 0
+      ? Math.round(
         proyectos.reduce(
           (s, p) => s + fixNum(p.logroKpi),
           0
         ) / totalProyectos
       )
-    : 0;
+      : 0;
 
-const totalActivMes = proyectos.reduce(
-  (s, p) => s + fixNum(p.actividadesMes),
-  0
-);
+  const totalActivMes = proyectos.reduce(
+    (s, p) => s + fixNum(p.actividadesMes),
+    0
+  );
 
-// ----------------------------
-// Actividades por estado
-// ----------------------------
-const cP = actividadesMes.filter(a => a.estado === 'P').length;
-const cI = actividadesMes.filter(a => a.estado === 'I').length;
-const cF = actividadesMes.filter(a => a.estado === 'F').length;
+  // ----------------------------
+  // Actividades por estado
+  // ----------------------------
+  const cP = actividadesMes.filter(a => a.estado === 'P').length;
+  const cI = actividadesMes.filter(a => a.estado === 'I').length;
+  const cF = actividadesMes.filter(a => a.estado === 'F').length;
 
-const urlSeguimiento = 'seguimiento_proyecto.html';
+  const urlSeguimiento = 'seguimiento_proyecto.html';
 
   // =============================
   //  ESTILOS (NO CAMBIADOS)
@@ -194,13 +192,8 @@ const urlSeguimiento = 'seguimiento_proyecto.html';
 
   return (
     <div style={containerStyle}>
-      <PageHeader
-        title="Universidad de Sonsonate"
-        subtitle="Dashboard POA - Portafolio de Proyectos"
-        userName="Carlos Roberto Martínez Martínez"
-        onLogout={authApi.logout}
-      />
-      
+      <NavBar />
+
 
       <main style={mainStyle}>
         <Card>
@@ -230,7 +223,7 @@ const urlSeguimiento = 'seguimiento_proyecto.html';
               </div>
 
               <div style={portafolioTextoStyle}>
-                Mes de referencia: <strong>Marzo 2025</strong><br />
+                Mes de referencia: <strong>{new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}</strong><br />
                 Este resumen consolida los datos de todos los proyectos aprobados en el POA.
               </div>
             </div>

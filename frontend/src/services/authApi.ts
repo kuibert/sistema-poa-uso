@@ -5,6 +5,7 @@ export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const { data } = await apiClient.post<AuthResponse>('/auth/login', credentials);
     localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
     return data;
   },
 
@@ -15,6 +16,7 @@ export const authApi = {
 
   logout: (): void => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     window.location.href = '/login';
   },
 

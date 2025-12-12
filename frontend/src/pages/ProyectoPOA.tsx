@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { PageHeader, Card, Divider, Grid, Section, Label, Button } from '../components/common';
-import { authApi } from '../services/authApi';
+import { useParams, useNavigate } from 'react-router-dom';
+import { NavBar, Card, Divider, Grid, Section, Label, Button, ErrorMessage, Input, TextArea, Select, Table, Checkbox } from '../components/common';
+import apiClient from '../services/apiClient';
 
 // Tipos auxiliares
 type Activity = {
@@ -26,6 +27,23 @@ type CostRow = {
 };
 
 export const ProyectoPOA: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  // Estados de UI
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Información del proyecto (valores por defecto)
+  const [projectData] = useState({
+    nombre: 'Gestión de acreditación de la Carrera de Ingeniería Industrial',
+    objetivo: 'Lograr la acreditación de la carrera ante ACAAI',
+    unidad_responsable: 'Facultad de Ingeniería',
+    anio: new Date().getFullYear(),
+    fecha_inicio: '',
+    fecha_fin: '',
+  });
+
   // Actividades iniciales (3) como en el HTML
   const initialActivities: Activity[] = useMemo(
     () => [
@@ -152,6 +170,40 @@ export const ProyectoPOA: React.FC = () => {
   const totalFijos = fijosRows.reduce((s, r) => s + rowTotal(r), 0);
   const totalGeneral = totalVariables + totalFijos;
 
+  // Función para guardar proyecto
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+
+      const proyectoPayload = {
+        nombre: projectData.nombre,
+        objetivo: projectData.objetivo,
+        unidad_responsable: projectData.unidad_responsable,
+        anio: projectData.anio,
+        fecha_inicio: projectData.fecha_inicio || new Date().toISOString().split('T')[0],
+        fecha_fin: projectData.fecha_fin || new Date().toISOString().split('T')[0],
+        presupuesto_total: totalGeneral
+      };
+
+      if (id) {
+        // Modo edición
+        await apiClient.put(`/proyectos/${id}`, proyectoPayload);
+      } else {
+        // Modo creación
+        await apiClient.post('/proyectos', proyectoPayload);
+      }
+
+      // Redirigir al dashboard
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al guardar el proyecto');
+      console.error('Error guardando proyecto:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Estilos inline
   const containerStyle: React.CSSProperties = {
     background: 'var(--fondo-azul)',
@@ -165,6 +217,7 @@ export const ProyectoPOA: React.FC = () => {
     padding: '0 1rem 1.2rem',
   };
 
+  // Estilos específicos que no pueden ser reemplazados por componentes genéricos
   const cardHeaderStyle: React.CSSProperties = {
     display: 'flex',
     justifyContent: 'space-between',
@@ -183,45 +236,11 @@ export const ProyectoPOA: React.FC = () => {
     marginTop: '0.2rem',
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    marginTop: '0.2rem',
-    background: 'var(--input-bg)',
-    border: '1px solid var(--borde)',
-    color: 'var(--texto-claro)',
-    padding: '0.45rem 0.6rem',
-    borderRadius: 'var(--radius-sm)',
-    fontSize: '0.82rem',
-  };
-
-  const textareaStyle: React.CSSProperties = {
-    ...inputStyle,
-    resize: 'vertical' as const,
-    minHeight: '80px',
-  };
-
-  const readonlyInputStyle: React.CSSProperties = {
-    ...inputStyle,
-    background: 'var(--input-readonly-bg)',
-  };
-
   const tableStyle: React.CSSProperties = {
     width: '100%',
     borderCollapse: 'collapse',
     fontSize: '0.8rem',
     marginTop: '0.3rem',
-  };
-
-  const thTdStyle: React.CSSProperties = {
-    padding: '0.35rem',
-    borderBottom: '1px solid var(--borde)',
-    verticalAlign: 'middle',
-  };
-
-  const thStyle: React.CSSProperties = {
-    ...thTdStyle,
-    textAlign: 'left',
-    color: 'var(--texto-secundario)',
   };
 
   const actividadHeaderStyle: React.CSSProperties = {
@@ -233,6 +252,8 @@ export const ProyectoPOA: React.FC = () => {
 
   const actividadNombreTdStyle: React.CSSProperties = {
     background: 'rgba(0, 0, 0, 0.06)',
+    padding: '0.5rem',
+    borderRadius: '4px',
   };
 
   const actividadIndentStyle: React.CSSProperties = {
@@ -267,12 +288,7 @@ export const ProyectoPOA: React.FC = () => {
 
   return (
     <div style={containerStyle}>
-      <PageHeader
-        title="Universidad de Sonsonate"
-        subtitle="Sistema de Gestión POA"
-        userName="Carlos Roberto Martínez Martínez"
-        onLogout={authApi.logout}
-      />
+      <NavBar />
 
       <main style={mainStyle}>
         <Card padding="1.8rem">
@@ -283,10 +299,14 @@ export const ProyectoPOA: React.FC = () => {
             </div>
 
             <div>
-              <Button variant="alt" type="button" style={{ marginRight: '0.5rem' }}>💾 Guardar</Button>
+              <Button variant="alt" type="button" style={{ marginRight: '0.5rem' }} onClick={handleSave} disabled={saving}>
+                {saving ? '💾 Guardando...' : '💾 Guardar'}
+              </Button>
               <Button variant="main" type="button" onClick={() => window.print()}>🖨 Imprimir PDF</Button>
             </div>
           </div>
+
+          {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
           <Divider variant="gradient" />
 
@@ -296,26 +316,26 @@ export const ProyectoPOA: React.FC = () => {
               <Grid columns={3}>
                 <div>
                   <Label>Año</Label>
-                  <input type="number" style={inputStyle} />
+                  <Input type="number" />
                 </div>
                 <div>
                   <Label>Unidad / Facultad</Label>
-                  <input type="text" placeholder="Facultad de Ingeniería y Ciencias Naturales" style={inputStyle} />
+                  <Input type="text" placeholder="Facultad de Ingeniería y Ciencias Naturales" />
                 </div>
                 <div>
                   <Label>Línea estratégica</Label>
-                  <input type="text" placeholder="1. Mejora continua de la docencia" style={inputStyle} />
+                  <Input type="text" placeholder="1. Mejora continua de la docencia" />
                 </div>
               </Grid>
 
               <Grid columns={2} style={{ marginTop: '1rem' }}>
                 <div>
                   <Label>Objetivo estratégico</Label>
-                  <textarea placeholder="Promover la excelencia académica mediante..." style={textareaStyle}></textarea>
+                  <TextArea placeholder="Promover la excelencia académica mediante..." />
                 </div>
                 <div>
                   <Label>Acción / Actividad estratégica</Label>
-                  <textarea placeholder="Participar en procesos de acreditación..." style={textareaStyle}></textarea>
+                  <TextArea placeholder="Participar en procesos de acreditación..." />
                 </div>
               </Grid>
             </Section>
@@ -325,17 +345,17 @@ export const ProyectoPOA: React.FC = () => {
               <Grid columns={2}>
                 <div>
                   <Label>Nombre del proyecto</Label>
-                  <input type="text" placeholder="Gestión de acreditación de la Carrera de Ingeniería Industrial" style={inputStyle} />
+                  <Input type="text" placeholder="Gestión de acreditación de la Carrera de Ingeniería Industrial" />
                 </div>
                 <div>
                   <Label>Responsable</Label>
-                  <input type="text" placeholder="Nombre y cargo del responsable" style={inputStyle} />
+                  <Input type="text" placeholder="Nombre y cargo del responsable" />
                 </div>
               </Grid>
 
               <div style={{ marginTop: '0.6rem' }}>
                 <Label>Objetivo del proyecto</Label>
-                <textarea placeholder="Describir qué se quiere lograr, cómo y para qué..." style={textareaStyle}></textarea>
+                <TextArea placeholder="Describir qué se quiere lograr, cómo y para qué..." />
               </div>
             </Section>
 
@@ -352,12 +372,12 @@ export const ProyectoPOA: React.FC = () => {
                       <tr>
                         <td style={actividadNombreTdStyle}>
                           <div style={actividadHeaderStyle}>{a.header}</div>
-                          <input
+                          <Input
                             type="text"
                             placeholder={a.name}
                             value={a.name}
                             onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, name: e.target.value } : x))}
-                            style={{ ...inputStyle, fontWeight: 600 }}
+                            style={{ fontWeight: 600 }}
                           />
                         </td>
                         <td style={{ textAlign: 'center' }}>
@@ -379,10 +399,10 @@ export const ProyectoPOA: React.FC = () => {
                               <tr>
                                 {a.months.map((checked, idx) => (
                                   <td key={idx} style={tablaMesesThTdStyle}>
-                                    <input
-                                      type="checkbox"
+                                    <Checkbox
                                       checked={checked}
                                       onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, months: x.months.map((m, i) => i === idx ? e.target.checked : m) } : x))}
+                                      style={{ justifyContent: 'center', marginBottom: 0 }}
                                     />
                                   </td>
                                 ))}
@@ -398,10 +418,9 @@ export const ProyectoPOA: React.FC = () => {
                           <div style={kpiGridStyle}>
                             <div>
                               <Label>Indicador de logro (categoría)</Label>
-                              <select
+                              <Select
                                 value={a.kpi.categoria}
                                 onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, kpi: { ...x.kpi, categoria: e.target.value } } : x))}
-                                style={inputStyle}
                               >
                                 <option value="">Seleccione...</option>
                                 <option>% de actividades ejecutadas</option>
@@ -409,46 +428,42 @@ export const ProyectoPOA: React.FC = () => {
                                 <option>Nº de personas beneficiadas indirectamente</option>
                                 <option>Nº de productos / documentos generados</option>
                                 <option>Logro principal alcanzado (Sí/No)</option>
-                              </select>
+                              </Select>
                             </div>
                             <div>
                               <Label>Descripción específica</Label>
-                              <input
+                              <Input
                                 type="text"
                                 placeholder="Descripción del indicador de la actividad"
                                 value={a.kpi.descripcion}
                                 onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, kpi: { ...x.kpi, descripcion: e.target.value } } : x))}
-                                style={inputStyle}
                               />
                             </div>
                             <div>
                               <Label>Meta</Label>
-                              <input
+                              <Input
                                 type="number"
                                 placeholder="Meta"
                                 value={a.kpi.meta}
                                 onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, kpi: { ...x.kpi, meta: e.target.value } } : x))}
-                                style={inputStyle}
                               />
                             </div>
                             <div>
                               <Label>Unidad</Label>
-                              <input
+                              <Input
                                 type="text"
                                 placeholder="Unidad"
                                 value={a.kpi.unidad}
                                 onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, kpi: { ...x.kpi, unidad: e.target.value } } : x))}
-                                style={inputStyle}
                               />
                             </div>
                             <div>
                               <Label>Beneficiarios</Label>
-                              <input
+                              <Input
                                 type="text"
                                 placeholder="Grupo beneficiado"
                                 value={a.kpi.beneficiarios}
                                 onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, kpi: { ...x.kpi, beneficiarios: e.target.value } } : x))}
-                                style={inputStyle}
                               />
                             </div>
                           </div>
@@ -459,12 +474,11 @@ export const ProyectoPOA: React.FC = () => {
                       <tr>
                         <td colSpan={2} style={actividadIndentStyle}>
                           <Label>Evidencias</Label>
-                          <textarea
+                          <TextArea
                             placeholder="Actas, minutas, correos, acuerdos..."
                             value={a.evidencias}
                             onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, evidencias: e.target.value } : x))}
-                            style={textareaStyle}
-                          ></textarea>
+                          />
                         </td>
                       </tr>
 
@@ -493,39 +507,37 @@ export const ProyectoPOA: React.FC = () => {
                 <Button variant="main" size="sm" type="button" onClick={() => addCostRow('variables')}>➕ Agregar costo variable</Button>
               </div>
 
-              <table style={tableStyle}>
-                <thead>
-                  <tr>
-                    <th style={{ ...thStyle, width: '36%' }}>Descripción</th>
-                    <th style={thStyle}>Cantidad</th>
-                    <th style={thStyle}>Unidad</th>
-                    <th style={thStyle}>Precio unitario ($)</th>
-                    <th style={thStyle}>Costo total ($)</th>
-                    <th style={{ ...thStyle, width: '3%' }}></th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table variant="compact">
+                <Table.Header>
+                  <Table.Row>
+                    <Table.Cell header style={{ width: '36%' }}>Descripción</Table.Cell>
+                    <Table.Cell header>Cantidad</Table.Cell>
+                    <Table.Cell header>Unidad</Table.Cell>
+                    <Table.Cell header>Precio unitario ($)</Table.Cell>
+                    <Table.Cell header>Costo total ($)</Table.Cell>
+                    <Table.Cell header style={{ width: '3%' }}>{null}</Table.Cell>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
                   {variablesRows.map((r, idx) => (
-                    <tr key={idx}>
-                      <td style={thTdStyle}><input type="text" placeholder="Nuevo costo" value={r.descripcion} onChange={(e) => updateCostRow('variables', idx, 'descripcion', e.target.value)} style={inputStyle} /></td>
-                      <td style={thTdStyle}><input type="number" min={0} step={1} value={r.qty} onChange={(e) => updateCostRow('variables', idx, 'qty', e.target.value)} style={inputStyle} /></td>
-                      <td style={thTdStyle}><input type="text" placeholder="Unidad" value={r.unidad} onChange={(e) => updateCostRow('variables', idx, 'unidad', e.target.value)} style={inputStyle} /></td>
-                      <td style={thTdStyle}><input type="number" min={0} step={0.01} value={r.unit} onChange={(e) => updateCostRow('variables', idx, 'unit', e.target.value)} style={inputStyle} /></td>
-                      <td style={thTdStyle}><input type="number" readOnly value={rowTotal(r) ? rowTotal(r).toFixed(2) : ''} style={readonlyInputStyle} /></td>
-                      <td style={{ ...thTdStyle, textAlign: 'center' }}>
+                    <Table.Row key={idx}>
+                      <Table.Cell><Input type="text" placeholder="Nuevo costo" value={r.descripcion} onChange={(e) => updateCostRow('variables', idx, 'descripcion', e.target.value)} /></Table.Cell>
+                      <Table.Cell><Input type="number" min={0} step={1} value={r.qty} onChange={(e) => updateCostRow('variables', idx, 'qty', e.target.value)} /></Table.Cell>
+                      <Table.Cell><Input type="text" placeholder="Unidad" value={r.unidad} onChange={(e) => updateCostRow('variables', idx, 'unidad', e.target.value)} /></Table.Cell>
+                      <Table.Cell><Input type="number" min={0} step={0.01} value={r.unit} onChange={(e) => updateCostRow('variables', idx, 'unit', e.target.value)} /></Table.Cell>
+                      <Table.Cell><Input type="number" readOnly value={rowTotal(r) ? rowTotal(r).toFixed(2) : ''} /></Table.Cell>
+                      <Table.Cell center>
                         <Button variant="alt" size="sm" type="button" onClick={() => removeCostRow('variables', idx)}>✖</Button>
-                      </td>
-                    </tr>
+                      </Table.Cell>
+                    </Table.Row>
                   ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={4} style={{ ...thTdStyle, textAlign: 'right' }}>Total costos variables ($):</td>
-                    <td style={thTdStyle}><input type="number" readOnly value={totalVariables ? totalVariables.toFixed(2) : ''} style={readonlyInputStyle} /></td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
+                  <Table.Row>
+                    <Table.Cell colSpan={4} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total costos variables ($):</Table.Cell>
+                    <Table.Cell><Input type="number" readOnly value={totalVariables ? totalVariables.toFixed(2) : ''} style={{ fontWeight: 'bold' }} /></Table.Cell>
+                    <Table.Cell>{null}</Table.Cell>
+                  </Table.Row>
+                </Table.Body>
+              </Table>
             </Section>
 
             {/* PRESUPUESTO: COSTOS FIJOS */}
@@ -537,39 +549,37 @@ export const ProyectoPOA: React.FC = () => {
                 <Button variant="main" size="sm" type="button" onClick={() => addCostRow('fijos')}>➕ Agregar costo fijo</Button>
               </div>
 
-              <table style={tableStyle}>
-                <thead>
-                  <tr>
-                    <th style={{ ...thStyle, width: '36%' }}>Descripción</th>
-                    <th style={thStyle}>Cantidad</th>
-                    <th style={thStyle}>Unidad</th>
-                    <th style={thStyle}>Precio unitario ($)</th>
-                    <th style={thStyle}>Costo total ($)</th>
-                    <th style={{ ...thStyle, width: '3%' }}></th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table variant="compact">
+                <Table.Header>
+                  <Table.Row>
+                    <Table.Cell header style={{ width: '36%' }}>Descripción</Table.Cell>
+                    <Table.Cell header>Cantidad</Table.Cell>
+                    <Table.Cell header>Unidad</Table.Cell>
+                    <Table.Cell header>Precio unitario ($)</Table.Cell>
+                    <Table.Cell header>Costo total ($)</Table.Cell>
+                    <Table.Cell header style={{ width: '3%' }}>{null}</Table.Cell>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
                   {fijosRows.map((r, idx) => (
-                    <tr key={idx}>
-                      <td style={thTdStyle}><input type="text" placeholder="Nuevo costo" value={r.descripcion} onChange={(e) => updateCostRow('fijos', idx, 'descripcion', e.target.value)} style={inputStyle} /></td>
-                      <td style={thTdStyle}><input type="number" min={0} step={1} value={r.qty} onChange={(e) => updateCostRow('fijos', idx, 'qty', e.target.value)} style={inputStyle} /></td>
-                      <td style={thTdStyle}><input type="text" placeholder="Meses" value={r.unidad} onChange={(e) => updateCostRow('fijos', idx, 'unidad', e.target.value)} style={inputStyle} /></td>
-                      <td style={thTdStyle}><input type="number" min={0} step={0.01} value={r.unit} onChange={(e) => updateCostRow('fijos', idx, 'unit', e.target.value)} style={inputStyle} /></td>
-                      <td style={thTdStyle}><input type="number" readOnly value={rowTotal(r) ? rowTotal(r).toFixed(2) : ''} style={readonlyInputStyle} /></td>
-                      <td style={{ ...thTdStyle, textAlign: 'center' }}>
+                    <Table.Row key={idx}>
+                      <Table.Cell><Input type="text" placeholder="Nuevo costo" value={r.descripcion} onChange={(e) => updateCostRow('fijos', idx, 'descripcion', e.target.value)} /></Table.Cell>
+                      <Table.Cell><Input type="number" min={0} step={1} value={r.qty} onChange={(e) => updateCostRow('fijos', idx, 'qty', e.target.value)} /></Table.Cell>
+                      <Table.Cell><Input type="text" placeholder="Meses" value={r.unidad} onChange={(e) => updateCostRow('fijos', idx, 'unidad', e.target.value)} /></Table.Cell>
+                      <Table.Cell><Input type="number" min={0} step={0.01} value={r.unit} onChange={(e) => updateCostRow('fijos', idx, 'unit', e.target.value)} /></Table.Cell>
+                      <Table.Cell><Input type="number" readOnly value={rowTotal(r) ? rowTotal(r).toFixed(2) : ''} /></Table.Cell>
+                      <Table.Cell center>
                         <Button variant="alt" size="sm" type="button" onClick={() => removeCostRow('fijos', idx)}>✖</Button>
-                      </td>
-                    </tr>
+                      </Table.Cell>
+                    </Table.Row>
                   ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={4} style={{ ...thTdStyle, textAlign: 'right' }}>Total costos fijos ($):</td>
-                    <td style={thTdStyle}><input type="number" readOnly value={totalFijos ? totalFijos.toFixed(2) : ''} style={readonlyInputStyle} /></td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
+                  <Table.Row>
+                    <Table.Cell colSpan={4} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total costos fijos ($):</Table.Cell>
+                    <Table.Cell><Input type="number" readOnly value={totalFijos ? totalFijos.toFixed(2) : ''} style={{ fontWeight: 'bold' }} /></Table.Cell>
+                    <Table.Cell>{null}</Table.Cell>
+                  </Table.Row>
+                </Table.Body>
+              </Table>
             </Section>
 
             {/* TOTAL GENERAL */}
@@ -577,15 +587,15 @@ export const ProyectoPOA: React.FC = () => {
               <Grid columns={3}>
                 <div>
                   <Label>Total costos variables ($)</Label>
-                  <input type="number" readOnly value={totalVariables ? totalVariables.toFixed(2) : ''} style={readonlyInputStyle} />
+                  <Input type="number" readOnly value={totalVariables ? totalVariables.toFixed(2) : ''} />
                 </div>
                 <div>
                   <Label>Total costos fijos ($)</Label>
-                  <input type="number" readOnly value={totalFijos ? totalFijos.toFixed(2) : ''} style={readonlyInputStyle} />
+                  <Input type="number" readOnly value={totalFijos ? totalFijos.toFixed(2) : ''} />
                 </div>
                 <div>
                   <Label>Total general del proyecto ($)</Label>
-                  <input type="number" readOnly value={totalGeneral ? totalGeneral.toFixed(2) : ''} style={readonlyInputStyle} />
+                  <Input type="number" readOnly value={totalGeneral ? totalGeneral.toFixed(2) : ''} />
                 </div>
               </Grid>
             </Section>

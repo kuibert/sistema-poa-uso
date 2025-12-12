@@ -1,123 +1,116 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PageHeader, Card, Divider, Grid, Table, Badge } from '../components/common';
 import { KPICard, StatusPill, Status } from '../components/poa';
 import { Button } from '../components/common/Button';
 import { authApi } from '../services/authApi';
+import apiClient from '../services/apiClient';
 
 export const DashboardPOA: React.FC = () => {
-  // Datos de ejemplo del prototipo (idénticos al HTML)
-  const proyectos = useMemo(() => ([
-    {
-      id: 1,
-      nombre: "Gestión de acreditación de la Carrera de Ingeniería Industrial",
-      anio: 2025,
-      responsable: "Coord. Ing. Industrial",
-      presupuestoAprobado: 10000,
-      gastado: 1500,
-      avanceOperativo: 55,
-      logroKpi: 62,
-      actividadesMes: 3
-    },
-    {
-      id: 2,
-      nombre: "Fortalecimiento de laboratorios de Ingeniería Eléctrica",
-      anio: 2025,
-      responsable: "Coord. Ing. Eléctrica",
-      presupuestoAprobado: 18000,
-      gastado: 4000,
-      avanceOperativo: 40,
-      logroKpi: 35,
-      actividadesMes: 4
-    },
-    {
-      id: 3,
-      nombre: "Programa de vinculación con el sector productivo Agronegocios",
-      anio: 2025,
-      responsable: "Coord. Ing. Agronegocios",
-      presupuestoAprobado: 12000,
-      gastado: 3000,
-      avanceOperativo: 70,
-      logroKpi: 55,
-      actividadesMes: 5
-    }
-  ]), []);
 
-  const actividadesMes = useMemo(() => ([
-    {
-      proyectoId: 1,
-      proyectoNombre: "Gestión de acreditación de la Carrera de Ingeniería Industrial",
-      nombre: "Acercamiento y entendimiento con ACAAI",
-      responsable: "Carlos Martínez",
-      estado: "I" as Status,
-      avanceActividad: 60,
-      logroKpiActividad: 40
-    },
-    {
-      proyectoId: 1,
-      proyectoNombre: "Gestión de acreditación de la Carrera de Ingeniería Industrial",
-      nombre: "Capacitación de actores de la USO",
-      responsable: "Equipo de acreditación",
-      estado: "P" as Status,
-      avanceActividad: 30,
-      logroKpiActividad: 30
-    },
-    {
-      proyectoId: 2,
-      proyectoNombre: "Fortalecimiento de laboratorios de Ingeniería Eléctrica",
-      nombre: "Adquisición de equipo de medición",
-      responsable: "Ing. responsable de laboratorio",
-      estado: "I" as Status,
-      avanceActividad: 45,
-      logroKpiActividad: 20
-    },
-    {
-      proyectoId: 2,
-      proyectoNombre: "Fortalecimiento de laboratorios de Ingeniería Eléctrica",
-      nombre: "Capacitación en uso de equipo",
-      responsable: "Unidad de capacitación",
-      estado: "P" as Status,
-      avanceActividad: 0,
-      logroKpiActividad: 0
-    },
-    {
-      proyectoId: 3,
-      proyectoNombre: "Programa de vinculación con el sector productivo Agronegocios",
-      nombre: "Diseño de talleres con productores",
-      responsable: "Equipo Agronegocios",
-      estado: "F" as Status,
-      avanceActividad: 100,
-      logroKpiActividad: 90
-    },
-    {
-      proyectoId: 3,
-      proyectoNombre: "Programa de vinculación con el sector productivo Agronegocios",
-      nombre: "Ejecución de jornadas de campo",
-      responsable: "Equipo de campo",
-      estado: "I" as Status,
-      avanceActividad: 50,
-      logroKpiActividad: 40
-    }
-  ]), []);
+  const [proyectos, setProyectos] = useState<any[]>([]);
+  const [actividadesMes, setActividadesMes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Helpers y cálculos idénticos al script del HTML
-  const formatoDinero = (v: number) => "$ " + v.toLocaleString("es-SV", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // ============================
+  //  CARGAR DATOS DESDE BACKEND
+  // ============================
+  useEffect(() => {
+    const load = async () => {
+      try {
+        // 🚀 AQUÍ SE ARREGLA EL ERROR
+        const { data } = await apiClient.get(`/api/proyectos/dashboard?anio=2025`);
 
-  const totalProyectos = proyectos.length;
-  const totalAprobado = proyectos.reduce((s, p) => s + p.presupuestoAprobado, 0);
-  const totalGastado = proyectos.reduce((s, p) => s + p.gastado, 0);
-  const dispPortafolio = totalAprobado - totalGastado;
-  const promAvance = totalProyectos ? Math.round(proyectos.reduce((s, p) => s + p.avanceOperativo, 0) / totalProyectos) : 0;
-  const promLogro = totalProyectos ? Math.round(proyectos.reduce((s, p) => s + p.logroKpi, 0) / totalProyectos) : 0;
-  const pctGastadoPortafolio = totalAprobado > 0 ? (totalGastado / totalAprobado) * 100 : 0;
-  const totalActivMes = proyectos.reduce((s, p) => s + p.actividadesMes, 0);
+        setProyectos(data.proyectos || []);
+        setActividadesMes(data.actividadesMes || []);
+      } catch (error) {
+        console.error("Error cargando dashboard:", error);
+      }
+      setLoading(false);
+    };
 
-  const cP = actividadesMes.filter(a => a.estado === 'P').length;
-  const cI = actividadesMes.filter(a => a.estado === 'I').length;
-  const cF = actividadesMes.filter(a => a.estado === 'F').length;
+    load();
+  }, []);
 
-  const urlSeguimiento = 'seguimiento_proyecto.html';
+  if (loading) {
+    return <p style={{ color: "white", padding: "2rem" }}>Cargando datos del dashboard...</p>;
+  }
 
-  // Estilos inline
+
+// ============================
+//  CÁLCULOS
+// ============================
+const formatoDinero = (v: number) =>
+  "$ " + Number(v).toLocaleString("es-SV", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Normalizar números (evitar NaN)
+const fixNum = (v: any) => Number(v ?? 0);
+
+// ----------------------------
+// Valores base
+// ----------------------------
+const totalProyectos = proyectos.length;
+
+const totalAprobado = proyectos.reduce(
+  (s, p) => s + fixNum(p.presupuestoAprobado),
+  0
+);
+
+const totalGastado = proyectos.reduce(
+  (s, p) => s + fixNum(p.gastado),
+  0
+);
+
+const dispPortafolio = totalAprobado - totalGastado;
+
+// ----------------------------
+// Porcentajes
+// ----------------------------
+const pctDisponible =
+  totalAprobado > 0 ? (dispPortafolio / totalAprobado) * 100 : 0;
+
+const pctGastadoPortafolio =
+  totalAprobado > 0 ? (totalGastado / totalAprobado) * 100 : 0;
+
+// ----------------------------
+// Promedios
+// ----------------------------
+const promAvance =
+  totalProyectos > 0
+    ? Math.round(
+        proyectos.reduce(
+          (s, p) => s + fixNum(p.avanceOperativo),
+          0
+        ) / totalProyectos
+      )
+    : 0;
+
+const promLogro =
+  totalProyectos > 0
+    ? Math.round(
+        proyectos.reduce(
+          (s, p) => s + fixNum(p.logroKpi),
+          0
+        ) / totalProyectos
+      )
+    : 0;
+
+const totalActivMes = proyectos.reduce(
+  (s, p) => s + fixNum(p.actividadesMes),
+  0
+);
+
+// ----------------------------
+// Actividades por estado
+// ----------------------------
+const cP = actividadesMes.filter(a => a.estado === 'P').length;
+const cI = actividadesMes.filter(a => a.estado === 'I').length;
+const cF = actividadesMes.filter(a => a.estado === 'F').length;
+
+const urlSeguimiento = 'seguimiento_proyecto.html';
+
+  // =============================
+  //  ESTILOS (NO CAMBIADOS)
+  // =============================
   const containerStyle: React.CSSProperties = {
     background: 'var(--fondo-azul)',
     color: 'var(--texto-claro)',
@@ -210,24 +203,31 @@ export const DashboardPOA: React.FC = () => {
 
       <main style={mainStyle}>
         <Card>
-          {/* CABECERA */}
+
+          {/* PANEL SUPERIOR */}
           <div style={cardHeaderStyle}>
             <div>
               <h1 style={cardTitleStyle}>Resumen del portafolio de proyectos POA</h1>
-              <p style={cardSubStyle}>Visión global del presupuesto, avance y resultados de todos los proyectos activos.</p>
+              <p style={cardSubStyle}>
+                Visión global del presupuesto, avance y resultados de todos los proyectos activos.
+              </p>
             </div>
-            <Button variant="alt" type="button" onClick={() => window.print()}>🖨 Imprimir dashboard</Button>
+
+            <Button variant="alt" onClick={() => window.print()}>
+              🖨 Imprimir dashboard
+            </Button>
           </div>
 
           <Divider variant="gradient" />
 
-          {/* PANEL 1: KPI DEL PORTAFOLIO */}
+          {/* ========= KPI ========= */}
           <div style={{ marginBottom: '1.5rem' }}>
             <div style={portafolioResumenStyle}>
               <div style={portafolioTextoStyle}>
                 Proyectos activos: <strong>{totalProyectos}</strong><br />
                 Seguimiento por ejecución del plan, logro de indicadores y uso de presupuesto.
               </div>
+
               <div style={portafolioTextoStyle}>
                 Mes de referencia: <strong>Marzo 2025</strong><br />
                 Este resumen consolida los datos de todos los proyectos aprobados en el POA.
@@ -268,41 +268,45 @@ export const DashboardPOA: React.FC = () => {
             </Grid>
           </div>
 
-          {/* PANEL 2: LISTADO DE PROYECTOS (TABLA) */}
-          <Card variant="dark" padding="1rem 1rem 1rem" style={{ marginBottom: '1.3rem' }}>
+          {/* ========= TABLA DE PROYECTOS ========= */}
+          <Card variant="dark" padding="1rem" style={{ marginBottom: '1.3rem' }}>
             <div style={sectionTitleStyle}>
               <span style={sectionTitleBeforeStyle}></span>
               Listado de proyectos activos
             </div>
+
             <div style={sectionDividerStyle}></div>
+
             <p style={sectionDescStyle}>
-              Visión compacta para más de 20 proyectos: por fila se muestra presupuesto y porcentajes clave.
+              Visión compacta para más de 20 proyectos.
             </p>
 
             <Table>
               <Table.Header>
                 <Table.Row hover={false}>
-                  <Table.Cell header style={{ width: '26%' }}>Proyecto</Table.Cell>
-                  <Table.Cell header center style={{ width: '6%' }}>Año</Table.Cell>
-                  <Table.Cell header style={{ width: '18%' }}>Responsable</Table.Cell>
-                  <Table.Cell header style={{ width: '10%' }}>Aprobado</Table.Cell>
-                  <Table.Cell header style={{ width: '10%' }}>Gastado</Table.Cell>
-                  <Table.Cell header style={{ width: '10%' }}>Disponible</Table.Cell>
-                  <Table.Cell header center style={{ width: '8%' }}>Avance %</Table.Cell>
-                  <Table.Cell header center style={{ width: '8%' }}>Logro %</Table.Cell>
-                  <Table.Cell header center style={{ width: '9%' }}>Act. mes</Table.Cell>
+                  <Table.Cell header>Proyecto</Table.Cell>
+                  <Table.Cell header center>Año</Table.Cell>
+                  <Table.Cell header>Responsable</Table.Cell>
+                  <Table.Cell header>Aprobado</Table.Cell>
+                  <Table.Cell header>Gastado</Table.Cell>
+                  <Table.Cell header>Disponible</Table.Cell>
+                  <Table.Cell header center>Avance %</Table.Cell>
+                  <Table.Cell header center>Logro %</Table.Cell>
+                  <Table.Cell header center>Act. Mes</Table.Cell>
                 </Table.Row>
               </Table.Header>
+
               <Table.Body>
-                {proyectos.map((p) => {
+                {proyectos.map(p => {
                   const disp = p.presupuestoAprobado - p.gastado;
                   return (
                     <Table.Row key={p.id}>
                       <Table.Cell>
-                        <a href={`${urlSeguimiento}?proyectoId=${encodeURIComponent(p.id)}`} style={proyectoLinkStyle}>
+                        <a href={`${urlSeguimiento}?proyectoId=${p.id}`} style={proyectoLinkStyle}>
                           {p.nombre}
                         </a>
                       </Table.Cell>
+
                       <Table.Cell center>{p.anio}</Table.Cell>
                       <Table.Cell>{p.responsable}</Table.Cell>
                       <Table.Cell>{formatoDinero(p.presupuestoAprobado)}</Table.Cell>
@@ -310,9 +314,7 @@ export const DashboardPOA: React.FC = () => {
                       <Table.Cell>{formatoDinero(disp)}</Table.Cell>
                       <Table.Cell center>{p.avanceOperativo}%</Table.Cell>
                       <Table.Cell center>{p.logroKpi}%</Table.Cell>
-                      <Table.Cell center>
-                        <Badge variant="circle">{p.actividadesMes}</Badge>
-                      </Table.Cell>
+                      <Table.Cell center><Badge variant="circle">{p.actividadesMes}</Badge></Table.Cell>
                     </Table.Row>
                   );
                 })}
@@ -320,50 +322,57 @@ export const DashboardPOA: React.FC = () => {
             </Table>
           </Card>
 
-          {/* PANEL 3: ACTIVIDADES DEL MES (CAJA DIFERENCIADA) */}
-          <Card variant="accent" padding="1rem 1rem 1.1rem" style={{ marginTop: '1rem' }}>
-            <div style={{ ...sectionTitleStyle, color: 'var(--texto-actividades)' }}>
+          {/* ========= TABLA ACTIVIDADES ========= */}
+          <Card variant="accent" padding="1rem 1rem 1.1rem">
+            <div style={sectionTitleStyle}>
               <span style={sectionTitleBeforeStyle}></span>
               Actividades del mes (todos los proyectos)
             </div>
+
             <div style={sectionDividerStyle}></div>
-            <p style={{ ...sectionDescStyle, color: 'var(--texto-actividades-sec)' }}>
-              Vista consolidada de las actividades que tienen ejecución este mes: proyecto, responsable y estado.
+
+            <p style={sectionDescStyle}>
+              Vista consolidada de todas las actividades del mes.
             </p>
 
             <Table variant="activities">
               <Table.Header>
                 <Table.Row hover={false}>
-                  <Table.Cell header style={{ width: '30%' }}>Actividad</Table.Cell>
-                  <Table.Cell header style={{ width: '26%' }}>Proyecto</Table.Cell>
-                  <Table.Cell header style={{ width: '18%' }}>Responsable</Table.Cell>
-                  <Table.Cell header style={{ width: '9%' }}>Estado</Table.Cell>
-                  <Table.Cell header center style={{ width: '9%' }}>Avance act. %</Table.Cell>
-                  <Table.Cell header center style={{ width: '8%' }}>Logro KPI %</Table.Cell>
+                  <Table.Cell header>Actividad</Table.Cell>
+                  <Table.Cell header>Proyecto</Table.Cell>
+                  <Table.Cell header>Responsable</Table.Cell>
+                  <Table.Cell header>Estado</Table.Cell>
+                  <Table.Cell header center>Avance %</Table.Cell>
+                  <Table.Cell header center>Logro KPI %</Table.Cell>
                 </Table.Row>
               </Table.Header>
+
               <Table.Body>
                 {actividadesMes.map((a, idx) => (
                   <Table.Row key={idx}>
                     <Table.Cell>
                       <a
-                        href={`${urlSeguimiento}?proyectoId=${encodeURIComponent(a.proyectoId)}&actividad=${encodeURIComponent(a.nombre)}`}
+                        href={`${urlSeguimiento}?proyectoId=${a.proyectoId}&actividad=${encodeURIComponent(a.nombre)}`}
                         style={actividadLinkStyle}
                       >
                         {a.nombre}
                       </a>
                     </Table.Cell>
+
                     <Table.Cell>{a.proyectoNombre}</Table.Cell>
                     <Table.Cell>{a.responsable}</Table.Cell>
+
                     <Table.Cell>
-                      <StatusPill status={a.estado} />
+                      <StatusPill status={a.estado as Status} />
                     </Table.Cell>
+
                     <Table.Cell center>{a.avanceActividad}%</Table.Cell>
                     <Table.Cell center>{a.logroKpiActividad}%</Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>
             </Table>
+
           </Card>
         </Card>
       </main>

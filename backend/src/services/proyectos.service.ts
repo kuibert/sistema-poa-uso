@@ -2,23 +2,87 @@ import { query } from '../db';
 
 export const proyectosService = {
   // Dashboard (Page0)
-  async getDashboard(anio: number) {
-    const proyectos = await query(
-      `SELECT p.*, u.nombre as responsable_nombre,
-        COUNT(DISTINCT a.id_actividad) as total_actividades,
-        COALESCE(SUM(g.monto), 0) as total_gastado
-       FROM proyecto p
-       LEFT JOIN usuario u ON p.id_responsable = u.id_usuario
-       LEFT JOIN actividad a ON p.id_proyecto = a.id_proyecto
-       LEFT JOIN gasto_actividad g ON a.id_actividad = g.id_actividad
-       WHERE p.anio = $1
-       GROUP BY p.id_proyecto, u.nombre
-       ORDER BY p.fecha_creacion DESC`,
-      [anio]
-    );
+async getDashboard(anio: number) {
+  // 1. Proyectos con presupuesto y gasto
+  const proyectosResult = await query(
+    `
+    SELECT 
+      p.id,
+      p.nombre,
+      p.anio,
+      u.nombre_completo AS responsable,
+      COUNT(DISTINCT a.id) AS "actividadesMes",
+      COALESCE(SUM(g.monto), 0) AS "gastado",
+      COALESCE(p.presupuesto_total, 0) AS "presupuestoAprobado"
+    FROM proyecto p
+    LEFT JOIN usuario u ON p.id_responsable = u.id
+    LEFT JOIN actividad a ON a.id_proyecto = p.id
+    LEFT JOIN gasto_actividad g ON g.id_actividad = a.id
+    WHERE p.anio = $1
+    GROUP BY p.id, u.nombre_completo
+    ORDER BY p.created_at DESC
+    `,
+    [anio]
+  );
 
-    return proyectos.rows;
-  },
+  // 2. Actividades del año con seguimiento + KPI
+  const actividadesResult = await query(
+    `
+    SELECT 
+      a.id,
+      a.nombre,
+      p.id AS "proyectoId",
+      p.nombre AS "proyectoNombre",
+      u.nombre_completo AS responsable,
+      COALESCE(ams.estado, 'P') AS estado,
+      -- KPI REAL de la base
+      ia.porcentaje_cumplimiento AS "logroKpiActividad",
+      -- Avance operativo según estado
+      CASE ams.estado
+        WHEN 'P' THEN 0
+        WHEN 'I' THEN 50
+        WHEN 'F' THEN 100
+        ELSE 0
+      END AS "avanceActividad"
+    FROM actividad a
+    LEFT JOIN proyecto p ON a.id_proyecto = p.id
+    LEFT JOIN usuario u ON a.id_responsable = u.id
+    LEFT JOIN actividad_mes_seguimiento ams ON ams.id_actividad = a.id
+    LEFT JOIN indicador_actividad ia ON ia.id_actividad = a.id
+    WHERE EXTRACT(YEAR FROM a.created_at) = $1
+    `,
+    [anio]
+  );
+
+  // 3. Cálculo por proyecto
+  const proyectos = proyectosResult.rows.map((p: any) => {
+    const actividades = actividadesResult.rows.filter((a: any) => a.proyectoId === p.id);
+
+    const avanceOperativo = actividades.length
+      ? Math.round(
+          actividades.reduce((sum: number, a: any) => sum + a.avanceActividad, 0) /
+          actividades.length
+        )
+      : 0;
+
+    const logroKpi = actividades.length
+      ? Math.round(
+          actividades.reduce(
+            (sum: number, a: any) => sum + (a.logroKpiActividad || 0),
+            0
+          ) / actividades.length
+        )
+      : 0;
+
+    return { ...p, avanceOperativo, logroKpi };
+  });
+
+  return {
+    proyectos,
+    actividadesMes: actividadesResult.rows
+  };
+},
+
 
   async getProyectos(anio: number) {
     const result = await query(

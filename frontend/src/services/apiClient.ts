@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import axios from 'axios';
 
 const apiClient = axios.create({
@@ -33,4 +34,13 @@ apiClient.interceptors.response.use(
   }
 );
 
+=======
+import axios from "axios";
+
+const apiClient = axios.create({
+  baseURL: "http://localhost:5000", // Backend Node.js
+  withCredentials: true,
+});
+
+>>>>>>> origin/DevGabriela
 export default apiClient;

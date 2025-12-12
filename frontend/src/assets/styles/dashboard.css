@@ -1,0 +1,219 @@
+/* ============ CONTENEDOR GENERAL ============ */
+.dashboard-container {
+  padding-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.dashboard-inner {
+  width: 1320px;
+  max-width: 100%;
+}
+
+/* ============ CARD PRINCIPAL ============ */
+.dashboard-main-card {
+  background: var(--tarjeta-azul);
+  padding: 45px;
+  border-radius: 22px;
+  border: 1px solid var(--borde);
+  box-shadow: 0 10px 35px rgba(0,0,0,0.35);
+  position: relative;
+  margin-bottom: 50px;
+}
+
+.dashboard-main-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: 100%;
+  background: var(--verde);
+  border-radius: 4px 4px 0 0;
+}
+
+/* ENCABEZADO */
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header-row h1 {
+  font-size: 2.0rem;
+  font-weight: 700;
+}
+
+.barra-verde{
+  height: 30px;
+  width: 6px;
+  background: var(--verde);
+  opacity: 0.85;
+  border-radius: 3px;
+  float: left;
+  margin-right: 10px;
+}
+
+/* Línea verde */
+.divider-green {
+  height: 3px;
+  background: var(--verde);
+  margin: 25px 0;
+  opacity: 0.85;
+  border-radius: 3px;
+}
+
+.divider-green-delgada {
+  height: 1px;
+  background: var(--verde);
+  margin: 15px 0;
+  opacity: 0.85;
+  border-radius: 3px;
+}
+
+.divider-green-difuminado {
+  height: 3px;
+  margin: 25px 0;
+  border-radius: 3px;
+  opacity: 0.85;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--verde),
+    transparent
+  );
+}
+
+
+.divider-green {
+  height: 3px;
+  background: var(--verde);
+  margin: 25px 0;
+  opacity: 0.85;
+  border-radius: 3px;
+}
+
+/* ============ KPI GRID ============ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 26px;
+  margin-top: 20px;
+}
+
+.kpi-card {
+  background: var(--panel-kpi);
+  padding: 32px;
+  border-radius: 20px;
+  border: 1px solid var(--borde);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.28);
+}
+
+.kpi-title {
+  color: var(--texto-sec);
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.kpi-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.kpi-sub {
+  font-size: 0.9rem;
+  color: var(--texto-sec);
+  margin-bottom: 14px;
+}
+
+.kpi-bar-bg {
+  height: 8px;
+  width: 100%;
+  background: rgba(255,255,255,0.12);
+  border-radius: 999px;
+}
+
+.kpi-bar-fill {
+  height: 100%;
+  background: var(--verde);
+  border-radius: 999px;
+}
+
+/* ============ TABLAS ============ */
+.card {
+  background: var(--tarjeta-azul);
+  border-radius: 20px;
+  padding: 28px;
+  border: 1px solid var(--borde);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.25);
+  margin-bottom: 35px;
+}
+
+.card-verde {
+  background: var(--tarjeta-verde);
+  border-radius: 20px;
+  padding: 28px;
+  border: 1px solid var(--borde);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.25);
+  margin-bottom: 35px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+thead {
+  background: rgba(255,255,255,0.06);
+}
+
+th, td {
+  padding: 15px;
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.center {
+  text-align: center;
+}
+
+/* ESTADOS */
+.estado-pill {
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.estado-P {
+  background: rgba(255,215,0,0.15);
+  border: 1px solid #f1c40f;
+  color: #f1c40f;
+}
+
+.estado-I {
+  background: rgba(41,128,185,0.15);
+  border: 1px solid #2980b9;
+  color: #3498db;
+}
+
+.estado-F {
+  background: rgba(46,204,113,0.15);
+  border: 1px solid #2ecc71;
+  color: #2ecc71;
+}
+
+/* BADGE */
+.badge {
+  padding: 5px;
+  border: 1px solid var(--texto-claro);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  display: inline-block;
+}

@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
+<<<<<<< HEAD
 import "../styles/global.css";
+=======
+import "../assets/styles/global.css";
+>>>>>>> origin/DevGabriela
 
 export const SeguimientoPage: React.FC = () => {
   // ============================

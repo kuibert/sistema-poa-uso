@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
+<<<<<<< HEAD
 import "../styles/global.css"; // estilos generales si los tienes
+=======
+import "../assets/styles/global.css"; // estilos generales si los tienes
+>>>>>>> origin/DevGabriela
 
 export default function ActividadGastos() {
   // Valores iniciales (simulados igual que tu HTML)

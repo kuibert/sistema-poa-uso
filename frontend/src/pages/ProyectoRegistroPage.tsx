@@ -1,7 +1,13 @@
 import React, { useState } from "react";
+<<<<<<< HEAD
 import "../styles/global.css";
 import "../styles/form.css";
 import "../styles/registro.css";
+=======
+import "../assets/styles/global.css";
+import "../assets/styles/form.css";
+import "../assets/styles/registro.css";
+>>>>>>> origin/DevGabriela
 
 
 export default function ProyectoRegistroPage() {

@@ -1,5 +1,9 @@
 import React, { useState } from "react";
+<<<<<<< HEAD
 import "../styles/global.css";
+=======
+import "../assets/styles/global.css";
+>>>>>>> origin/DevGabriela
 
 export default function ProyectoRegistroPage() {
   const [proyecto, setProyecto] = useState({

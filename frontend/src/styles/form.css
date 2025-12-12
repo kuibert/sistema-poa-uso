@@ -1,0 +1,43 @@
+/* Inputs generales */
+input, select, textarea {
+  width: 100%;
+  background: #0d213f;
+  border: 1px solid var(--borde);
+  color: var(--texto-claro);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9bb2d1;
+}
+
+textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Labels */
+label {
+  color: var(--texto-sec);
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+/* Grids reutilizables */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 22px;
+}

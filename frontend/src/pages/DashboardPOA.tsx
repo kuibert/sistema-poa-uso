@@ -200,6 +200,7 @@ const urlSeguimiento = 'seguimiento_proyecto.html';
         userName="Carlos Roberto Martínez Martínez"
         onLogout={authApi.logout}
       />
+      
 
       <main style={mainStyle}>
         <Card>

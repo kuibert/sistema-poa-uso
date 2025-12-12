@@ -1,0 +1,67 @@
+/* CARD ESPECIAL */
+.registro-card {
+  background: var(--tarjeta-azul);
+  padding: 40px;
+  border-radius: 16px;
+  border: 1px solid var(--borde);
+  box-shadow: 0 10px 25px rgba(0,0,0,.35);
+  margin-bottom: 40px;
+  position: relative;
+}
+
+/* Línea verde superior */
+.registro-card::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: 100%;
+  background: var(--verde);
+  border-radius: 4px 4px 0 0;
+}
+
+.registro-card h1 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+/* Título sección */
+.registro-section-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-top: 35px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.registro-section-title span {
+  color: var(--verde);
+  font-size: 1.4rem;
+  margin-right: 5px;
+}
+
+.tabla-anio{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.texto-verde{
+  color: var(--verde);
+  font-size: 1.1rem;
+}
+
+.header-activity-name{
+  background: var(--fondo-azul);
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.activity-name{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

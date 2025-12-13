@@ -62,6 +62,15 @@ router.post('/:id/actividades', authMiddleware, async (req, res, next) => {
   }
 });
 
+router.get('/actividades/:id', authMiddleware, async (req, res, next) => {
+  try {
+    const actividad = await proyectosService.getActividad(parseInt(req.params.id));
+    res.json(actividad);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.put('/actividades/:id/plan-mensual', authMiddleware, async (req, res, next) => {
   try {
     const result = await proyectosService.updatePlanMensual(parseInt(req.params.id), req.body.meses);

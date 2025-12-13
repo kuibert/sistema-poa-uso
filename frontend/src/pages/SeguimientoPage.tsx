@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from 'react-router-dom';
-import { NavBar, Card, Divider, Section, Label, LoadingSpinner, ErrorMessage } from '../components/common';
+import { useParams, useNavigate } from 'react-router-dom';
+import { NavBar, Card, LoadingSpinner, ErrorMessage, Select, Input, Button, Label } from '../components/common';
 import { Status } from '../components/poa';
-import { MonthlyGanttView, IndicadoresTable, ActivityActionButtons } from '../components/Seguimiento';
+import { MonthlyGanttView } from '../components/Seguimiento';
 import apiClient from '../services/apiClient';
 
 type Actividad = {
@@ -14,11 +14,14 @@ type Actividad = {
   seguimiento_mensual: { mes: number; estado: Status }[] | null;
   indicadores: {
     id_indicador: number;
-    nombre: string;
+    nombre: string; // descripcion especifica
     unidad_medida: string;
     meta: number;
-    valor_logrado: number;
+    valor_logrado: number; // valor actual
     porcentaje_cumplimiento: number;
+    // Extra fields if available from backend, otherwise generic
+    categoria?: string;
+    beneficiarios?: string;
   }[] | null;
 };
 
@@ -31,6 +34,7 @@ type ProyectoSeguimiento = {
 
 export const SeguimientoPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   // Estados
   const [proyectos, setProyectos] = useState<any[]>([]);
@@ -52,7 +56,6 @@ export const SeguimientoPage: React.FC = () => {
     } else if (id) {
       const projectId = parseInt(id);
       setProyectoSel(projectId);
-      loadSeguimiento(projectId);
     }
   }, [proyectoSel, id]);
 
@@ -60,10 +63,10 @@ export const SeguimientoPage: React.FC = () => {
     try {
       const response = await apiClient.get('/proyectos');
       setProyectos(response.data);
-
-      // Si hay proyectos y no hay uno seleccionado, seleccionar el primero
-      if (response.data.length > 0 && proyectoSel === 0) {
-        setProyectoSel(response.data[0].id);
+      // Si hay proyectos y no hay uno seleccionado, seleccionar el primero si no hay ID en URL
+      if (!id && response.data.length > 0 && proyectoSel === 0) {
+        // Optional: Auto-select first? Or wait for user. HTML design implies "Selected Project".
+        // setProyectoSel(response.data[0].id);
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al cargar proyectos');
@@ -85,56 +88,111 @@ export const SeguimientoPage: React.FC = () => {
     }
   };
 
-  const actualizarEstadoMes = async (actividadId: number, mes: number, nuevoEstado: Status) => {
+  // Lógica de actualización de estado (Paso 3)
+  const actualizarEstadoMes = async (actividadId: number, mes: number, nuevoEstado: Status | undefined) => {
     if (!seguimiento) return;
-
     try {
       setSaving(true);
 
-      // Encontrar la actividad
+      // Encontrar actividad
       const actividad = seguimiento.actividades.find(a => a.id_actividad === actividadId);
       if (!actividad) return;
 
       // Actualizar seguimiento mensual
-      const seguimientoActualizado = (actividad.seguimiento_mensual || []).map(s =>
-        s.mes === mes ? { ...s, estado: nuevoEstado } : s
-      );
+      let seguimientoActualizado = [...(actividad.seguimiento_mensual || [])];
 
-      // Si el mes no existe, agregarlo
-      if (!(actividad.seguimiento_mensual || []).find(s => s.mes === mes)) {
+      // Remove existing for this month to replace or delete
+      seguimientoActualizado = seguimientoActualizado.filter(s => s.mes !== mes);
+
+      if (nuevoEstado) {
         seguimientoActualizado.push({ mes, estado: nuevoEstado });
       }
+
+      // Optimistic update
+      const newSeguimiento = {
+        ...seguimiento,
+        actividades: seguimiento.actividades.map(a =>
+          a.id_actividad === actividadId ? { ...a, seguimiento_mensual: seguimientoActualizado } : a
+        )
+      };
+      setSeguimiento(newSeguimiento);
 
       await apiClient.put(`/proyectos/actividades/${actividadId}/seguimiento-mensual`, {
         seguimiento: seguimientoActualizado
       });
 
-      // Actualizar estado local
-      setSeguimiento({
-        ...seguimiento,
-        actividades: seguimiento.actividades.map(a =>
-          a.id_actividad === actividadId
-            ? { ...a, seguimiento_mensual: seguimientoActualizado }
-            : a
-        )
-      });
-
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al actualizar el seguimiento');
-      console.error('Error actualizando seguimiento:', err);
+      setError(err.response?.data?.error || 'Error al actualizar estado');
+      console.error('Error actualizando estado:', err);
+      // Revert logic would go here
     } finally {
       setSaving(false);
     }
   };
 
-  const formatoDinero = (n: number) => `$ ${n.toLocaleString("es-SV", { minimumFractionDigits: 2 })}`;
+  // Lógica de actualización de indicador (Paso 4)
+  // Lógica de actualización de indicador (Paso 4)
+  const actualizarIndicador = async (actividadId: number, indicadorId: number, valorLogrado: number) => {
+    if (!seguimiento) return;
 
+    // Find meta for calculation
+    const act = seguimiento.actividades.find(a => a.id_actividad === actividadId);
+    const ind = act?.indicadores?.find(i => i.id_indicador === indicadorId);
+    const meta = Number(ind?.meta) || 0;
+    const porcentaje = meta > 0 ? Math.round((valorLogrado / meta) * 100) : 0;
+
+    try {
+      setSaving(true);
+      // Optimistic update
+      const newSeguimiento = {
+        ...seguimiento,
+        actividades: seguimiento.actividades.map(a =>
+          a.id_actividad === actividadId ? {
+            ...a,
+            indicadores: (a.indicadores || []).map(ind =>
+              ind.id_indicador === indicadorId ? {
+                ...ind,
+                valor_logrado: valorLogrado,
+                porcentaje_cumplimiento: porcentaje
+              } : ind
+            )
+          } : a
+        )
+      };
+      setSeguimiento(newSeguimiento);
+
+      // API Call
+      await apiClient.put(`/indicadores/${indicadorId}/avance`, {
+        valor_logrado: valorLogrado,
+        porcentaje_cumplimiento: porcentaje
+      });
+
+    } catch (err: any) {
+      console.error('Error updating indicator:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Lógica de progreso (Paso 3 - HTML Logic)
   const calcularProgreso = (seguimientoMensual: { mes: number; estado: Status }[] | null) => {
     if (!seguimientoMensual) return 0;
-    const total = seguimientoMensual.length;
-    const finalizados = seguimientoMensual.filter(s => s.estado === "F").length;
-    return total > 0 ? Math.round((finalizados / total) * 100) : 0;
+
+    let usados = 0;
+    let suma = 0;
+
+    seguimientoMensual.forEach(s => {
+      if (s.estado === 'P' || s.estado === 'I' || s.estado === 'F') {
+        usados++;
+        if (s.estado === 'I') suma += 0.5;
+        if (s.estado === 'F') suma += 1;
+      }
+    });
+
+    return usados ? Math.round((suma / usados) * 100) : 0;
   };
+
+  const formatoDinero = (n: number) => `$ ${n.toLocaleString("es-SV", { minimumFractionDigits: 2 })}`;
 
   // Estilos
   const containerStyle: React.CSSProperties = {
@@ -149,54 +207,38 @@ export const SeguimientoPage: React.FC = () => {
     padding: '0 1rem 1rem',
   };
 
-  const progressBarStyle: React.CSSProperties = {
-    width: '100%',
-    height: '8px',
-    background: 'var(--card-dark-bg)',
-    borderRadius: '4px',
-    overflow: 'hidden',
-    marginTop: '0.5rem',
+  const sectionTitleStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+    fontWeight: 600,
+    marginBottom: '0.2rem',
+    fontSize: '1rem' // Default h2 size aprox
   };
 
-  const progressFillStyle = (porcentaje: number): React.CSSProperties => ({
-    width: `${porcentaje}%`,
+  const sectionDividerStyle: React.CSSProperties = {
+    height: '1px',
+    background: 'var(--verde-hoja)',
+    opacity: 0.4,
+    margin: '0.4rem 0 0.8rem'
+  };
+
+  // Bar styles
+  const barBgStyle: React.CSSProperties = {
+    width: '130px',
+    height: '6px',
+    borderRadius: '999px',
+    background: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
+  };
+
+  const barFillStyle = (pct: number): React.CSSProperties => ({
     height: '100%',
-    background: 'linear-gradient(90deg, var(--acento-verde), var(--acento-verde-claro))',
-    transition: 'width 0.3s ease',
+    width: `${pct}%`,
+    background: 'var(--verde-hoja)',
+    transition: 'width 0.25s ease-out'
   });
 
-  const activityTitleStyle: React.CSSProperties = {
-    fontSize: '1rem',
-    margin: 0,
-    color: 'var(--acento-verde)',
-    marginBottom: '0.5rem',
-  };
-
-  const responsableStyle: React.CSSProperties = {
-    fontSize: '0.8rem',
-    color: 'var(--texto-sec)',
-    marginBottom: '0.8rem',
-  };
-
-  const progressInfoStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: '1rem',
-    fontSize: '0.85rem',
-  };
-
-  const budgetInfoStyle: React.CSSProperties = {
-    display: 'flex',
-    gap: '1.5rem',
-    color: 'var(--texto-sec)',
-  };
-
-  const budgetItemStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-  };
 
   return (
     <div style={containerStyle}>
@@ -205,159 +247,256 @@ export const SeguimientoPage: React.FC = () => {
       <main style={mainStyle}>
         <Card padding="1.8rem">
           {/* Header */}
-          <div style={{ marginBottom: '1rem' }}>
-            <h1 style={{ fontSize: '1.2rem', margin: 0 }}>
-              Avance por actividad
-            </h1>
-            <p style={{ color: 'var(--texto-sec)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
-              Gantt mensual, responsable y cumplimiento de indicadores de logro.
-            </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem', marginBottom: '1rem' }}>
+            <div>
+              <h1 style={{ fontSize: '1.2rem', margin: 0 }}>Avance por actividad</h1>
+              <p style={{ color: 'var(--texto-sec)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
+                Gantt mensual, responsable y cumplimiento de indicadores de logro.
+              </p>
+            </div>
+            <button
+              className="btn-alt" // Assuming global class or style below
+              onClick={() => window.print()}
+              style={{
+                border: '1px solid var(--verde-hoja)',
+                color: 'var(--verde-hoja)',
+                background: 'transparent',
+                borderRadius: '999px',
+                padding: '0.35rem 0.9rem',
+                cursor: 'pointer',
+                fontSize: '0.78rem'
+              }}
+            >
+              🖨 Imprimir tablero
+            </button>
           </div>
 
-          <Divider variant="gradient" />
+          {/* Divider */}
+          <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent, var(--verde-hoja), transparent)', margin: '1.2rem 0' }} />
 
           {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
-          {/* Project Selector */}
-          <Section title="Proyecto seleccionado" description="">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'end' }}>
-              <div>
-                <span style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  color: 'var(--texto-sec)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>Proyecto</span>
-                <select
+          {/* Proyecto Seleccionado */}
+          <div>
+            <h2 style={sectionTitleStyle}>
+              <span style={{ width: '4px', height: '18px', background: 'var(--verde-hoja)', borderRadius: '10px', display: 'inline-block' }}></span>
+              Proyecto seleccionado
+            </h2>
+            <div style={sectionDividerStyle}></div>
+
+            {!seguimiento && !loading ? (
+              /* Selector Mode if no project loaded */
+              <div style={{ marginBottom: '1rem' }}>
+                <Label>Seleccione un proyecto para ver su seguimiento:</Label>
+                <Select
                   value={proyectoSel}
                   onChange={(e) => setProyectoSel(parseInt(e.target.value))}
-                  style={{
-                    width: '100%',
-                    background: 'var(--input-bg)',
-                    border: '1px solid var(--borde)',
-                    color: 'var(--texto-claro)',
-                    padding: '0.6rem 0.8rem',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '0.85rem',
-                  }}
                   disabled={loading}
                 >
-                  <option value={0}>Seleccione un proyecto...</option>
+                  <option value={0}>Seleccione...</option>
                   {proyectos.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.nombre}
-                    </option>
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
                   ))}
-                </select>
+                </Select>
               </div>
-              <div>
-                <span style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  color: 'var(--texto-sec)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>Año</span>
-                <div style={{
-                  background: 'var(--input-bg)',
-                  border: '1px solid var(--borde)',
-                  color: 'var(--texto-claro)',
-                  padding: '0.6rem 0.8rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.85rem',
-                  textAlign: 'center',
-                }}>
-                  {seguimiento ? seguimiento.anio : '-'}
+            ) : (
+              /* ReadOnly Mode (HTML Design) */
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                <div>
+                  <Label>Proyecto</Label>
+                  <Input type="text" value={seguimiento?.nombre || ''} readOnly style={{ background: '#081529' }} />
+                </div>
+                <div>
+                  <Label>Año</Label>
+                  <Input
+                    type="number"
+                    value={seguimiento?.anio || 2025}
+                    onChange={(e) => seguimiento && setSeguimiento({ ...seguimiento, anio: parseInt(e.target.value) })}
+                    style={{
+                      background: '#081529',
+                      border: '1px solid var(--verde-hoja)',
+                      color: 'var(--texto-claro)'
+                    }}
+                  />
+                  {!id && (
+                    <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+                      <button
+                        onClick={() => { setSeguimiento(null); setProyectoSel(0); }}
+                        style={{ background: 'none', border: 'none', color: 'var(--texto-sec)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Cambiar proyecto
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          </Section>
+            )}
+          </div>
+
+          <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent, var(--verde-hoja), transparent)', margin: '1.2rem 0' }} />
 
           {loading ? (
             <LoadingSpinner size="lg" fullScreen={false} />
           ) : seguimiento ? (
             <>
-              {/* Activities Section */}
-              <Section
-                title="Actividades, indicadores y avance"
-                description={`Estados mensuales: - (no aplica), P (pendiente), I (iniciado), F (finalizado). El progreso de la actividad se calcula con los meses P-I-F. El cumplimiento del indicador se calcula a partir del valor alcanzado y la meta definida en la página 1.`}
-              >
-                {(seguimiento.actividades || []).map((act, idx) => {
+              {/* Description Text */}
+              <div>
+                <h2 style={sectionTitleStyle}>
+                  <span style={{ width: '4px', height: '18px', background: 'var(--verde-hoja)', borderRadius: '10px', display: 'inline-block' }}></span>
+                  Actividades, indicadores y avance
+                </h2>
+                <p style={{ fontSize: '0.8rem', color: 'var(--texto-sec)', marginBottom: '0.4rem' }}>
+                  Estados mensuales: <strong>-</strong> (no aplica), <strong style={{ color: 'var(--P)' }}>P</strong> (pendiente), <strong style={{ color: 'var(--I)' }}>I</strong> (iniciado), <strong style={{ color: 'var(--F)' }}>F</strong> (finalizado).<br />
+                  El progreso de la actividad se calcula con los meses P/I/F. El cumplimiento del indicador se calcula a partir del valor alcanzado y la meta definida en la página 1.
+                </p>
+                <div style={sectionDividerStyle}></div>
+              </div>
+
+              {/* Lista de Actividades */}
+              <div id="lista-actividades">
+                {seguimiento.actividades.map((act, idx) => {
                   const progreso = calcularProgreso(act.seguimiento_mensual);
                   const disponible = act.presupuesto_asignado - act.total_gastado;
+                  const indicador = act.indicadores && act.indicadores.length > 0 ? act.indicadores[0] : null;
 
                   return (
-                    <Card key={act.id_actividad} variant="dark" padding="1.2rem" style={{ marginBottom: '1rem' }}>
-                      {/* Activity Header */}
-                      <h3 style={activityTitleStyle}>
+                    <div key={act.id_actividad} style={{ marginBottom: '1.6rem' }}>
+                      <div style={{ color: 'var(--verde-hoja)', fontWeight: 700, fontSize: '0.98rem', marginLeft: '0.2rem', marginBottom: '0.35rem' }}>
                         Actividad {idx + 1}
-                      </h3>
-                      <p style={{ fontSize: '0.95rem', margin: '0 0 0.3rem 0' }}>{act.nombre}</p>
-                      <p style={responsableStyle}>
-                        Responsable de la actividad: {act.responsable_nombre}
-                      </p>
+                      </div>
+                      <div style={{ marginLeft: '1.2rem' }}>
+                        {/* Nombre y Responsable */}
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <Input type="text" value={act.nombre} readOnly style={{ background: '#081529', fontWeight: 600 }} />
+                        </div>
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <Label>Responsable de la actividad</Label>
+                          <Input type="text" value={act.responsable_nombre} readOnly placeholder="Nombre del responsable" />
+                        </div>
 
-                      {/* Monthly Gantt View */}
-                      <Label>Nombre del responsable</Label>
-                      <MonthlyGanttView
-                        seguimientoMensual={act.seguimiento_mensual}
-                        onStatusClick={(mesIdx) => {
-                          // Ciclo: sin estado → P → I → F → sin estado
-                          const seguimiento = act.seguimiento_mensual?.find(s => s.mes === mesIdx + 1);
-                          const estadoActual = seguimiento?.estado;
-                          const nuevoEstado: Status | undefined = !estadoActual ? 'P' : estadoActual === 'P' ? 'I' : estadoActual === 'I' ? 'F' : undefined;
-                          if (nuevoEstado) {
-                            actualizarEstadoMes(act.id_actividad, mesIdx + 1, nuevoEstado);
-                          }
-                        }}
-                        disabled={saving}
-                      />
+                        {/* Meses */}
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <MonthlyGanttView
+                            seguimientoMensual={act.seguimiento_mensual}
+                            onStatusChange={(mes, status) => actualizarEstadoMes(act.id_actividad, mes + 1, status)}
+                            onStatusClick={() => { }} // Legacy
+                            disabled={saving}
+                          />
+                        </div>
 
-                      {/* Progress Bar */}
-                      <div style={progressInfoStyle}>
-                        <span style={{ color: 'var(--acento-verde)', fontWeight: '600' }}>
-                          Progreso: {progreso}%
-                        </span>
-                        <div style={budgetInfoStyle}>
-                          <div style={budgetItemStyle}>
-                            <span>Presupuesto:</span>
-                            <strong>{formatoDinero(act.presupuesto_asignado)}</strong>
+                        {/* Progreso + Presupuesto */}
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem', fontSize: '0.78rem', color: 'var(--texto-sec)' }}>
+                            <strong style={{ color: 'var(--texto-claro)' }}>Progreso:</strong>
+                            <div style={barBgStyle}>
+                              <div style={barFillStyle(progreso)}></div>
+                            </div>
+                            <strong style={{ color: 'var(--texto-claro)' }}>{progreso}%</strong>
+                            <span>| Presupuestado: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(act.presupuesto_asignado)}</strong></span>
+                            <span>| Gastado: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(act.total_gastado)}</strong></span>
+                            <span>| Disponible: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(disponible)}</strong></span>
                           </div>
-                          <div style={budgetItemStyle}>
-                            <span>Gastado:</span>
-                            <strong>{formatoDinero(act.total_gastado)}</strong>
+                        </div>
+
+                        {/* Indicador de logro */}
+                        {indicador && (
+                          <div style={{ marginBottom: '0.6rem' }}>
+                            <div style={{
+                              borderRadius: '10px',
+                              border: '1px solid rgba(255,255,255,.06)',
+                              background: 'rgba(0,0,0,.14)',
+                              padding: '0.7rem 0.75rem',
+                              marginTop: '0.3rem'
+                            }}>
+                              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--verde-hoja)', marginBottom: '0.4rem' }}>
+                                Indicador de logro de la actividad
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                <div>
+                                  <Label>Categoría</Label>
+                                  <Input type="text" value={indicador.categoria || ''} readOnly />
+                                </div>
+                                <div>
+                                  <Label>Meta</Label>
+                                  <Input type="text" value={indicador.meta} readOnly />
+                                </div>
+                                <div>
+                                  <Label>Unidad</Label>
+                                  <Input type="text" value={indicador.unidad_medida} readOnly />
+                                </div>
+                                <div>
+                                  <Label>Beneficiarios</Label>
+                                  <Input type="text" value={indicador.beneficiarios || '-'} readOnly />
+                                </div>
+                                <div style={{ gridColumn: '1/-1' }}>
+                                  <Label>Descripción específica del indicador</Label>
+                                  <Input type="text" value={indicador.nombre} readOnly />
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '0.7rem', fontSize: '0.78rem' }}>
+                                <div style={{ minWidth: '150px' }}>
+                                  <Label>Valor alcanzado a la fecha</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="0"
+                                    value={indicador.valor_logrado}
+                                    onChange={(e) => actualizarIndicador(act.id_actividad, indicador.id_indicador, Number(e.target.value))}
+                                  />
+                                </div>
+                                <div style={{ color: 'var(--texto-sec)', paddingBottom: '0.4rem' }}>
+                                  Cumplimiento del indicador: <strong style={{ color: 'var(--texto-claro)' }}>{indicador.porcentaje_cumplimiento}%</strong>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <div style={budgetItemStyle}>
-                            <span>Disponible:</span>
-                            <strong style={{ color: disponible >= 0 ? 'var(--acento-verde)' : 'var(--error)' }}>
-                              {formatoDinero(disponible)}
-                            </strong>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.4rem' }}>
+                            <button
+                              className="btn-alt"
+                              onClick={() => navigate(`/actividades/${act.id_actividad}/evidencias`)}
+                              style={{
+                                border: '1px solid var(--verde-hoja)',
+                                color: 'var(--verde-hoja)',
+                                background: 'transparent',
+                                borderRadius: '999px',
+                                padding: '0.35rem 0.9rem',
+                                cursor: 'pointer',
+                                fontSize: '0.78rem'
+                              }}
+                            >
+                              📎 Evidencias
+                            </button>
+                            <button
+                              className="btn-alt"
+                              onClick={() => navigate(`/actividades/${act.id_actividad}/gastos`)}
+                              style={{
+                                border: '1px solid var(--verde-hoja)',
+                                color: 'var(--verde-hoja)',
+                                background: 'transparent',
+                                borderRadius: '999px',
+                                padding: '0.35rem 0.9rem',
+                                cursor: 'pointer',
+                                fontSize: '0.78rem'
+                              }}
+                            >
+                              💰 Gastos
+                            </button>
                           </div>
                         </div>
                       </div>
-                      <div style={progressBarStyle}>
-                        <div style={progressFillStyle(progreso)} />
-                      </div>
-
-                      {/* Indicators Table */}
-                      <IndicadoresTable indicadores={act.indicadores} />
-
-                      {/* Action Buttons */}
-                      <ActivityActionButtons actividadId={act.id_actividad} />
-                    </Card>
+                      <div style={{ height: '3px', background: 'var(--verde-hoja)', borderRadius: '999px', margin: '1rem 0 0.6rem' }}></div>
+                    </div>
                   );
                 })}
-              </Section>
+              </div>
             </>
-          ) : proyectoSel === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--texto-sec)', padding: '2rem' }}>
-              Selecciona un proyecto para ver su seguimiento
-            </p>
           ) : null}
         </Card>
       </main>

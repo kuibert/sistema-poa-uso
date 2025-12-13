@@ -20,10 +20,7 @@ interface TableFooterProps {
     children: React.ReactNode;
 }
 
-interface TableRowProps {
-    children: React.ReactNode;
-    hover?: boolean;
-}
+
 
 interface TableCellProps {
     children: React.ReactNode;
@@ -74,16 +71,25 @@ const TableFooter: React.FC<TableFooterProps> = ({ children }) => {
     return <tfoot>{children}</tfoot>;
 };
 
-const TableRow: React.FC<TableRowProps> = ({ children, hover = true }) => {
+interface TableRowProps {
+    children: React.ReactNode;
+    hover?: boolean;
+    style?: React.CSSProperties;
+    className?: string;
+}
+
+const TableRow: React.FC<TableRowProps> = ({ children, hover = true, style, className }) => {
     const [isHovered, setIsHovered] = React.useState(false);
 
     const rowStyle: React.CSSProperties = {
         background: isHovered && hover ? 'rgba(255, 255, 255, 0.05)' : undefined,
+        ...style,
     };
 
     return (
         <tr
             style={rowStyle}
+            className={className}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >

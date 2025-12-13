@@ -5,16 +5,24 @@ interface SectionProps {
     description?: string;
     children: React.ReactNode;
     className?: string;
+    headerAction?: React.ReactNode;
 }
 
 export const Section: React.FC<SectionProps> = ({
     title,
     description,
     children,
-    className = ''
+    className = '',
+    headerAction
 }) => {
     const sectionStyle: React.CSSProperties = {
         marginBottom: '1.7rem',
+    };
+
+    const headerAreaStyle: React.CSSProperties = {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     };
 
     const titleStyle: React.CSSProperties = {
@@ -22,7 +30,7 @@ export const Section: React.FC<SectionProps> = ({
         fontWeight: 600,
         display: 'flex',
         alignItems: 'center',
-        gap: '0.5rem',
+        gap: '0.4rem',
     };
 
     const titleBeforeStyle: React.CSSProperties = {
@@ -47,10 +55,13 @@ export const Section: React.FC<SectionProps> = ({
 
     return (
         <div style={sectionStyle} className={className}>
-            <h2 style={titleStyle}>
-                <span style={titleBeforeStyle}></span>
-                {title}
-            </h2>
+            <div style={headerAreaStyle}>
+                <h2 style={titleStyle}>
+                    <span style={titleBeforeStyle}></span>
+                    {title}
+                </h2>
+                {headerAction && <div>{headerAction}</div>}
+            </div>
             {description && <p style={descStyle}>{description}</p>}
             <div style={dividerStyle}></div>
             {children}

@@ -1,15 +1,15 @@
 import React from 'react';
 
 type InputProps = {
-  type?: 'text' | 'email' | 'password' | 'number' | 'date';
+  type?: 'text' | 'email' | 'password' | 'number' | 'date' | 'file';
   value?: string | number;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
   readOnly?: boolean;
-  min?: number;
-  max?: number;
+  min?: number | string;
+  max?: number | string;
   step?: number | string;
   style?: React.CSSProperties;
 };

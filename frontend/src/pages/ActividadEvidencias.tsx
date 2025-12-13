@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
-import { NavBar, Card, Divider, Grid, Section, Label, Button, LoadingSpinner, ErrorMessage, Input, Select } from '../components/common';
+import { NavBar, Card, Divider, Grid, Section, Label, Button, LoadingSpinner, ErrorMessage, Input, Select, Table } from '../components/common';
 import apiClient from '../services/apiClient';
 
 type Evidencia = {
@@ -16,8 +16,16 @@ export default function ActividadEvidencias() {
   const navigate = useNavigate();
 
   // Valores iniciales
-  const [proyecto] = useState("Gestión de acreditación de la Carrera de Ingeniería Industrial");
-  const [actividad] = useState("Acercamiento y entendimiento con ACAAI");
+  // const [proyecto] = useState("Gestión de acreditación de la Carrera de Ingeniería Industrial");
+  // const [actividad] = useState("Acercamiento y entendimiento con ACAAI");
+
+  const [headerInfo, setHeaderInfo] = useState({
+    proyecto: '',
+    actividad: '',
+    anio: 2024,
+    responsable: '',
+    cargo: ''
+  });
 
   // Lista de evidencias
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
@@ -34,21 +42,34 @@ export default function ActividadEvidencias() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Cargar evidencias al montar el componente
+  // Cargar evidencias y datos al montar el componente
   useEffect(() => {
     if (id) {
-      loadEvidencias();
+      loadData();
     }
   }, [id]);
 
-  const loadEvidencias = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiClient.get(`/actividades/${id}/evidencias`);
 
-      // Transformar datos del backend al formato del componente
-      const evidenciasTransformadas = response.data.map((e: any) => ({
+      // 1. Cargar datos de la actividad (header)
+      // Endpoint: GET /api/proyectos/actividades/:id
+      const actResponse = await apiClient.get(`/proyectos/actividades/${id}`);
+      const actData = actResponse.data;
+
+      setHeaderInfo({
+        proyecto: actData.proyecto_nombre,
+        actividad: actData.nombre,
+        anio: actData.anio,
+        responsable: actData.responsable_nombre || 'No asignado',
+        cargo: 'Responsable de Actividad' // Dato no disponible en backend aun, placeholder
+      });
+
+      // 2. Cargar evidencias
+      const evResponse = await apiClient.get(`/actividades/${id}/evidencias`);
+      const evidenciasTransformadas = evResponse.data.map((e: any) => ({
         id_evidencia: e.id_evidencia,
         tipo: e.tipo_evidencia,
         descripcion: e.descripcion,
@@ -57,9 +78,10 @@ export default function ActividadEvidencias() {
       }));
 
       setEvidencias(evidenciasTransformadas);
+
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al cargar las evidencias');
-      console.error('Error cargando evidencias:', err);
+      setError(err.response?.data?.error || 'Error al cargar los datos');
+      console.error('Error cargando datos:', err);
     } finally {
       setLoading(false);
     }
@@ -147,13 +169,7 @@ export default function ActividadEvidencias() {
 
 
 
-  const evidenciaItemStyle: React.CSSProperties = {
-    background: 'var(--card-dark-bg)',
-    padding: '1rem',
-    borderRadius: 'var(--radius-sm)',
-    border: '1px solid var(--borde)',
-    marginBottom: '0.75rem',
-  };
+
 
   if (!id) {
     return (
@@ -187,7 +203,7 @@ export default function ActividadEvidencias() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <div>
               <h1 style={{ fontSize: '1.2rem', margin: 0 }}>
-                Evidencias de la actividad: {actividad}
+                Evidencias de la actividad: {headerInfo.actividad}
               </h1>
               <p style={{ color: 'var(--texto-sec)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
                 Tipo, descripción y archivo adjunto de cada evidencia.
@@ -207,127 +223,157 @@ export default function ActividadEvidencias() {
           ) : (
             <>
               {/* Información del proyecto y actividad */}
-              <Grid columns={2} style={{ marginBottom: '1.5rem' }}>
-                <div>
-                  <Label>Proyecto</Label>
-                  <Input type="text" value={proyecto} readOnly />
-                </div>
-                <div>
-                  <Label>Nombre de la actividad</Label>
-                  <Input type="text" value={actividad} readOnly />
-                </div>
-              </Grid>
+              <Section title="Proyecto y actividad" description="">
+                <Grid columns={2} style={{ marginBottom: '1rem' }}>
+                  <div>
+                    <Label>Proyecto</Label>
+                    <Input type="text" value={headerInfo.proyecto} readOnly />
+                  </div>
+                  <div>
+                    <Label>Actividad</Label>
+                    <Input type="text" value={headerInfo.actividad} readOnly />
+                  </div>
+                </Grid>
+
+                <Grid columns={3}>
+                  <div>
+                    <Label>Año</Label>
+                    <Input type="number" value={headerInfo.anio} readOnly style={{ textAlign: 'center' }} />
+                  </div>
+                  <div>
+                    <Label>Responsable de la actividad</Label>
+                    <Input type="text" value={headerInfo.responsable} readOnly />
+                  </div>
+                  <div>
+                    <Label>Cargo / Unidad</Label>
+                    <Input type="text" value={headerInfo.cargo} readOnly />
+                  </div>
+                </Grid>
+              </Section>
 
               {/* Formulario para agregar evidencia */}
               <Section
-                title="Agregar Nueva Evidencia"
-                description="Completa los campos y haz clic en Agregar"
+                title="Registro de nueva evidencia"
+                description="Cada evidencia puede ser un archivo (acta, lista, informe, fotografía, etc.) con su descripción y fecha."
               >
-                <Grid columns={3} style={{ marginBottom: '1rem' }}>
-                  <div>
-                    <Label required>Tipo de evidencia</Label>
-                    <Select
-                      value={nuevaEvidencia.tipo}
-                      onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, tipo: e.target.value })}
-                      disabled={saving}
-                    >
-                      <option value="">Seleccione...</option>
-                      <option value="Acta">Acta</option>
-                      <option value="Informe">Informe</option>
-                      <option value="Fotografía">Fotografía</option>
-                      <option value="Video">Video</option>
-                      <option value="Documento">Documento</option>
-                      <option value="Otro">Otro</option>
-                    </Select>
-                  </div>
+                <div style={{ background: 'var(--panel-contenido)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--borde)' }}>
+                  <Grid columns={3} style={{ marginBottom: '1rem' }}>
+                    <div>
+                      <Label>Fecha de la evidencia</Label>
+                      <Input
+                        type="date"
+                        value={nuevaEvidencia.fecha ? new Date(nuevaEvidencia.fecha).toISOString().split('T')[0] : ''}
+                        onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, fecha: e.target.value })}
+                        disabled={saving}
+                      />
+                    </div>
+                    <div>
+                      <Label>Tipo de evidencia</Label>
+                      <Select
+                        value={nuevaEvidencia.tipo}
+                        onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, tipo: e.target.value })}
+                        disabled={saving}
+                      >
+                        <option value="">Seleccione...</option>
+                        <option value="Acta / minuta">Acta / minuta</option>
+                        <option value="Informe">Informe</option>
+                        <option value="Lista de asistencia">Lista de asistencia</option>
+                        <option value="Constancia / certificado">Constancia / certificado</option>
+                        <option value="Registro fotográfico">Registro fotográfico</option>
+                        <option value="Otro">Otro</option>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Archivo (simulación)</Label>
+                      <Input
+                        type="file"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setNuevaEvidencia({ ...nuevaEvidencia, archivo: file.name });
+                          }
+                        }}
+                        disabled={saving}
+                      />
+                    </div>
+                  </Grid>
 
-                  <div>
-                    <Label required>Descripción</Label>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <Label>Descripción de la evidencia</Label>
                     <Input
                       type="text"
-                      placeholder="Breve descripción de la evidencia"
+                      placeholder="Describe brevemente qué evidencia es, qué actividad documenta y en qué contexto."
                       value={nuevaEvidencia.descripcion}
                       onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, descripcion: e.target.value })}
                       disabled={saving}
                     />
                   </div>
 
-                  <div>
-                    <Label required>Archivo / Enlace</Label>
-                    <Input
-                      type="text"
-                      placeholder="URL o nombre del archivo"
-                      value={nuevaEvidencia.archivo}
-                      onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, archivo: e.target.value })}
-                      disabled={saving}
-                    />
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                    <Button variant="alt" type="button" onClick={limpiarCampos} disabled={saving}>
+                      ↺ Limpiar campos
+                    </Button>
+                    <Button variant="main" type="button" onClick={agregarEvidencia} disabled={saving}>
+                      ➕ Agregar evidencia
+                    </Button>
                   </div>
-                </Grid>
-
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <Button variant="main" type="button" onClick={agregarEvidencia} disabled={saving}>
-                    ➕ Agregar evidencia
-                  </Button>
-                  <Button variant="alt" type="button" onClick={limpiarCampos} disabled={saving}>
-                    🔄 Limpiar
-                  </Button>
                 </div>
               </Section>
 
               {/* Lista de evidencias */}
               <Section
-                title="Evidencias Registradas"
-                description={`Total: ${evidencias.length} evidencia(s)`}
+                title="Evidencias registradas"
+                description="En el sistema real, desde aquí se podría descargar cada evidencia y usarla para auditorías o procesos de acreditación."
               >
                 {evidencias.length === 0 ? (
                   <p style={{ textAlign: 'center', color: 'var(--texto-sec)', padding: '2rem' }}>
                     No hay evidencias registradas. Agrega la primera evidencia arriba.
                   </p>
                 ) : (
-                  evidencias.map((ev, i) => (
-                    <div key={i} style={evidenciaItemStyle}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
-                            <div>
-                              <Label>Tipo</Label>
-                              <p style={{ margin: 0, color: 'var(--acento-verde)' }}>{ev.tipo}</p>
+                  <Table variant="compact">
+                    <Table.Header>
+                      <Table.Row>
+                        <Table.Cell header style={{ width: '10%' }}>Fecha</Table.Cell>
+                        <Table.Cell header style={{ width: '20%' }}>Tipo</Table.Cell>
+                        <Table.Cell header style={{ width: '23%' }}>Archivo</Table.Cell>
+                        <Table.Cell header style={{ width: '35%' }}>Descripción</Table.Cell>
+                        <Table.Cell header center style={{ width: '12%' }}>Acciones</Table.Cell>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                      {evidencias.map((ev, i) => (
+                        <Table.Row key={i}>
+                          <Table.Cell>{ev.fecha ? new Date(ev.fecha).toLocaleDateString() : '-'}</Table.Cell>
+                          <Table.Cell>{ev.tipo}</Table.Cell>
+                          <Table.Cell>{ev.archivo}</Table.Cell>
+                          <Table.Cell>{ev.descripcion}</Table.Cell>
+                          <Table.Cell center>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                              <Button variant="main" size="sm" type="button" onClick={() => alert("Simulacion descarga " + ev.id_evidencia)}>⬇</Button>
+                              <Button variant="alt" size="sm" type="button" onClick={() => eliminarEvidencia(i)}>✖</Button>
                             </div>
-                            <div style={{ flex: 1 }}>
-                              <Label>Descripción</Label>
-                              <p style={{ margin: 0 }}>{ev.descripcion}</p>
-                            </div>
-                          </div>
-                          <div>
-                            <Label>Archivo</Label>
-                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--texto-sec)' }}>
-                              {ev.archivo}
-                            </p>
-                          </div>
-                          {ev.fecha && (
-                            <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: 'var(--texto-sec)' }}>
-                              Subido: {new Date(ev.fecha).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
-                        <Button
-                          variant="alt"
-                          size="sm"
-                          type="button"
-                          onClick={() => eliminarEvidencia(i)}
-                          disabled={saving}
-                        >
-                          ✖ Eliminar
-                        </Button>
-                      </div>
-                    </div>
-                  ))
+                          </Table.Cell>
+                        </Table.Row>
+                      ))}
+                    </Table.Body>
+                  </Table>
                 )}
               </Section>
+
+              <Divider variant="gradient" />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.2rem', gap: '0.7rem', flexWrap: 'wrap' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--texto-sec)' }}>
+                  Esta pantalla sirve como memoria de respaldo documental del proyecto en procesos de evaluación y acreditación.
+                </div>
+                <Button variant="alt" type="button" onClick={() => alert("Simulacion exportar")}>
+                  ⬇ Exportar listado (simulado)
+                </Button>
+              </div>
             </>
           )}
         </Card>
       </main>
-    </div>
+    </div >
   );
 }

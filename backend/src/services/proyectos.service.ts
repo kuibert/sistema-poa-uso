@@ -135,6 +135,19 @@ export const proyectosService = {
     return result.rows[0];
   },
 
+  async getActividad(id: number) {
+    const result = await query(
+      `SELECT a.*, p.nombre as proyecto_nombre, p.anio, u.nombre_completo as responsable_nombre
+       FROM actividad a
+       JOIN proyecto p ON a.id_proyecto = p.id
+       LEFT JOIN usuario u ON a.id_responsable = u.id
+       WHERE a.id = $1`,
+      [id]
+    );
+    if (result.rows.length === 0) throw { statusCode: 404, message: 'Actividad no encontrada' };
+    return result.rows[0];
+  },
+
   async updatePlanMensual(actividadId: number, meses: any[]) {
     await query('DELETE FROM actividad_mes_plan WHERE id_actividad = $1', [actividadId]);
 
@@ -209,13 +222,19 @@ export const proyectosService = {
   },
 
   async updateSeguimientoMensual(actividadId: number, seguimiento: any[]) {
+    // 1. First delete all existing status for this activity to ensure we sync exactly with frontend
+    // (This handles the case where user removes a status by setting it to empty/undefined)
+    await query('DELETE FROM actividad_mes_seguimiento WHERE id_actividad = $1', [actividadId]);
+
+    // 2. Insert the current valid statuses
     for (const item of seguimiento) {
-      await query(
-        `INSERT INTO actividad_mes_seguimiento (id_actividad, mes, estado, comentario)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (id_actividad, mes) DO UPDATE SET estado = $3, comentario = $4, fecha_actualizacion = NOW()`,
-        [actividadId, item.mes, item.estado, item.comentario]
-      );
+      if (item.estado) { // Only insert if there is a status
+        await query(
+          `INSERT INTO actividad_mes_seguimiento (id_actividad, mes, estado, comentario)
+           VALUES ($1, $2, $3, $4)`,
+          [actividadId, item.mes, item.estado, item.comentario || '']
+        );
+      }
     }
 
     return { success: true };

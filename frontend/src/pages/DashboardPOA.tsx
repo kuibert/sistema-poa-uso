@@ -104,7 +104,7 @@ export const DashboardPOA: React.FC = () => {
   const cI = actividadesMes.filter(a => a.estado === 'I').length;
   const cF = actividadesMes.filter(a => a.estado === 'F').length;
 
-  const urlSeguimiento = 'seguimiento_proyecto.html';
+  const urlSeguimiento = 'seguimiento';
 
   // =============================
   //  ESTILOS (NO CAMBIADOS)

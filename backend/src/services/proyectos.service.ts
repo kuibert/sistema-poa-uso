@@ -95,20 +95,45 @@ export const proyectosService = {
   // Planificación (Page1)
   async crearProyecto(data: any, userId: number) {
     const result = await query(
-      `INSERT INTO proyecto (nombre, objetivo, unidad_responsable, id_responsable, anio, fecha_inicio, fecha_fin, presupuesto_total, estado)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'PLANIFICACION') RETURNING *`,
-      [data.nombre, data.objetivo, data.unidad_responsable, data.id_responsable, data.anio, data.fecha_inicio, data.fecha_fin, data.presupuesto_total]
+      `
+    INSERT INTO proyecto (
+      anio,
+      unidad_facultad,
+      linea_estrategica,
+      objetivo_estrategico,
+      accion_estrategica,
+      nombre,
+      objetivo_proyecto,
+      presupuesto_total,
+      id_responsable
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    RETURNING *
+    `,
+      [
+        data.anio,
+        data.unidad_facultad,
+        data.linea_estrategica || null,
+        data.objetivo_estrategico || null,
+        data.accion_estrategica || null,
+        data.nombre,
+        data.objetivo,
+        data.presupuesto_total,
+        data.id_responsable || null
+      ]
     );
 
     const proyecto = result.rows[0];
 
     await query(
-      'INSERT INTO proyecto_usuario_rol (id_proyecto, id_usuario, rol) VALUES ($1, $2, $3)',
-      [proyecto.id, userId, 'OWNER']
+      `INSERT INTO proyecto_usuario_rol (id_proyecto, id_usuario, rol)
+     VALUES ($1, $2, 'OWNER')`,
+      [proyecto.id, userId]
     );
 
     return proyecto;
   },
+
 
   async getProyecto(id: number) {
     const result = await query('SELECT * FROM proyecto WHERE id = $1', [id]);
@@ -126,14 +151,86 @@ export const proyectosService = {
     return result.rows[0];
   },
 
+
   async crearActividad(proyectoId: number, data: any) {
-    const result = await query(
-      `INSERT INTO actividad (id_proyecto, nombre, descripcion, id_responsable, presupuesto_asignado, orden)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [proyectoId, data.nombre, data.descripcion, data.id_responsable, data.presupuesto_asignado, data.orden]
+    // 1️⃣ Insertar actividad (YA CON TODOS LOS CAMPOS)
+    const actividadResult = await query(
+      `
+    INSERT INTO actividad (
+      id_proyecto,
+      nombre,
+      descripcion,
+      id_responsable,
+      cargo_responsable,
+      unidad_responsable,
+      presupuesto_asignado
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING *
+    `,
+      [
+        proyectoId,
+        data.nombre,
+        data.descripcion,
+        data.id_responsable || null,
+
+        // 👇 aunque esté "mal", se guarda
+        data.cargo_responsable || '',
+
+        data.unidad_responsable || '',
+
+        // 👇 MUY IMPORTANTE: numeric nunca debe recibir ''
+        Number(data.presupuesto_asignado) || 0
+      ]
     );
-    return result.rows[0];
+
+    const actividad = actividadResult.rows[0];
+
+    // 2️⃣ Plan mensual
+    if (Array.isArray(data.meses)) {
+      for (const mes of data.meses) {
+        await query(
+          `
+        INSERT INTO actividad_mes_plan (id_actividad, mes, planificado)
+        VALUES ($1, $2, true)
+        `,
+          [actividad.id, mes]
+        );
+      }
+    }
+
+    // 3️⃣ Indicador
+    if (data.indicador) {
+      await query(
+        `
+      INSERT INTO indicador_actividad (
+        id_actividad,
+        categoria,
+        descripcion_especifica,
+        meta_valor,
+        unidad_medida,
+        beneficiarios,
+        valor_logrado,
+        porcentaje_cumplimiento
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, 0, 0)
+      `,
+        [
+          actividad.id,
+          data.indicador.categoria,
+          data.indicador.descripcion,
+          data.indicador.meta,
+          data.indicador.unidad,
+          data.indicador.beneficiarios
+        ]
+      );
+    }
+
+    return actividad;
   },
+
+
+
 
   async getActividad(id: number) {
     const result = await query(

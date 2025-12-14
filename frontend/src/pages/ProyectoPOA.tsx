@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { NavBar, Card, Divider, Grid, Section, Label, Button, ErrorMessage, Input, TextArea, Select, Table, Checkbox } from '../components/common';
 import apiClient from '../services/apiClient';
@@ -9,6 +9,7 @@ type Activity = {
   header: string; // "Actividad N"
   name: string;
   months: boolean[]; // 12 meses
+  id_responsable: string;
   kpi: {
     categoria: string;
     descripcion: string;
@@ -35,14 +36,34 @@ export const ProyectoPOA: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Información del proyecto (valores por defecto)
-  const [projectData] = useState({
+  const [projectData, setProjectData] = useState({
     nombre: 'Gestión de acreditación de la Carrera de Ingeniería Industrial',
     objetivo: 'Lograr la acreditación de la carrera ante ACAAI',
     unidad_responsable: 'Facultad de Ingeniería',
+    linea_estrategica: '',
+    objetivo_estrategico: '',
+    accion_estrategica: '',
     anio: new Date().getFullYear(),
     fecha_inicio: '',
     fecha_fin: '',
+    id_responsable: '',
   });
+
+  const [responsables, setResponsables] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadResponsables = async () => {
+      try {
+        const { data } = await apiClient.get('/proyectos/responsables');
+        setResponsables(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadResponsables();
+  }, []);
+
 
   // Actividades iniciales (3) como en el HTML
   const initialActivities: Activity[] = useMemo(
@@ -52,12 +73,14 @@ export const ProyectoPOA: React.FC = () => {
         header: 'Actividad 1',
         name: 'Acercamiento y entendimiento con ACAAI',
         months: new Array(12).fill(false),
+        id_responsable: '',
         kpi: {
           categoria: '',
           descripcion: 'Reuniones realizadas con la entidad acreditadora',
           meta: '',
           unidad: 'Reuniones',
           beneficiarios: 'Equipo de acreditación',
+          id_responsable: '',
         },
         evidencias: 'Actas, minutas, correos, acuerdos...'
       },
@@ -66,6 +89,7 @@ export const ProyectoPOA: React.FC = () => {
         header: 'Actividad 2',
         name: 'Capacitación de actores de la USO',
         months: new Array(12).fill(false),
+        id_responsable: '',
         kpi: {
           categoria: 'Nº de personas beneficiadas directamente',
           descripcion: 'Docentes capacitados en el modelo de acreditación',
@@ -80,6 +104,7 @@ export const ProyectoPOA: React.FC = () => {
         header: 'Actividad 3',
         name: 'Recopilación de documentación y autoevaluación',
         months: new Array(12).fill(false),
+        id_responsable: '',
         kpi: {
           categoria: 'Nº de productos / documentos generados',
           descripcion: 'Expediente completo de autoevaluación elaborado',
@@ -108,6 +133,7 @@ export const ProyectoPOA: React.FC = () => {
       header: `Actividad ${nextNum}`,
       name: 'Nueva actividad',
       months: new Array(12).fill(false),
+      id_responsable: '',
       kpi: {
         categoria: '',
         descripcion: 'Descripción del indicador de la actividad',
@@ -169,9 +195,111 @@ export const ProyectoPOA: React.FC = () => {
   const totalVariables = variablesRows.reduce((s, r) => s + rowTotal(r), 0);
   const totalFijos = fijosRows.reduce((s, r) => s + rowTotal(r), 0);
   const totalGeneral = totalVariables + totalFijos;
-
   // Función para guardar proyecto
   const handleSave = async () => {
+    // 🔒 Validaciones
+    if (!activities.length) {
+      setError('Debe registrar al menos una actividad');
+      return;
+    }
+
+    const actividadesValidas = activities.filter(a => a.name.trim() !== '');
+
+    if (!actividadesValidas.length) {
+      setError('Debe registrar al menos una actividad con nombre');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      // 1️⃣ PROYECTO
+      const proyectoPayload = {
+        nombre: projectData.nombre,
+        objetivo: projectData.objetivo,
+        unidad_facultad: projectData.unidad_responsable || 'No definida',
+        linea_estrategica: projectData.linea_estrategica || null,
+        objetivo_estrategico: projectData.objetivo_estrategico || null,
+        accion_estrategica: projectData.accion_estrategica || null,
+        anio: projectData.anio,
+        fecha_inicio: projectData.fecha_inicio || new Date().toISOString().split('T')[0],
+        fecha_fin: projectData.fecha_fin || new Date().toISOString().split('T')[0],
+        presupuesto_total: totalGeneral,
+        id_responsable: projectData.id_responsable
+          ? Number(projectData.id_responsable)
+          : null,
+      };
+
+      const { data: proyecto } = await apiClient.post('/proyectos', proyectoPayload);
+
+      // 2️⃣ ACTIVIDADES
+      const presupuestoPorActividad =
+        actividadesValidas.length > 0
+          ? totalVariables / actividadesValidas.length
+          : 0;
+
+      const actividadesPayload = actividadesValidas.map((a, index) => ({
+        nombre: a.name,
+        descripcion: a.kpi.descripcion,
+
+        // RESPONSABLE
+        id_responsable: projectData.id_responsable
+          ? Number(projectData.id_responsable)
+          : null,
+
+        // 🔹 NUEVOS CAMPOS IMPORTANTES
+        cargo_responsable: a.kpi.beneficiarios, // 👈 lo que escriben en Beneficiarios
+        unidad_responsable: projectData.unidad_responsable, // 👈 Facultad
+        presupuesto_asignado: presupuestoPorActividad, // 👈 según orden
+
+        meses: a.months
+          .map((m, idx) => (m ? idx + 1 : null))
+          .filter(m => m !== null),
+
+        indicador: {
+          categoria: a.kpi.categoria,
+          descripcion: a.kpi.descripcion,
+          meta: a.kpi.meta,
+          unidad: a.kpi.unidad,
+          beneficiarios: a.kpi.beneficiarios
+        }
+      }));
+
+
+      for (const actividad of actividadesPayload) {
+        await apiClient.post(
+          `/proyectos/${proyecto.id}/actividades`,
+          actividad
+        );
+      }
+
+      navigate('/dashboard');
+
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al guardar el proyecto');
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+
+
+  // Función para guardar proyecto
+  /*const handleSave = async () => {
+          if (!activities.length) {
+        setError('Debe registrar al menos una actividad');
+        return;
+      }
+
+      const actividadesValidas = activities.filter(a => a.name.trim() !== '');
+
+      if (!actividadesValidas.length) {
+        setError('Debe registrar al menos una actividad con nombre');
+        return;
+      }
+
     try {
       setSaving(true);
       setError(null);
@@ -179,11 +307,13 @@ export const ProyectoPOA: React.FC = () => {
       const proyectoPayload = {
         nombre: projectData.nombre,
         objetivo: projectData.objetivo,
-        unidad_responsable: projectData.unidad_responsable,
+        unidad_facultad: projectData.unidad_responsable || 'No definida',
         anio: projectData.anio,
         fecha_inicio: projectData.fecha_inicio || new Date().toISOString().split('T')[0],
         fecha_fin: projectData.fecha_fin || new Date().toISOString().split('T')[0],
-        presupuesto_total: totalGeneral
+        presupuesto_total: totalGeneral,
+        id_responsable: projectData.id_responsable || null
+
       };
 
       if (id) {
@@ -203,7 +333,7 @@ export const ProyectoPOA: React.FC = () => {
       setSaving(false);
     }
   };
-
+*/
   // Estilos inline
   const containerStyle: React.CSSProperties = {
     background: 'var(--fondo-azul)',
@@ -316,26 +446,59 @@ export const ProyectoPOA: React.FC = () => {
               <Grid columns={3}>
                 <div>
                   <Label>Año</Label>
-                  <Input type="number" />
+                  <Input
+                    type="number"
+                    value={projectData.anio}
+                    onChange={(e) =>
+                      setProjectData(p => ({ ...p, anio: Number(e.target.value) }))
+                    }
+                  />
+
                 </div>
                 <div>
                   <Label>Unidad / Facultad</Label>
-                  <Input type="text" placeholder="Facultad de Ingeniería y Ciencias Naturales" />
+                  <Input
+                    type="text"
+                    value={projectData.unidad_responsable}
+                    onChange={(e) =>
+                      setProjectData({
+                        ...projectData,
+                        unidad_responsable: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div>
                   <Label>Línea estratégica</Label>
-                  <Input type="text" placeholder="1. Mejora continua de la docencia" />
+                  <Input
+                    type="text"
+                    value={projectData.linea_estrategica}
+                    onChange={(e) =>
+                      setProjectData(p => ({ ...p, linea_estrategica: e.target.value }))
+                    }
+                  />
                 </div>
               </Grid>
 
               <Grid columns={2} style={{ marginTop: '1rem' }}>
                 <div>
                   <Label>Objetivo estratégico</Label>
-                  <TextArea placeholder="Promover la excelencia académica mediante..." />
+                  <TextArea
+                    value={projectData.objetivo_estrategico}
+                    onChange={(e) =>
+                      setProjectData(p => ({ ...p, objetivo_estrategico: e.target.value }))
+                    }
+                  />
                 </div>
                 <div>
                   <Label>Acción / Actividad estratégica</Label>
-                  <TextArea placeholder="Participar en procesos de acreditación..." />
+                  <TextArea
+                    value={projectData.accion_estrategica}
+                    onChange={(e) =>
+                      setProjectData(p => ({ ...p, accion_estrategica: e.target.value }))
+                    }
+                  />
+
                 </div>
               </Grid>
             </Section>
@@ -345,11 +508,33 @@ export const ProyectoPOA: React.FC = () => {
               <Grid columns={2}>
                 <div>
                   <Label>Nombre del proyecto</Label>
-                  <Input type="text" placeholder="Gestión de acreditación de la Carrera de Ingeniería Industrial" />
+                  <Input
+                    type="text"
+                    value={projectData.nombre}
+                    onChange={(e) =>
+                      setProjectData(p => ({ ...p, nombre: e.target.value }))
+                    }
+                  />
+
                 </div>
                 <div>
                   <Label>Responsable</Label>
-                  <Input type="text" placeholder="Nombre y cargo del responsable" />
+                  <Select
+                    value={projectData.id_responsable}
+                    onChange={(e) =>
+                      setProjectData({
+                        ...projectData,
+                        id_responsable: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Seleccione responsable</option>
+                    {responsables.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.nombre_completo}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
               </Grid>
 

@@ -60,7 +60,7 @@ export const proyectosService = {
 
       const avanceOperativo = actividades.length
         ? Math.round(
-          actividades.reduce((sum: number, a: any) => sum + a.avanceActividad, 0) /
+          actividades.reduce((sum: number, a: any) => sum + Number(a.avanceActividad), 0) /
           actividades.length
         )
         : 0;
@@ -68,7 +68,7 @@ export const proyectosService = {
       const logroKpi = actividades.length
         ? Math.round(
           actividades.reduce(
-            (sum: number, a: any) => sum + (a.logroKpiActividad || 0),
+            (sum: number, a: any) => sum + (Number(a.logroKpiActividad) || 0),
             0
           ) / actividades.length
         )
@@ -297,7 +297,9 @@ export const proyectosService = {
           'unidad_medida', i.unidad_medida,
           'meta', i.meta_valor,
           'valor_logrado', i.valor_logrado,
-          'porcentaje_cumplimiento', i.porcentaje_cumplimiento
+          'porcentaje_cumplimiento', i.porcentaje_cumplimiento,
+          'categoria', i.categoria,
+          'beneficiarios', i.beneficiarios
         )) FROM indicador_actividad i WHERE i.id_actividad = a.id) as indicadores,
         COALESCE(SUM(g.monto), 0) as total_gastado
        FROM actividad a
@@ -339,7 +341,7 @@ export const proyectosService = {
 
   async updateAvanceIndicador(indicadorId: number, data: any) {
     const result = await query(
-      `UPDATE indicador_actividad SET valor_logrado = $1, porcentaje_cumplimiento = $2 WHERE id_indicador = $3 RETURNING *`,
+      `UPDATE indicador_actividad SET valor_logrado = $1, porcentaje_cumplimiento = $2 WHERE id = $3 RETURNING *`,
       [data.valor_logrado, data.porcentaje_cumplimiento, indicadorId]
     );
     return result.rows[0];

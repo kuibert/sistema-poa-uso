@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from 'react-router-dom';
-import { NavBar, Card, LoadingSpinner, ErrorMessage, Select, Input, Button, Label } from '../components/common';
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { NavBar, Card, LoadingSpinner, ErrorMessage, Select, Input, Label } from '../components/common';
 import { Status } from '../components/poa';
 import { MonthlyGanttView } from '../components/Seguimiento';
 import apiClient from '../services/apiClient';
@@ -11,6 +11,7 @@ type Actividad = {
   responsable_nombre: string;
   presupuesto_asignado: number;
   total_gastado: number;
+  plan_mensual: { mes: number; planificado: boolean }[] | null;
   seguimiento_mensual: { mes: number; estado: Status }[] | null;
   indicadores: {
     id_indicador: number;
@@ -35,6 +36,7 @@ type ProyectoSeguimiento = {
 export const SeguimientoPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Estados
   const [proyectos, setProyectos] = useState<any[]>([]);
@@ -44,20 +46,51 @@ export const SeguimientoPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Referencias para scroll
+  const [targetActivityId, setTargetActivityId] = useState<number | null>(null);
+  const activityRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+
+
   // Cargar lista de proyectos
   useEffect(() => {
     loadProyectos();
   }, []);
 
+  // Leer Query Params (proyectoId y actividad)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const pId = searchParams.get('proyectoId');
+    const aId = searchParams.get('actividad');
+
+    if (pId) {
+      setProyectoSel(Number(pId));
+    } else if (id) {
+      setProyectoSel(Number(id));
+    }
+
+    if (aId) {
+      setTargetActivityId(Number(aId));
+    }
+  }, [location.search, id]);
+
+
   // Cargar seguimiento cuando cambia el proyecto seleccionado
   useEffect(() => {
     if (proyectoSel > 0) {
       loadSeguimiento(proyectoSel);
-    } else if (id) {
-      const projectId = parseInt(id);
-      setProyectoSel(projectId);
     }
-  }, [proyectoSel, id]);
+  }, [proyectoSel]);
+
+  // Efecto para hacer scroll a la actividad seleccionada
+  useEffect(() => {
+    if (seguimiento && targetActivityId && activityRefs.current[targetActivityId]) {
+      // Pequeño timeout para asegurar que el DOM se renderizó
+      setTimeout(() => {
+        activityRefs.current[targetActivityId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Opcional: Resaltar temporalmente si se desea
+      }, 500);
+    }
+  }, [seguimiento, targetActivityId]);
 
   const loadProyectos = async () => {
     try {
@@ -88,43 +121,104 @@ export const SeguimientoPage: React.FC = () => {
     }
   };
 
+  // Helper para verificar si una actividad está totalmente finalizada (todos los meses planificados están en 'F')
+  const isActivityFinalized = (act: Actividad, overrideSeguimiento?: { mes: number; estado: Status }[]) => {
+    const planificados = act.plan_mensual?.filter(p => p.planificado) || [];
+    if (planificados.length === 0) return false; // Sin plan no cuenta como ejecutada (o definir regla de negocio)
+
+    const actualSeguimiento = overrideSeguimiento || act.seguimiento_mensual || [];
+
+    return planificados.every(p => {
+      const seg = actualSeguimiento.find(s => s.mes === p.mes);
+      return seg && seg.estado === 'F';
+    });
+  };
+
   // Lógica de actualización de estado (Paso 3)
   const actualizarEstadoMes = async (actividadId: number, mes: number, nuevoEstado: Status | undefined) => {
     if (!seguimiento) return;
     try {
       setSaving(true);
 
-      // Encontrar actividad
-      const actividad = seguimiento.actividades.find(a => a.id_actividad === actividadId);
-      if (!actividad) return;
+      // 1. Calcular nuevo seguimiento para la actividad afectada
+      const actividadAfectada = seguimiento.actividades.find(a => a.id_actividad === actividadId);
+      if (!actividadAfectada) return;
 
-      // Actualizar seguimiento mensual
-      let seguimientoActualizado = [...(actividad.seguimiento_mensual || [])];
-
-      // Remove existing for this month to replace or delete
+      let seguimientoActualizado = [...(actividadAfectada.seguimiento_mensual || [])];
       seguimientoActualizado = seguimientoActualizado.filter(s => s.mes !== mes);
-
       if (nuevoEstado) {
         seguimientoActualizado.push({ mes, estado: nuevoEstado });
       }
 
-      // Optimistic update
+      // 2. Crear una proyección de TODAS las actividades con este cambio aplicado
+      // Esto es necesario para calcular cuántas ESTARÁN finalizadas globalmente
+      const actividadesProyectadas = seguimiento.actividades.map(a =>
+        a.id_actividad === actividadId
+          ? { ...a, seguimiento_mensual: seguimientoActualizado }
+          : a
+      );
+
+      // 3. Calcular total de actividades finalizadas globalmente
+      const totalActivities = actividadesProyectadas.length;
+      const totalFinalizadas = actividadesProyectadas.filter(a => isActivityFinalized(a)).length;
+
+      // 4. Identificar indicadores que deben actualizarse (Categoría: "% de actividades ejecutadas")
+      // y preparar sus nuevos valores
+      const indicadoresAActualizar: { actId: number; indId: number; valor: number; pct: number }[] = [];
+
+      const actividadesConIndicadoresActualizados = actividadesProyectadas.map(a => {
+        if (!a.indicadores) return a;
+
+        const indicadoresNuevos = a.indicadores.map(ind => {
+          if (ind.categoria === '% de actividades ejecutadas') {
+            // Autocalcular
+            // Meta debe ser totalActivities (asegurado desde Page1, pero usamos live count por seguridad)
+            // Ojo: si la meta viniera mal, usar el meta guardado o totalActivities?
+            // El requerimiento dice que la meta ES el total de actividades.
+            const meta = Number(ind.meta) || totalActivities;
+            const valor = totalFinalizadas;
+            const pct = meta > 0 ? Math.round((valor / meta) * 100) : 0;
+
+            // Guardar para API call side-effect
+            if (valor !== ind.valor_logrado) {
+              indicadoresAActualizar.push({ actId: a.id_actividad, indId: ind.id_indicador, valor, pct });
+            }
+
+            return { ...ind, valor_logrado: valor, porcentaje_cumplimiento: pct };
+          }
+          return ind;
+        });
+
+        return { ...a, indicadores: indicadoresNuevos };
+      });
+
+      // 5. Actualizar Estado Local (Optimistic)
       const newSeguimiento = {
         ...seguimiento,
-        actividades: seguimiento.actividades.map(a =>
-          a.id_actividad === actividadId ? { ...a, seguimiento_mensual: seguimientoActualizado } : a
-        )
+        actividades: actividadesConIndicadoresActualizados
       };
       setSeguimiento(newSeguimiento);
 
-      await apiClient.put(`/proyectos/actividades/${actividadId}/seguimiento-mensual`, {
+      // 6. Enviar actualizaciones al Backend
+      // a) Actualizar mes
+      const updateMesPromise = apiClient.put(`/proyectos/actividades/${actividadId}/seguimiento-mensual`, {
         seguimiento: seguimientoActualizado
       });
+
+      // b) Actualizar indicadores afectados
+      const updateIndicadoresPromises = indicadoresAActualizar.map(item =>
+        apiClient.put(`/proyectos/indicadores/${item.indId}/avance`, {
+          valor_logrado: item.valor,
+          porcentaje_cumplimiento: item.pct
+        })
+      );
+
+      await Promise.all([updateMesPromise, ...updateIndicadoresPromises]);
 
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al actualizar estado');
       console.error('Error actualizando estado:', err);
-      // Revert logic would go here
+      // Revert logic usually required here, simplifying for prototype
     } finally {
       setSaving(false);
     }
@@ -162,7 +256,7 @@ export const SeguimientoPage: React.FC = () => {
       setSeguimiento(newSeguimiento);
 
       // API Call
-      await apiClient.put(`/indicadores/${indicadorId}/avance`, {
+      await apiClient.put(`/proyectos/indicadores/${indicadorId}/avance`, {
         valor_logrado: valorLogrado,
         porcentaje_cumplimiento: porcentaje
       });
@@ -359,8 +453,31 @@ export const SeguimientoPage: React.FC = () => {
                   const disponible = act.presupuesto_asignado - act.total_gastado;
                   const indicador = act.indicadores && act.indicadores.length > 0 ? act.indicadores[0] : null;
 
+                  // Merge Plan + Execution
+                  const mergedSeguimiento = [];
+                  for (let m = 1; m <= 12; m++) {
+                    const seg = act.seguimiento_mensual?.find(s => s.mes === m);
+                    const plan = act.plan_mensual?.find(p => p.mes === m && p.planificado);
+
+                    if (seg) {
+                      mergedSeguimiento.push({ mes: m, estado: seg.estado });
+                    } else if (plan) {
+                      mergedSeguimiento.push({ mes: m, estado: 'P' as Status });
+                    }
+                  }
+
                   return (
-                    <div key={act.id_actividad} style={{ marginBottom: '1.6rem' }}>
+                    <div
+                      key={act.id_actividad}
+                      ref={(el) => { activityRefs.current[act.id_actividad] = el }}
+                      style={{
+                        marginBottom: '1.6rem',
+                        transition: 'background 0.5s',
+                        background: targetActivityId === act.id_actividad ? 'rgba(46, 204, 113, 0.3)' : 'transparent', // Highlight effect
+                        padding: targetActivityId === act.id_actividad ? '0.5rem' : '0',
+                        borderRadius: '8px'
+                      }}
+                    >
                       <div style={{ color: 'var(--verde-hoja)', fontWeight: 700, fontSize: '0.98rem', marginLeft: '0.2rem', marginBottom: '0.35rem' }}>
                         Actividad {idx + 1}
                       </div>
@@ -377,7 +494,7 @@ export const SeguimientoPage: React.FC = () => {
                         {/* Meses */}
                         <div style={{ marginBottom: '0.6rem' }}>
                           <MonthlyGanttView
-                            seguimientoMensual={act.seguimiento_mensual}
+                            seguimientoMensual={mergedSeguimiento}
                             onStatusChange={(mes, status) => actualizarEstadoMes(act.id_actividad, mes + 1, status)}
                             onStatusClick={() => { }} // Legacy
                             disabled={saving}
@@ -418,16 +535,16 @@ export const SeguimientoPage: React.FC = () => {
                                   <Input type="text" value={indicador.categoria || ''} readOnly />
                                 </div>
                                 <div>
+                                  <Label>Beneficiarios</Label>
+                                  <Input type="text" value={indicador.beneficiarios || '-'} readOnly />
+                                </div>
+                                <div>
                                   <Label>Meta</Label>
                                   <Input type="text" value={indicador.meta} readOnly />
                                 </div>
                                 <div>
                                   <Label>Unidad</Label>
                                   <Input type="text" value={indicador.unidad_medida} readOnly />
-                                </div>
-                                <div>
-                                  <Label>Beneficiarios</Label>
-                                  <Input type="text" value={indicador.beneficiarios || '-'} readOnly />
                                 </div>
                                 <div style={{ gridColumn: '1/-1' }}>
                                   <Label>Descripción específica del indicador</Label>

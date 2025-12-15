@@ -9,7 +9,7 @@ const router = Router();
 router.get('/responsables', authMiddleware, async (req, res, next) => {
   try {
     const result = await query(
-      "SELECT id, nombre_completo FROM usuario WHERE activo = true ORDER BY nombre_completo"
+      "SELECT id, nombre_completo, cargo FROM usuario WHERE activo = true ORDER BY nombre_completo"
     );
     res.json(result.rows);
   } catch (error) {

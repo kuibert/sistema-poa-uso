@@ -10,6 +10,7 @@ type Activity = {
   name: string;
   months: boolean[]; // 12 meses
   id_responsable: string;
+  cargo_responsable: string; // Nuevo campo
   kpi: {
     categoria: string;
     descripcion: string;
@@ -25,6 +26,7 @@ type CostRow = {
   qty: string; // mantener como string para inputs
   unidad: string;
   unit: string; // precio unitario, string para inputs
+  actividadId?: number; // Vinculación opcional a actividad
 };
 
 export const ProyectoPOA: React.FC = () => {
@@ -74,13 +76,13 @@ export const ProyectoPOA: React.FC = () => {
         name: 'Acercamiento y entendimiento con ACAAI',
         months: new Array(12).fill(false),
         id_responsable: '',
+        cargo_responsable: '',
         kpi: {
           categoria: '',
           descripcion: 'Reuniones realizadas con la entidad acreditadora',
           meta: '',
           unidad: 'Reuniones',
           beneficiarios: 'Equipo de acreditación',
-          id_responsable: '',
         },
         evidencias: 'Actas, minutas, correos, acuerdos...'
       },
@@ -90,6 +92,7 @@ export const ProyectoPOA: React.FC = () => {
         name: 'Capacitación de actores de la USO',
         months: new Array(12).fill(false),
         id_responsable: '',
+        cargo_responsable: '',
         kpi: {
           categoria: 'Nº de personas beneficiadas directamente',
           descripcion: 'Docentes capacitados en el modelo de acreditación',
@@ -105,6 +108,7 @@ export const ProyectoPOA: React.FC = () => {
         name: 'Recopilación de documentación y autoevaluación',
         months: new Array(12).fill(false),
         id_responsable: '',
+        cargo_responsable: '',
         kpi: {
           categoria: 'Nº de productos / documentos generados',
           descripcion: 'Expediente completo de autoevaluación elaborado',
@@ -134,6 +138,7 @@ export const ProyectoPOA: React.FC = () => {
       name: 'Nueva actividad',
       months: new Array(12).fill(false),
       id_responsable: '',
+      cargo_responsable: '',
       kpi: {
         categoria: '',
         descripcion: 'Descripción del indicador de la actividad',
@@ -152,9 +157,9 @@ export const ProyectoPOA: React.FC = () => {
 
   // Costos variables (3 filas iniciales)
   const [variablesRows, setVariablesRows] = useState<CostRow[]>([
-    { descripcion: 'Costo de inscripción', qty: '', unidad: 'Evento', unit: '' },
-    { descripcion: 'Capacitación a personal de la USO', qty: '', unidad: 'Sesión', unit: '' },
-    { descripcion: 'Viáticos y alimentación', qty: '', unidad: 'Paquete', unit: '' },
+    { descripcion: 'Costo de inscripción', qty: '', unidad: 'Evento', unit: '', actividadId: 1 },
+    { descripcion: 'Capacitación a personal de la USO', qty: '', unidad: 'Sesión', unit: '', actividadId: 2 },
+    { descripcion: 'Viáticos y alimentación', qty: '', unidad: 'Paquete', unit: '', actividadId: 3 },
   ]);
 
   // Costos fijos (3 filas iniciales)
@@ -165,9 +170,9 @@ export const ProyectoPOA: React.FC = () => {
   ]);
 
   const addCostRow = (table: 'variables' | 'fijos') => {
-    const nueva: CostRow = { descripcion: 'Nuevo costo', qty: '', unidad: 'Unidad', unit: '' };
-    if (table === 'variables') setVariablesRows(prev => [...prev, nueva]);
-    else setFijosRows(prev => [...prev, nueva]);
+    const nuevo: CostRow = { descripcion: '', qty: '', unidad: '', unit: '' };
+    if (table === 'variables') setVariablesRows(prev => [...prev, nuevo]);
+    else setFijosRows(prev => [...prev, nuevo]);
   };
 
   const removeCostRow = (table: 'variables' | 'fijos', index: number) => {
@@ -179,7 +184,7 @@ export const ProyectoPOA: React.FC = () => {
     table: 'variables' | 'fijos',
     index: number,
     field: keyof CostRow,
-    value: string
+    value: string | number
   ) => {
     const updater = (rows: CostRow[]) => rows.map((r, i) => i === index ? { ...r, [field]: value } : r);
     if (table === 'variables') setVariablesRows(prev => updater(prev));
@@ -234,37 +239,42 @@ export const ProyectoPOA: React.FC = () => {
       const { data: proyecto } = await apiClient.post('/proyectos', proyectoPayload);
 
       // 2️⃣ ACTIVIDADES
-      const presupuestoPorActividad =
-        actividadesValidas.length > 0
-          ? totalVariables / actividadesValidas.length
-          : 0;
+      const actividadesPayload = actividadesValidas.map((a) => {
+        // Calcular presupuesto sumando costos vinculados
+        const costosVinculados = variablesRows.filter(r => r.actividadId === a.id);
+        const sumaCostos = costosVinculados.reduce((s, r) => s + rowTotal(r), 0);
 
-      const actividadesPayload = actividadesValidas.map((a, index) => ({
-        nombre: a.name,
-        descripcion: a.kpi.descripcion,
-
-        // RESPONSABLE
-        id_responsable: projectData.id_responsable
-          ? Number(projectData.id_responsable)
-          : null,
-
-        // 🔹 NUEVOS CAMPOS IMPORTANTES
-        cargo_responsable: a.kpi.beneficiarios, // 👈 lo que escriben en Beneficiarios
-        unidad_responsable: projectData.unidad_responsable, // 👈 Facultad
-        presupuesto_asignado: presupuestoPorActividad, // 👈 según orden
-
-        meses: a.months
-          .map((m, idx) => (m ? idx + 1 : null))
-          .filter(m => m !== null),
-
-        indicador: {
-          categoria: a.kpi.categoria,
+        return {
+          nombre: a.name,
           descripcion: a.kpi.descripcion,
-          meta: a.kpi.meta,
-          unidad: a.kpi.unidad,
-          beneficiarios: a.kpi.beneficiarios
-        }
-      }));
+          // RESPONSABLE
+          id_responsable: a.id_responsable
+            ? Number(a.id_responsable)
+            : (projectData.id_responsable ? Number(projectData.id_responsable) : null),
+
+          // 🔹 NUEVOS CAMPOS IMPORTANTES
+          // CORREGIDO: Usar campo específico de la actividad, o fallback al calculado del proyecto
+          cargo_responsable: a.cargo_responsable ||
+            (() => {
+              const seleccionado = responsables.find(r => String(r.id) === String(projectData.id_responsable));
+              return seleccionado?.cargo || 'Cargo no definido';
+            })(),
+          unidad_responsable: projectData.unidad_responsable, // 👈 Facultad
+          presupuesto_asignado: sumaCostos, // 👈 Suma real de costos vinculados
+
+          meses: a.months
+            .map((m, idx) => (m ? idx + 1 : null))
+            .filter(m => m !== null),
+
+          indicador: {
+            categoria: a.kpi.categoria,
+            descripcion: a.kpi.descripcion,
+            meta: a.kpi.meta,
+            unidad: a.kpi.unidad,
+            beneficiarios: a.kpi.beneficiarios
+          }
+        };
+      });
 
 
       for (const actividad of actividadesPayload) {
@@ -594,6 +604,45 @@ export const ProyectoPOA: React.FC = () => {
                               </tr>
                             </tbody>
                           </table>
+                        </td>
+                      </tr>
+
+                      {/* BLOQUE: RESPONSABLE Y CARGO */}
+                      <tr>
+                        <td colSpan={2} style={actividadIndentStyle}>
+                          <Grid columns={2} gap="1rem" style={{ marginBottom: '1rem' }}>
+                            <div>
+                              <Label>Responsable de la actividad</Label>
+                              <Select
+                                value={a.id_responsable}
+                                onChange={(e) => {
+                                  const idRes = e.target.value;
+                                  const seleccionado = responsables.find(r => String(r.id) === String(idRes));
+                                  setActivities(prev => prev.map(x => x.id === a.id ? {
+                                    ...x,
+                                    id_responsable: idRes,
+                                    cargo_responsable: seleccionado?.cargo || ''
+                                  } : x));
+                                }}
+                              >
+                                <option value="">Seleccione responsable...</option>
+                                {responsables.map((r) => (
+                                  <option key={r.id} value={r.id}>
+                                    {r.nombre_completo}
+                                  </option>
+                                ))}
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>Cargo del responsable</Label>
+                              <Input
+                                type="text"
+                                placeholder="Cargo"
+                                value={a.cargo_responsable}
+                                onChange={(e) => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, cargo_responsable: e.target.value } : x))}
+                              />
+                            </div>
+                          </Grid>
                         </td>
                       </tr>
 

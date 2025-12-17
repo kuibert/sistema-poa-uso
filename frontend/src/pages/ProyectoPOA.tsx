@@ -149,6 +149,16 @@ export const ProyectoPOA: React.FC = () => {
       evidencias: 'Actas, listas, informes, dictámenes...'
     };
     setActivities(prev => [...prev, nueva]);
+
+    // Crear costo vinculado automáticamente
+    const nuevoCosto: CostRow = {
+      descripcion: `Gastos para ${nueva.header}`,
+      qty: '1',
+      unidad: 'Global',
+      unit: '0',
+      actividadId: nextId
+    };
+    setVariablesRows(prev => [...prev, nuevoCosto]);
   };
 
   const removeActivity = (id: number) => {
@@ -744,7 +754,8 @@ export const ProyectoPOA: React.FC = () => {
               <Table variant="compact">
                 <Table.Header>
                   <Table.Row>
-                    <Table.Cell header style={{ width: '36%' }}>Descripción</Table.Cell>
+                    <Table.Cell header style={{ width: '20%' }}>Actividad</Table.Cell>
+                    <Table.Cell header style={{ width: '30%' }}>Descripción</Table.Cell>
                     <Table.Cell header>Cantidad</Table.Cell>
                     <Table.Cell header>Unidad</Table.Cell>
                     <Table.Cell header>Precio unitario ($)</Table.Cell>
@@ -755,6 +766,18 @@ export const ProyectoPOA: React.FC = () => {
                 <Table.Body>
                   {variablesRows.map((r, idx) => (
                     <Table.Row key={idx}>
+                      <Table.Cell>
+                        <Select
+                          value={r.actividadId || ''}
+                          onChange={(e) => updateCostRow('variables', idx, 'actividadId', Number(e.target.value))}
+                          style={{ fontSize: '0.8rem', padding: '0.3rem' }}
+                        >
+                          <option value="">Seleccione...</option>
+                          {activities.map(a => (
+                            <option key={a.id} value={a.id}>{a.header}: {a.name.substring(0, 20)}...</option>
+                          ))}
+                        </Select>
+                      </Table.Cell>
                       <Table.Cell><Input type="text" placeholder="Nuevo costo" value={r.descripcion} onChange={(e) => updateCostRow('variables', idx, 'descripcion', e.target.value)} /></Table.Cell>
                       <Table.Cell><Input type="number" min={0} step={1} value={r.qty} onChange={(e) => updateCostRow('variables', idx, 'qty', e.target.value)} /></Table.Cell>
                       <Table.Cell><Input type="text" placeholder="Unidad" value={r.unidad} onChange={(e) => updateCostRow('variables', idx, 'unidad', e.target.value)} /></Table.Cell>
@@ -766,7 +789,7 @@ export const ProyectoPOA: React.FC = () => {
                     </Table.Row>
                   ))}
                   <Table.Row>
-                    <Table.Cell colSpan={4} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total costos variables ($):</Table.Cell>
+                    <Table.Cell colSpan={5} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total costos variables ($):</Table.Cell>
                     <Table.Cell><Input type="number" readOnly value={totalVariables ? totalVariables.toFixed(2) : ''} style={{ fontWeight: 'bold' }} /></Table.Cell>
                     <Table.Cell>{null}</Table.Cell>
                   </Table.Row>

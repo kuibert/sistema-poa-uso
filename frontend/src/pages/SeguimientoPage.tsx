@@ -96,14 +96,28 @@ export const SeguimientoPage: React.FC = () => {
     try {
       const response = await apiClient.get('/proyectos');
       setProyectos(response.data);
-      // Si hay proyectos y no hay uno seleccionado, seleccionar el primero si no hay ID en URL
-      if (!id && response.data.length > 0 && proyectoSel === 0) {
-        // Optional: Auto-select first? Or wait for user. HTML design implies "Selected Project".
-        // setProyectoSel(response.data[0].id);
-      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al cargar proyectos');
       console.error('Error cargando proyectos:', err);
+    }
+  };
+
+  const deleteProyecto = async () => {
+    if (!seguimiento) return;
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este proyecto y TODAS sus actividades? Esta acción no se puede deshacer.')) return;
+
+    try {
+      setLoading(true);
+      await apiClient.delete(`/proyectos/${seguimiento.id_proyecto}`);
+      alert('Proyecto eliminado correctamente');
+      setSeguimiento(null);
+      setProyectoSel(0);
+      loadProyectos(); // Recargar lista
+      navigate('/dashboard'); // Opcional: ir a dashboard o quedarse
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al eliminar proyecto');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -413,7 +427,21 @@ export const SeguimientoPage: React.FC = () => {
                     }}
                   />
                   {!id && (
-                    <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+                    <div style={{ marginTop: '0.5rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => navigate(`/proyectos/${seguimiento.id_proyecto}`)}
+                        style={{ background: 'none', border: 'none', color: 'var(--verde-hoja)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        ✏️ Editar Proyecto
+                      </button>
+
+                      <button
+                        onClick={deleteProyecto}
+                        style={{ background: 'none', border: 'none', color: '#e74c3c', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        🗑️ Eliminar Proyecto
+                      </button>
+
                       <button
                         onClick={() => { setSeguimiento(null); setProyectoSel(0); }}
                         style={{ background: 'none', border: 'none', color: 'var(--texto-sec)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}

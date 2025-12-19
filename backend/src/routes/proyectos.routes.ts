@@ -66,6 +66,16 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
   }
 });
 
+router.delete('/:id', authMiddleware, async (req, res, next) => {
+  try {
+    const result = await proyectosService.deleteProyecto(parseInt(req.params.id));
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+
 router.post('/:id/actividades', authMiddleware, async (req, res, next) => {
   try {
     const actividad = await proyectosService.crearActividad(parseInt(req.params.id), req.body);
@@ -125,6 +135,24 @@ router.put('/indicadores/:id/avance', authMiddleware, async (req, res, next) => 
   try {
     const indicador = await proyectosService.updateAvanceIndicador(parseInt(req.params.id), req.body);
     res.json(indicador);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/actividades/:id', authMiddleware, async (req, res, next) => {
+  try {
+    const actividad = await proyectosService.updateActividad(parseInt(req.params.id), req.body);
+    res.json(actividad);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/actividades/:id', authMiddleware, async (req, res, next) => {
+  try {
+    const result = await proyectosService.deleteActividad(parseInt(req.params.id));
+    res.json(result);
   } catch (error) {
     next(error);
   }

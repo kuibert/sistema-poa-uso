@@ -53,6 +53,7 @@ export const ProyectoPOA: React.FC = () => {
 
   const [responsables, setResponsables] = useState<any[]>([]);
 
+
   useEffect(() => {
     const loadResponsables = async () => {
       try {
@@ -62,9 +63,139 @@ export const ProyectoPOA: React.FC = () => {
         console.error(err);
       }
     };
-
     loadResponsables();
   }, []);
+
+  // Cargar datos del proyecto si estamos en modo edición
+  // Guardamos los IDs originales de la base de datos para saber cuáles son existentes
+  const [dbActivityIds, setDbActivityIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    if (!id) return;
+
+    const loadProject = async () => {
+      try {
+        // Usamos el endpoint de seguimiento que trae toda la estructura
+        const { data } = await apiClient.get(`/proyectos/${id}/seguimiento`);
+
+        // 1. Mapear datos básicos
+        setProjectData({
+          nombre: data.nombre,
+          objetivo: data.nombre, // Ojo: el endpoint seguimiento no trae 'objetivo' descriptivo, trae 'año'. Asumiremos nombre o re-fetch si hace falta.
+          // *CORRECCION*: El endpoint seguimiento es optimizado para read-only. Para editar necesitamos todos los campos.
+          // Mejor hacer dos llamadas: getProyecto (datos crudos) + getSeguimiento (actividades)
+          // OJO: getProyecto ya está disponible.
+          unidad_responsable: 'Cargando...', // Se actualizará con getProyecto
+          linea_estrategica: '',
+          objetivo_estrategico: '',
+          accion_estrategica: '',
+          anio: data.anio,
+          fecha_inicio: '',
+          fecha_fin: '',
+          id_responsable: '',
+        });
+
+
+        // Llamada complementaria para datos administrativos no presentes en seguimiento
+        const { data: pFull } = await apiClient.get(`/proyectos/${id}`);
+
+        setProjectData({
+          nombre: pFull.nombre,
+          objetivo: pFull.objetivo_proyecto || pFull.objetivo || '',
+          unidad_responsable: pFull.unidad_facultad || pFull.unidad_responsable || '', // Trying both
+          linea_estrategica: pFull.linea_estrategica || '',
+          objetivo_estrategico: pFull.objetivo_estrategico || '',
+          accion_estrategica: pFull.accion_estrategica || '',
+          anio: pFull.anio,
+          fecha_inicio: pFull.fecha_inicio ? pFull.fecha_inicio.split('T')[0] : '',
+          fecha_fin: pFull.fecha_fin ? pFull.fecha_fin.split('T')[0] : '',
+          id_responsable: pFull.id_responsable || '',
+        });
+
+
+        // 2. Mapear Actividades
+        if (data.actividades) {
+          const initialIds = new Set<number>();
+          const mappedActivities: Activity[] = data.actividades.map((a: any, index: number) => {
+            // Mapear meses
+            const monthsBool = new Array(12).fill(false);
+            if (a.plan_mensual) {
+              a.plan_mensual.forEach((pm: any) => {
+                if (pm.planificado && pm.mes >= 1 && pm.mes <= 12) {
+                  monthsBool[pm.mes - 1] = true;
+                }
+              });
+            }
+
+            // Mapear Indicador (usamos el primero si hay)
+            const ind = a.indicadores && a.indicadores.length > 0 ? a.indicadores[0] : {};
+
+            initialIds.add(Number(a.id_actividad));
+
+            return {
+              id: Number(a.id_actividad), // ID real de DB
+              header: `Actividad ${index + 1}`,
+              name: a.nombre,
+              months: monthsBool,
+              id_responsable: a.id_responsable || data.id_responsable || '',
+              cargo_responsable: a.cargo_responsable || '',
+              kpi: {
+                categoria: ind.categoria || '',
+                descripcion: ind.nombre || '', // En seguimiento mapped 'nombre' es descripcion especifica
+                meta: ind.meta || '',
+                unidad: ind.unidad_medida || '',
+                beneficiarios: ind.beneficiarios || ''
+              },
+              evidencias: '', // No viene en seguimiento
+            };
+          });
+
+          setDbActivityIds(initialIds);
+          setActivities(mappedActivities);
+          setActividadCounter(mappedActivities.length);
+
+          // Asegurar que el contador de grupos no colisione con IDs existentes
+          const maxId = mappedActivities.length > 0 ? Math.max(...mappedActivities.map(a => a.id)) : 0;
+          setGroupCounter(maxId + 100);
+
+          // 3. Mapear Costos (Reales desde backend)
+          if (data.costos && Array.isArray(data.costos) && data.costos.length > 0) {
+            const vars: CostRow[] = [];
+            const fijos: CostRow[] = [];
+
+            data.costos.forEach((c: any) => {
+              const row: CostRow = {
+                descripcion: c.descripcion,
+                qty: String(c.cantidad),
+                unidad: c.unidad,
+                unit: String(c.precio_unitario),
+                actividadId: c.id_actividad ? Number(c.id_actividad) : undefined
+              };
+              if (c.tipo === 'variable') {
+                vars.push(row);
+              } else {
+                fijos.push(row);
+              }
+            });
+
+            setVariablesRows(vars);
+            setFijosRows(fijos);
+          } else {
+            // Fallback o init empty si no habia costos guardados (proyectos viejos)
+            // Dejamos vacio o lo que estaba por defecto
+            setVariablesRows([]);
+            setFijosRows([]);
+          }
+
+        }
+
+      } catch (err) {
+        console.error("Error loading project", err);
+        setError("Error cargando los datos del proyecto.");
+      }
+    };
+    loadProject();
+  }, [id]);
 
 
   // Actividades iniciales (3) como en el HTML
@@ -229,7 +360,29 @@ export const ProyectoPOA: React.FC = () => {
       setSaving(true);
       setError(null);
 
-      // 1️⃣ PROYECTO
+      // 1️⃣ PROYECTO (Payload base - Costos con ID NULL)
+      // Enviamos id_actividad: null para evitar error de FK (falta crear las actividades)
+      const costosIniciales = [
+        ...variablesRows.map(r => ({
+          tipo: 'variable',
+          descripcion: r.descripcion,
+          cantidad: r.qty,
+          unidad: r.unidad,
+          precio_unitario: r.unit,
+          costo_total: rowTotal(r),
+          id_actividad: null // Se vincula en paso 3
+        })),
+        ...fijosRows.map(r => ({
+          tipo: 'fijo',
+          descripcion: r.descripcion,
+          cantidad: r.qty,
+          unidad: r.unidad,
+          precio_unitario: r.unit,
+          costo_total: rowTotal(r),
+          id_actividad: null
+        }))
+      ];
+
       const proyectoPayload = {
         nombre: projectData.nombre,
         objetivo: projectData.objetivo,
@@ -244,38 +397,57 @@ export const ProyectoPOA: React.FC = () => {
         id_responsable: projectData.id_responsable
           ? Number(projectData.id_responsable)
           : null,
+        costos: costosIniciales
       };
 
-      const { data: proyecto } = await apiClient.post('/proyectos', proyectoPayload);
+      let projectId = id ? Number(id) : null;
 
-      // 2️⃣ ACTIVIDADES
-      const actividadesPayload = actividadesValidas.map((a) => {
-        // Calcular presupuesto sumando costos vinculados
+      if (id) {
+        // UPDATE
+        await apiClient.put(`/proyectos/${id}`, proyectoPayload);
+      } else {
+        // CREATE
+        const { data: proyecto } = await apiClient.post('/proyectos', proyectoPayload);
+        projectId = proyecto.id;
+      }
+
+      if (!projectId) throw new Error("No Project ID");
+
+      // 2️⃣ ACTIVIDADES (Sync)
+      let actividadesToDelete: number[] = [];
+      if (id) {
+        const currentIds = new Set(activities.map(a => a.id));
+        dbActivityIds.forEach(dbId => {
+          if (!currentIds.has(dbId)) {
+            actividadesToDelete.push(dbId);
+          }
+        });
+      }
+
+      for (const delId of actividadesToDelete) {
+        await apiClient.delete(`/proyectos/actividades/${delId}`);
+      }
+
+      // Mapa para rastrear TempID -> RealID
+      const idMap = new Map<number, number>();
+
+      for (const a of actividadesValidas) {
+        // Calcular presupuesto sumando costos vinculados (usando datos de UI)
         const costosVinculados = variablesRows.filter(r => r.actividadId === a.id);
         const sumaCostos = costosVinculados.reduce((s, r) => s + rowTotal(r), 0);
 
-        return {
+        const actPayload = {
           nombre: a.name,
           descripcion: a.kpi.descripcion,
-          // RESPONSABLE
           id_responsable: a.id_responsable
             ? Number(a.id_responsable)
             : (projectData.id_responsable ? Number(projectData.id_responsable) : null),
-
-          // 🔹 NUEVOS CAMPOS IMPORTANTES
-          // CORREGIDO: Usar campo específico de la actividad, o fallback al calculado del proyecto
-          cargo_responsable: a.cargo_responsable ||
-            (() => {
-              const seleccionado = responsables.find(r => String(r.id) === String(projectData.id_responsable));
-              return seleccionado?.cargo || 'Cargo no definido';
-            })(),
-          unidad_responsable: projectData.unidad_responsable, // 👈 Facultad
-          presupuesto_asignado: sumaCostos, // 👈 Suma real de costos vinculados
-
+          cargo_responsable: a.cargo_responsable || '',
+          unidad_responsable: projectData.unidad_responsable,
+          presupuesto_asignado: sumaCostos,
           meses: a.months
             .map((m, idx) => (m ? idx + 1 : null))
             .filter(m => m !== null),
-
           indicador: {
             categoria: a.kpi.categoria,
             descripcion: a.kpi.descripcion,
@@ -284,15 +456,53 @@ export const ProyectoPOA: React.FC = () => {
             beneficiarios: a.kpi.beneficiarios
           }
         };
-      });
 
+        const isExisting = id && dbActivityIds.has(a.id);
 
-      for (const actividad of actividadesPayload) {
-        await apiClient.post(
-          `/proyectos/${proyecto.id}/actividades`,
-          actividad
-        );
+        if (isExisting) {
+          await apiClient.put(`/proyectos/actividades/${a.id}`, actPayload);
+          idMap.set(a.id, a.id);
+        } else {
+          const { data: actCreated } = await apiClient.post(`/proyectos/${projectId}/actividades`, actPayload);
+          idMap.set(a.id, actCreated.id);
+        }
       }
+
+      // 3️⃣ FINAL UPDATE: Vincular costos con IDs reales
+      console.log('Mapa de IDs:', Array.from(idMap.entries()));
+
+      const costosFinales = [
+        ...variablesRows.map(r => {
+          const realActId = r.actividadId ? idMap.get(r.actividadId) : null;
+          console.log(`Mapping Cost Var: Desc=${r.descripcion}, UI_ID=${r.actividadId}, Real_ID=${realActId}`);
+          return {
+            tipo: 'variable',
+            descripcion: r.descripcion,
+            cantidad: r.qty,
+            unidad: r.unidad,
+            precio_unitario: r.unit,
+            costo_total: rowTotal(r),
+            id_actividad: realActId || null
+          };
+        }),
+        ...fijosRows.map(r => ({
+          tipo: 'fijo',
+          descripcion: r.descripcion,
+          cantidad: r.qty,
+          unidad: r.unidad,
+          precio_unitario: r.unit,
+          costo_total: rowTotal(r),
+          id_actividad: null
+        }))
+      ];
+
+      console.log('Costos Finales Payload:', JSON.stringify(costosFinales, null, 2));
+
+      // Actualizamos solo los costos (y el resto de data por integridad)
+      await apiClient.put(`/proyectos/${projectId}`, {
+        ...proyectoPayload,
+        costos: costosFinales
+      });
 
       navigate('/dashboard');
 
@@ -560,7 +770,11 @@ export const ProyectoPOA: React.FC = () => {
 
               <div style={{ marginTop: '0.6rem' }}>
                 <Label>Objetivo del proyecto</Label>
-                <TextArea placeholder="Describir qué se quiere lograr, cómo y para qué..." />
+                <TextArea
+                  placeholder="Describir qué se quiere lograr, cómo y para qué..."
+                  value={projectData.objetivo}
+                  onChange={(e) => setProjectData(p => ({ ...p, objetivo: e.target.value }))}
+                />
               </div>
             </Section>
 

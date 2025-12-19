@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { NavBar, Card, LoadingSpinner, ErrorMessage, Select, Input, Label } from '../components/common';
+import { NavBar, Card, LoadingSpinner, ErrorMessage, Select, Input, Label, Button, Modal, FormGroup } from '../components/common';
 import { Status } from '../components/poa';
 import { MonthlyGanttView } from '../components/Seguimiento';
 import apiClient from '../services/apiClient';
@@ -11,6 +11,9 @@ type Actividad = {
   responsable_nombre: string;
   presupuesto_asignado: number;
   total_gastado: number;
+  id_responsable?: number;
+  cargo_responsable?: string;
+  unidad_responsable?: string;
   plan_mensual: { mes: number; planificado: boolean }[] | null;
   seguimiento_mensual: { mes: number; estado: Status }[] | null;
   indicadores: {
@@ -45,6 +48,17 @@ export const SeguimientoPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Edit State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<Actividad | null>(null);
+  const [editForm, setEditForm] = useState({
+    nombre: '',
+    presupuesto: 0,
+    responsable_nombre: '', // Visual only for now if we don't have full user list here
+    cargo_responsable: '',
+    unidad_responsable: ''
+  });
 
   // Referencias para scroll
   const [targetActivityId, setTargetActivityId] = useState<number | null>(null);
@@ -99,6 +113,58 @@ export const SeguimientoPage: React.FC = () => {
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al cargar proyectos');
       console.error('Error cargando proyectos:', err);
+    }
+  };
+
+  const handleEditClick = (act: Actividad) => {
+    setEditingActivity(act);
+    setEditForm({
+      nombre: act.nombre,
+      presupuesto: act.presupuesto_asignado,
+      responsable_nombre: act.responsable_nombre || '',
+      cargo_responsable: act.cargo_responsable || '',
+      unidad_responsable: act.unidad_responsable || ''
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleSaveActivity = async () => {
+    if (!editingActivity || !seguimiento) return;
+
+    try {
+      setSaving(true);
+      // Note: We are only updating basic fields here. Responsable ID logic would need a user selector.
+      // For now we keep the same responsible ID or generic update if backend supports it.
+      await apiClient.put(`/proyectos/actividades/${editingActivity.id_actividad}`, {
+        nombre: editForm.nombre,
+        presupuesto_asignado: editForm.presupuesto,
+        // Send other fields if needed or kept as is
+        cargo_responsable: editForm.cargo_responsable,
+        unidad_responsable: editForm.unidad_responsable
+        // id_responsable: editingActivity.id_responsable // Keep same responsible
+      });
+
+      setEditModalOpen(false);
+      setEditingActivity(null);
+      loadSeguimiento(seguimiento.id_proyecto); // Reload to refresh
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al actualizar actividad');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteActivity = async (act: Actividad) => {
+    if (!window.confirm(`¿Estás seguro de eliminar la actividad "${act.nombre}"? Esto borrará también sus gastos y evidencias.`)) return;
+
+    try {
+      setSaving(true);
+      await apiClient.delete(`/proyectos/actividades/${act.id_actividad}`);
+      if (seguimiento) loadSeguimiento(seguimiento.id_proyecto);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al eliminar actividad');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -537,8 +603,9 @@ export const SeguimientoPage: React.FC = () => {
                               <div style={barFillStyle(progreso)}></div>
                             </div>
                             <strong style={{ color: 'var(--texto-claro)' }}>{progreso}%</strong>
+                            <strong style={{ color: 'var(--texto-claro)' }}>{progreso}%</strong>
                             <span>| Presupuestado: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(act.presupuesto_asignado)}</strong></span>
-                            <span>| Gastado: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(act.total_gastado)}</strong></span>
+                            <span>| Gastado: <strong style={{ color: '#e74c3c' }}>{formatoDinero(act.total_gastado)}</strong></span>
                             <span>| Disponible: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(disponible)}</strong></span>
                           </div>
                         </div>
@@ -602,37 +669,38 @@ export const SeguimientoPage: React.FC = () => {
 
                         {/* Action Buttons */}
                         <div style={{ marginBottom: '0.6rem' }}>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.4rem' }}>
-                            <button
-                              className="btn-alt"
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.6rem' }}>
+                            <Button
+                              variant="alt"
+                              size="sm"
                               onClick={() => navigate(`/actividades/${act.id_actividad}/evidencias`)}
-                              style={{
-                                border: '1px solid var(--verde-hoja)',
-                                color: 'var(--verde-hoja)',
-                                background: 'transparent',
-                                borderRadius: '999px',
-                                padding: '0.35rem 0.9rem',
-                                cursor: 'pointer',
-                                fontSize: '0.78rem'
-                              }}
                             >
                               📎 Evidencias
-                            </button>
-                            <button
-                              className="btn-alt"
+                            </Button>
+                            <Button
+                              variant="alt"
+                              size="sm"
                               onClick={() => navigate(`/actividades/${act.id_actividad}/gastos`)}
-                              style={{
-                                border: '1px solid var(--verde-hoja)',
-                                color: 'var(--verde-hoja)',
-                                background: 'transparent',
-                                borderRadius: '999px',
-                                padding: '0.35rem 0.9rem',
-                                cursor: 'pointer',
-                                fontSize: '0.78rem'
-                              }}
                             >
                               💰 Gastos
-                            </button>
+                            </Button>
+                            <div style={{ flex: 1 }}></div>
+                            <Button
+                              variant="alt"
+                              size="sm"
+                              onClick={() => handleEditClick(act)}
+                              title="Editar detalles de la actividad"
+                            >
+                              ✏️ Editar
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteActivity(act)}
+                              title="Eliminar actividad permanentemente"
+                            >
+                              🗑️ Eliminar
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -645,6 +713,61 @@ export const SeguimientoPage: React.FC = () => {
           ) : null}
         </Card>
       </main>
-    </div>
+
+      {/* Modal de Edición */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title="Editar Actividad"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: '300px' }}>
+          <FormGroup>
+            <Label>Nombre de la actividad</Label>
+            <Input
+              type="text"
+              value={editForm.nombre}
+              onChange={e => setEditForm({ ...editForm, nombre: e.target.value })}
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <Label>Presupuesto Asignado ($)</Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={editForm.presupuesto}
+              onChange={e => setEditForm({ ...editForm, presupuesto: Number(e.target.value) })}
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <Label>Cargo del responsable</Label>
+            <Input
+              type="text"
+              value={editForm.cargo_responsable}
+              onChange={e => setEditForm({ ...editForm, cargo_responsable: e.target.value })}
+              placeholder="Ej. Coordinador de Proyecto"
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <Label>Unidad responsable</Label>
+            <Input
+              type="text"
+              value={editForm.unidad_responsable}
+              onChange={e => setEditForm({ ...editForm, unidad_responsable: e.target.value })}
+              placeholder="Ej. Facultad de Ingeniería"
+            />
+          </FormGroup>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+            <Button variant="ghost" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
+            <Button variant="main" onClick={handleSaveActivity} disabled={saving}>
+              {saving ? 'Guardando...' : 'Guardar Cambios'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div >
   );
 };

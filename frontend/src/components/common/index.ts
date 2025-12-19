@@ -16,4 +16,5 @@ export { LoadingSpinner } from './LoadingSpinner';
 export { ConfirmDialog } from './ConfirmDialog';
 export { Table } from './Table';
 export { Checkbox } from './Checkbox';
+export { Modal } from './Modal';
 export { LoginCard, LoginHeader, LoginForm, LoginFooter } from './LoginComponents';

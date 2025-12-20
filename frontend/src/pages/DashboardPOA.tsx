@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavBar, Card, Divider, Grid, Table, Badge } from '../components/common';
+import { NavBar, Card, Divider, Grid, Table, Badge, Select, Input } from '../components/common';
 import { KPICard, StatusPill, Status } from '../components/poa';
 import { Button } from '../components/common/Button';
 import apiClient from '../services/apiClient';
@@ -10,6 +10,29 @@ export const DashboardPOA: React.FC = () => {
   const [actividadesMes, setActividadesMes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Estados de los Inputs (Interfaz de usuario)
+  const [inputMonth, setInputMonth] = useState<number>(12);
+  const [inputYear, setInputYear] = useState<string>("2025");
+
+  // Estados de los Filtros Aplicados (Para la query)
+  const [appliedMonth, setAppliedMonth] = useState<number>(12);
+  const [appliedYear, setAppliedYear] = useState<number>(2025);
+
+  const months = [
+    { value: 1, label: 'Enero' },
+    { value: 2, label: 'Febrero' },
+    { value: 3, label: 'Marzo' },
+    { value: 4, label: 'Abril' },
+    { value: 5, label: 'Mayo' },
+    { value: 6, label: 'Junio' },
+    { value: 7, label: 'Julio' },
+    { value: 8, label: 'Agosto' },
+    { value: 9, label: 'Septiembre' },
+    { value: 10, label: 'Octubre' },
+    { value: 11, label: 'Noviembre' },
+    { value: 12, label: 'Diciembre' },
+  ];
+
   // ============================
   //  CARGAR DATOS DESDE BACKEND
   // ============================
@@ -17,9 +40,8 @@ export const DashboardPOA: React.FC = () => {
     const load = async () => {
       try {
         setLoading(true);
-        // 🚀 AQUÍ SE ARREGLA EL ERROR
-        const year = new Date().getFullYear();
-        const { data } = await apiClient.get(`/proyectos/dashboard?anio=${year}`);
+        // Usar los filtros APLICADOS
+        const { data } = await apiClient.get(`/proyectos/dashboard?anio=${appliedYear}&mes=${appliedMonth}`);
 
         setProyectos(data.proyectos || []);
         setActividadesMes(data.actividadesMes || []);
@@ -30,7 +52,15 @@ export const DashboardPOA: React.FC = () => {
     };
 
     load();
-  }, []);
+  }, [appliedYear, appliedMonth]); // Dependencias: solo cambia cuando se aplican
+
+  const handleApplyFilters = () => {
+    const yearParsed = parseInt(inputYear, 10);
+    if (!isNaN(yearParsed) && yearParsed > 1900 && yearParsed < 2100) {
+      setAppliedYear(yearParsed);
+      setAppliedMonth(inputMonth);
+    }
+  };
 
   if (loading) {
     return <p style={{ color: "white", padding: "2rem" }}>Cargando datos del dashboard...</p>;
@@ -190,6 +220,13 @@ export const DashboardPOA: React.FC = () => {
     textDecoration: 'none',
   };
 
+  const filterContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '0.5rem',
+    marginTop: '0.4rem',
+    alignItems: 'center'
+  };
+
   return (
     <div style={containerStyle}>
       <NavBar />
@@ -223,8 +260,41 @@ export const DashboardPOA: React.FC = () => {
               </div>
 
               <div style={portafolioTextoStyle}>
-                Mes de referencia: <strong>{new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}</strong><br />
-                Este resumen consolida los datos de todos los proyectos aprobados en el POA.
+                Mes de referencia:
+                <div style={filterContainerStyle}>
+                  <Select
+                    value={inputMonth}
+                    onChange={(e) => setInputMonth(Number(e.target.value))}
+                    style={{ width: '130px', padding: '4px 8px', fontSize: '0.9rem' }}
+                  >
+                    {months.map(m => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </Select>
+
+                  <Input
+                    value={inputYear}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // Solo permite dígitos
+                      if (/^\d*$/.test(val)) {
+                        setInputYear(val);
+                      }
+                    }}
+                    style={{ width: '70px', padding: '4px 8px', fontSize: '0.9rem' }}
+                    placeholder="Año"
+                  />
+
+                  <Button
+                    onClick={handleApplyFilters}
+                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                  >
+                    Aplicar
+                  </Button>
+                </div>
+                <div style={{ marginTop: '0.4rem' }}>
+                  Este resumen consolida los datos de todos los proyectos aprobados en el POA.
+                </div>
               </div>
             </div>
 

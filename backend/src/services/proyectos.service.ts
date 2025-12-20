@@ -72,25 +72,41 @@ export const proyectosService = {
     // Calcula el promedio de avance y logro de TODAS las actividades del proyecto en el año
     const statsResult = await query(
       `
+      WITH ActivityStats AS (
+         SELECT
+            a.id AS id_actividad,
+            COUNT(amp.mes) as total_plan,
+            COALESCE(SUM(
+                CASE
+                  WHEN ams.estado = 'F' THEN 1.0
+                  WHEN ams.estado = 'I' THEN 0.5
+                  ELSE 0.0
+                END
+            ), 0) as puntos_ganados
+         FROM actividad a
+         LEFT JOIN actividad_mes_plan amp ON amp.id_actividad = a.id AND amp.planificado = true
+         LEFT JOIN actividad_mes_seguimiento ams ON ams.id_actividad = a.id AND ams.mes = amp.mes
+         GROUP BY a.id
+      )
       SELECT 
         p.id as "proyectoId",
         AVG(COALESCE(ia.porcentaje_cumplimiento, 0))::numeric as "logroKpi",
         AVG(
-          CASE ams.estado
-            WHEN 'F' THEN 100
-            WHEN 'I' THEN 50
+          CASE
+            WHEN s.total_plan > 0 THEN (s.puntos_ganados / s.total_plan::numeric) * 100
             ELSE 0
           END
         )::numeric as "avanceOperativo"
       FROM proyecto p
       JOIN actividad a ON a.id_proyecto = p.id
       LEFT JOIN indicador_actividad ia ON ia.id_actividad = a.id
-      LEFT JOIN actividad_mes_seguimiento ams ON ams.id_actividad = a.id
+      LEFT JOIN ActivityStats s ON s.id_actividad = a.id
       WHERE p.anio = $1
       GROUP BY p.id
       `,
       [anio]
     );
+
 
     // Map stats to dictionary for easy access
     const statsMap: Record<number, { avance: number, logro: number }> = {};
@@ -324,11 +340,18 @@ export const proyectosService = {
   async updatePlanMensual(actividadId: number, meses: any[]) {
     await query('DELETE FROM actividad_mes_plan WHERE id_actividad = $1', [actividadId]);
 
-    for (const mes of meses) {
-      if (mes.planificado) {
+    for (const item of meses) {
+      let mesNum: number | null = null;
+      if (typeof item === 'number') {
+        mesNum = item;
+      } else if (item && item.planificado) {
+        mesNum = item.mes;
+      }
+
+      if (mesNum) {
         await query(
           'INSERT INTO actividad_mes_plan (id_actividad, mes, planificado) VALUES ($1, $2, true)',
-          [actividadId, mes.mes]
+          [actividadId, mesNum]
         );
       }
     }
@@ -338,12 +361,22 @@ export const proyectosService = {
 
   async crearIndicador(actividadId: number, data: any) {
     const result = await query(
-      `INSERT INTO indicador_actividad (id_actividad, nombre, unidad_medida, meta, valor_logrado, porcentaje_cumplimiento, beneficiarios_directos, beneficiarios_indirectos)
-       VALUES ($1, $2, $3, $4, 0, 0, $5, $6) RETURNING *`,
-      [actividadId, data.nombre, data.unidad_medida, data.meta, data.beneficiarios_directos, data.beneficiarios_indirectos]
+      `INSERT INTO indicador_actividad (
+        id_actividad, categoria, descripcion_especifica, meta_valor, unidad_medida, beneficiarios, valor_logrado, porcentaje_cumplimiento
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, 0, 0) RETURNING *`,
+      [
+        actividadId,
+        data.categoria || 'Generico',
+        data.descripcion_especifica,
+        data.meta_valor,
+        data.unidad_medida,
+        data.beneficiarios
+      ]
     );
     return result.rows[0];
   },
+
 
   // Seguimiento (Page2)
   async getSeguimientoProyecto(proyectoId: number) {
@@ -524,15 +557,15 @@ export const proyectosService = {
         );
       } else {
         // Crear si no existe (raro en update, pero posible)
+        // Crear si no existe (raro en update, pero posible)
         await this.crearIndicador(id, {
-          nombre: data.indicador.descripcion,
+          categoria: data.indicador.categoria,
+          descripcion_especifica: data.indicador.descripcion,
           unidad_medida: data.indicador.unidad,
-          meta: data.indicador.meta,
-          beneficiarios_directos: 0, // Ajustar según modelo
-          beneficiarios_indirectos: 0 // Ajustar según modelo
-          // Nota: el metodo crearIndicador usa otros nombres de parametros, cuidado. 
-          // Mejor reimplementar insert directo aquí para evitar confusión de firmas
+          meta_valor: data.indicador.meta,
+          beneficiarios: data.indicador.beneficiarios
         });
+
         await query(
           `INSERT INTO indicador_actividad (
                   id_actividad, categoria, descripcion_especifica, meta_valor, unidad_medida, beneficiarios, valor_logrado, porcentaje_cumplimiento

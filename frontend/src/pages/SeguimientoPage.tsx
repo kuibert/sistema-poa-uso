@@ -349,22 +349,33 @@ export const SeguimientoPage: React.FC = () => {
   };
 
   // Lógica de progreso (Paso 3 - HTML Logic)
-  const calcularProgreso = (seguimientoMensual: { mes: number; estado: Status }[] | null) => {
-    if (!seguimientoMensual) return 0;
+  const calcularProgreso = (
+    seguimientoMensual: { mes: number; estado: Status }[] | null,
+    planMensual: { mes: number; planificado: boolean }[] | null
+  ) => {
+    // 1. Contar total planificados
+    const mesesPlanificados = planMensual?.filter(p => p.planificado) || [];
+    const totalPlanificados = mesesPlanificados.length;
 
-    let usados = 0;
+    if (totalPlanificados === 0) return 0;
+
     let suma = 0;
 
-    seguimientoMensual.forEach(s => {
-      if (s.estado === 'P' || s.estado === 'I' || s.estado === 'F') {
-        usados++;
-        if (s.estado === 'I') suma += 0.5;
-        if (s.estado === 'F') suma += 1;
+    // 2. Iterar sobre lo PLANIFICADO (Base 100%)
+    mesesPlanificados.forEach(p => {
+      // Buscar si tiene estado reportado para este mes
+      const rep = seguimientoMensual?.find(s => s.mes === p.mes);
+
+      if (rep) {
+        if (rep.estado === 'F') suma += 1;
+        else if (rep.estado === 'I') suma += 0.5;
       }
+      // Si no hay reporte o es 'P' o '-', suma 0.
     });
 
-    return usados ? Math.round((suma / usados) * 100) : 0;
+    return Math.round((suma / totalPlanificados) * 100);
   };
+
 
   const formatoDinero = (n: number) => `$ ${n.toLocaleString("es-SV", { minimumFractionDigits: 2 })}`;
 
@@ -543,7 +554,8 @@ export const SeguimientoPage: React.FC = () => {
               {/* Lista de Actividades */}
               <div id="lista-actividades">
                 {seguimiento.actividades.map((act, idx) => {
-                  const progreso = calcularProgreso(act.seguimiento_mensual);
+                  const progreso = calcularProgreso(act.seguimiento_mensual, act.plan_mensual);
+
                   const disponible = act.presupuesto_asignado - act.total_gastado;
                   const indicador = act.indicadores && act.indicadores.length > 0 ? act.indicadores[0] : null;
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { NavBar, Card, LoadingSpinner, ErrorMessage, Select, Input, Label, Button, Modal, FormGroup } from '../components/common';
+import { NavBar, Card, LoadingSpinner, ErrorMessage, Select, Input, Label, Button, Modal, FormGroup, ConfirmDialog } from '../components/common';
 import { Status } from '../components/poa';
 import { MonthlyGanttView } from '../components/Seguimiento';
 import apiClient from '../services/apiClient';
@@ -59,6 +59,14 @@ export const SeguimientoPage: React.FC = () => {
     cargo_responsable: '',
     unidad_responsable: ''
   });
+
+  // Confirm Dialog State
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    action: () => void;
+  }>({ title: '', message: '', action: () => { } });
 
   // Referencias para scroll
   const [targetActivityId, setTargetActivityId] = useState<number | null>(null);
@@ -154,9 +162,16 @@ export const SeguimientoPage: React.FC = () => {
     }
   };
 
-  const handleDeleteActivity = async (act: Actividad) => {
-    if (!window.confirm(`¿Estás seguro de eliminar la actividad "${act.nombre}"? Esto borrará también sus gastos y evidencias.`)) return;
+  const handleDeleteActivityClick = (act: Actividad) => {
+    setConfirmConfig({
+      title: 'Eliminar Actividad',
+      message: `¿Estás seguro de eliminar la actividad "${act.nombre}"? Esto borrará también sus gastos y evidencias.`,
+      action: () => executeDeleteActivity(act)
+    });
+    setConfirmOpen(true);
+  };
 
+  const executeDeleteActivity = async (act: Actividad) => {
     try {
       setSaving(true);
       await apiClient.delete(`/proyectos/actividades/${act.id_actividad}`);
@@ -165,25 +180,35 @@ export const SeguimientoPage: React.FC = () => {
       setError(err.response?.data?.error || 'Error al eliminar actividad');
     } finally {
       setSaving(false);
+      setConfirmOpen(false);
     }
   };
 
-  const deleteProyecto = async () => {
+  const handleDeleteProyectoClick = () => {
     if (!seguimiento) return;
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este proyecto y TODAS sus actividades? Esta acción no se puede deshacer.')) return;
+    setConfirmConfig({
+      title: 'Eliminar Proyecto',
+      message: '¿Estás seguro de que quieres eliminar este proyecto y TODAS sus actividades? Esta acción no se puede deshacer.',
+      action: () => executeDeleteProyecto()
+    });
+    setConfirmOpen(true);
+  };
 
+  const executeDeleteProyecto = async () => {
+    if (!seguimiento) return;
     try {
       setLoading(true);
       await apiClient.delete(`/proyectos/${seguimiento.id_proyecto}`);
-      alert('Proyecto eliminado correctamente');
+      // alert('Proyecto eliminado correctamente'); // Removed to use UI feedback if needed, or just redirect
       setSeguimiento(null);
       setProyectoSel(0);
       loadProyectos(); // Recargar lista
-      navigate('/dashboard'); // Opcional: ir a dashboard o quedarse
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al eliminar proyecto');
     } finally {
       setLoading(false);
+      setConfirmOpen(false);
     }
   };
 
@@ -513,7 +538,7 @@ export const SeguimientoPage: React.FC = () => {
                       </button>
 
                       <button
-                        onClick={deleteProyecto}
+                        onClick={handleDeleteProyectoClick}
                         style={{ background: 'none', border: 'none', color: '#e74c3c', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
                       >
                         🗑️ Eliminar Proyecto
@@ -708,7 +733,7 @@ export const SeguimientoPage: React.FC = () => {
                             <Button
                               variant="danger"
                               size="sm"
-                              onClick={() => handleDeleteActivity(act)}
+                              onClick={() => handleDeleteActivityClick(act)}
                               title="Eliminar actividad permanentemente"
                             >
                               🗑️ Eliminar
@@ -780,6 +805,17 @@ export const SeguimientoPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={confirmConfig.action}
+        onCancel={() => setConfirmOpen(false)}
+        confirmVariant="danger"
+        confirmText="Sí, eliminar"
+        cancelText="Cancelar"
+      />
     </div >
   );
 };

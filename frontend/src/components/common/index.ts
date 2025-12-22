@@ -18,3 +18,4 @@ export { Table } from './Table';
 export { Checkbox } from './Checkbox';
 export { Modal } from './Modal';
 export { LoginCard, LoginHeader, LoginForm, LoginFooter } from './LoginComponents';
+export { SuccessMessage } from './SuccessMessage';

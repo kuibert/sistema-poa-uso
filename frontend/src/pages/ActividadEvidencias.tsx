@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
-import { NavBar, Card, Divider, Grid, Section, Label, Button, LoadingSpinner, ErrorMessage, Input, Select, Table } from '../components/common';
+import { NavBar, Card, Divider, Grid, Section, Label, Button, LoadingSpinner, ErrorMessage, Input, Select, Table, ConfirmDialog } from '../components/common';
 import apiClient from '../services/apiClient';
 
 type Evidencia = {
@@ -40,7 +40,12 @@ export default function ActividadEvidencias() {
   // Estados de UI
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Estado para confirmación de eliminación
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteTargetIndex, setDeleteTargetIndex] = useState<number | null>(null);
 
   // Cargar evidencias y datos al montar el componente
   useEffect(() => {
@@ -105,6 +110,7 @@ export default function ActividadEvidencias() {
     try {
       setSaving(true);
       setError(null);
+      setSuccess(null);
 
       const response = await apiClient.post(`/actividades/${id}/evidencias`, {
         tipo_evidencia: nuevaEvidencia.tipo,
@@ -126,6 +132,8 @@ export default function ActividadEvidencias() {
 
       // Limpiar formulario
       limpiarCampos();
+      setSuccess('Evidencia agregada correctamente');
+      setTimeout(() => setSuccess(null), 3000);
 
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al guardar la evidencia');
@@ -135,22 +143,32 @@ export default function ActividadEvidencias() {
     }
   };
 
-  const eliminarEvidencia = async (index: number) => {
+  const eliminarEvidencia = (index: number) => {
     const evidencia = evidencias[index];
+    if (!evidencia.id_evidencia) return;
 
-    if (!evidencia.id_evidencia) {
-      return;
-    }
+    setDeleteTargetIndex(index);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmarEliminacion = async () => {
+    if (deleteTargetIndex === null) return;
+    const index = deleteTargetIndex;
+    const evidencia = evidencias[index];
 
     try {
       setSaving(true);
       await apiClient.delete(`/evidencias/${evidencia.id_evidencia}`);
       setEvidencias(evidencias.filter((_, i) => i !== index));
+      setSuccess('Evidencia eliminada correctamente');
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al eliminar la evidencia');
       console.error('Error eliminando evidencia:', err);
     } finally {
       setSaving(false);
+      setShowDeleteDialog(false);
+      setDeleteTargetIndex(null);
     }
   };
 
@@ -218,6 +236,22 @@ export default function ActividadEvidencias() {
 
           {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
+          {success && (
+            <div style={{
+              background: 'rgba(39, 174, 96, 0.15)',
+              border: '1px solid #27ae60',
+              color: '#27ae60',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <span>✅</span> {success}
+            </div>
+          )}
+
           {loading ? (
             <LoadingSpinner size="lg" fullScreen={false} />
           ) : (
@@ -284,7 +318,7 @@ export default function ActividadEvidencias() {
                       </Select>
                     </div>
                     <div>
-                      <Label>Archivo (simulación)</Label>
+                      <Label>Archivo</Label>
                       <Input
                         type="file"
                         onChange={(e) => {
@@ -349,7 +383,7 @@ export default function ActividadEvidencias() {
                           <Table.Cell>{ev.descripcion}</Table.Cell>
                           <Table.Cell center>
                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                              <Button variant="main" size="sm" type="button" onClick={() => alert("Simulacion descarga " + ev.id_evidencia)}>⬇</Button>
+                              <Button variant="main" size="sm" type="button" onClick={() => alert("Función de descarga no implementada aún")}>⬇</Button>
                               <Button variant="alt" size="sm" type="button" onClick={() => eliminarEvidencia(i)}>✖</Button>
                             </div>
                           </Table.Cell>
@@ -366,12 +400,22 @@ export default function ActividadEvidencias() {
                 <div style={{ fontSize: '0.78rem', color: 'var(--texto-sec)' }}>
                   Esta pantalla sirve como memoria de respaldo documental del proyecto en procesos de evaluación y acreditación.
                 </div>
-                <Button variant="alt" type="button" onClick={() => alert("Simulacion exportar")}>
-                  ⬇ Exportar listado (simulado)
+                <Button variant="alt" type="button" onClick={() => alert("Función de exportar no implementada aún")}>
+                  ⬇ Exportar listado
                 </Button>
               </div>
             </>
           )}
+          <ConfirmDialog
+            isOpen={showDeleteDialog}
+            title="Eliminar Evidencia"
+            message="¿Está seguro de que desea eliminar esta evidencia? Esta acción no se puede deshacer."
+            confirmText="Sí, eliminar"
+            cancelText="Cancelar"
+            confirmVariant="danger"
+            onConfirm={confirmarEliminacion}
+            onCancel={() => setShowDeleteDialog(false)}
+          />
         </Card>
       </main>
     </div >

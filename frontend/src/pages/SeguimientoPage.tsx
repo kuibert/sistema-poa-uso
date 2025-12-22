@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { NavBar, Card, LoadingSpinner, ErrorMessage, Select, Input, Label, Button, Modal, FormGroup } from '../components/common';
+import { NavBar, Card, LoadingSpinner, ErrorMessage, Select, Input, Label, Button, Modal, FormGroup, ConfirmDialog } from '../components/common';
 import { Status } from '../components/poa';
 import { MonthlyGanttView } from '../components/Seguimiento';
 import apiClient from '../services/apiClient';
@@ -66,6 +66,14 @@ export const SeguimientoPage: React.FC = () => {
     cargo_responsable: '',
     unidad_responsable: ''
   });
+
+  // Confirm Dialog State
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    action: () => void;
+  }>({ title: '', message: '', action: () => { } });
 
   // Referencias para scroll
   const [targetActivityId, setTargetActivityId] = useState<number | null>(null);
@@ -161,9 +169,16 @@ export const SeguimientoPage: React.FC = () => {
     }
   };
 
-  const handleDeleteActivity = async (act: Actividad) => {
-    if (!window.confirm(`¿Estás seguro de eliminar la actividad "${act.nombre}"? Esto borrará también sus gastos y evidencias.`)) return;
+  const handleDeleteActivityClick = (act: Actividad) => {
+    setConfirmConfig({
+      title: 'Eliminar Actividad',
+      message: `¿Estás seguro de eliminar la actividad "${act.nombre}"? Esto borrará también sus gastos y evidencias.`,
+      action: () => executeDeleteActivity(act)
+    });
+    setConfirmOpen(true);
+  };
 
+  const executeDeleteActivity = async (act: Actividad) => {
     try {
       setSaving(true);
       await apiClient.delete(`/proyectos/actividades/${act.id_actividad}`);
@@ -172,25 +187,35 @@ export const SeguimientoPage: React.FC = () => {
       setError(err.response?.data?.error || 'Error al eliminar actividad');
     } finally {
       setSaving(false);
+      setConfirmOpen(false);
     }
   };
 
-  const deleteProyecto = async () => {
+  const handleDeleteProyectoClick = () => {
     if (!seguimiento) return;
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este proyecto y TODAS sus actividades? Esta acción no se puede deshacer.')) return;
+    setConfirmConfig({
+      title: 'Eliminar Proyecto',
+      message: '¿Estás seguro de que quieres eliminar este proyecto y TODAS sus actividades? Esta acción no se puede deshacer.',
+      action: () => executeDeleteProyecto()
+    });
+    setConfirmOpen(true);
+  };
 
+  const executeDeleteProyecto = async () => {
+    if (!seguimiento) return;
     try {
       setLoading(true);
       await apiClient.delete(`/proyectos/${seguimiento.id_proyecto}`);
-      alert('Proyecto eliminado correctamente');
+      // alert('Proyecto eliminado correctamente'); // Removed to use UI feedback if needed, or just redirect
       setSeguimiento(null);
       setProyectoSel(0);
       loadProyectos(); // Recargar lista
-      navigate('/dashboard'); // Opcional: ir a dashboard o quedarse
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al eliminar proyecto');
     } finally {
       setLoading(false);
+      setConfirmOpen(false);
     }
   };
 
@@ -356,22 +381,33 @@ export const SeguimientoPage: React.FC = () => {
   };
 
   // Lógica de progreso (Paso 3 - HTML Logic)
-  const calcularProgreso = (seguimientoMensual: { mes: number; estado: Status }[] | null) => {
-    if (!seguimientoMensual) return 0;
+  const calcularProgreso = (
+    seguimientoMensual: { mes: number; estado: Status }[] | null,
+    planMensual: { mes: number; planificado: boolean }[] | null
+  ) => {
+    // 1. Contar total planificados
+    const mesesPlanificados = planMensual?.filter(p => p.planificado) || [];
+    const totalPlanificados = mesesPlanificados.length;
 
-    let usados = 0;
+    if (totalPlanificados === 0) return 0;
+
     let suma = 0;
 
-    seguimientoMensual.forEach(s => {
-      if (s.estado === 'P' || s.estado === 'I' || s.estado === 'F') {
-        usados++;
-        if (s.estado === 'I') suma += 0.5;
-        if (s.estado === 'F') suma += 1;
+    // 2. Iterar sobre lo PLANIFICADO (Base 100%)
+    mesesPlanificados.forEach(p => {
+      // Buscar si tiene estado reportado para este mes
+      const rep = seguimientoMensual?.find(s => s.mes === p.mes);
+
+      if (rep) {
+        if (rep.estado === 'F') suma += 1;
+        else if (rep.estado === 'I') suma += 0.5;
       }
+      // Si no hay reporte o es 'P' o '-', suma 0.
     });
 
-    return usados ? Math.round((suma / usados) * 100) : 0;
+    return Math.round((suma / totalPlanificados) * 100);
   };
+
 
   const formatoDinero = (n: number) => `$ ${n.toLocaleString("es-SV", { minimumFractionDigits: 2 })}`;
 
@@ -512,7 +548,7 @@ export const SeguimientoPage: React.FC = () => {
 
                       {isAdmin && (
                         <button
-                          onClick={deleteProyecto}
+                          onClick={handleDeleteProyectoClick}
                           style={{ background: 'none', border: 'none', color: '#e74c3c', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
                         >
                           🗑️ Eliminar Proyecto
@@ -554,7 +590,8 @@ export const SeguimientoPage: React.FC = () => {
               {/* Lista de Actividades */}
               <div id="lista-actividades">
                 {seguimiento.actividades.map((act, idx) => {
-                  const progreso = calcularProgreso(act.seguimiento_mensual);
+                  const progreso = calcularProgreso(act.seguimiento_mensual, act.plan_mensual);
+
                   const disponible = act.presupuesto_asignado - act.total_gastado;
                   const indicador = act.indicadores && act.indicadores.length > 0 ? act.indicadores[0] : null;
 
@@ -711,7 +748,7 @@ export const SeguimientoPage: React.FC = () => {
                               <Button
                                 variant="danger"
                                 size="sm"
-                                onClick={() => handleDeleteActivity(act)}
+                                onClick={() => handleDeleteActivityClick(act)}
                                 title="Eliminar actividad permanentemente"
                               >
                                 🗑️ Eliminar
@@ -783,7 +820,18 @@ export const SeguimientoPage: React.FC = () => {
             </Button>
           </div>
         </div>
-      </Modal>
+      </Modal >
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={confirmConfig.action}
+        onCancel={() => setConfirmOpen(false)}
+        confirmVariant="danger"
+        confirmText="Sí, eliminar"
+        cancelText="Cancelar"
+      />
     </div >
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
-import { NavBar, Card, Divider, Section, Label, Button, LoadingSpinner, ErrorMessage, Input } from '../components/common';
+import { NavBar, Card, Divider, Section, Label, Button, LoadingSpinner, ErrorMessage, Input, ConfirmDialog } from '../components/common';
 import { Table } from '../components/common/Table';
 import apiClient from '../services/apiClient';
 
@@ -36,7 +36,12 @@ export default function ActividadGastos() {
   // Estados de UI
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Estado para confirmación de eliminación
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteTargetIndex, setDeleteTargetIndex] = useState<number | null>(null);
 
   // Cargar gastos al montar el componente
   useEffect(() => {
@@ -90,28 +95,48 @@ export default function ActividadGastos() {
 
   // Agregar fila vacía para nuevo gasto
   const agregarFila = () => {
+    if (montoDisponible <= 0) {
+      setError('No hay presupuesto disponible para agregar más gastos.');
+      return;
+    }
     setGastos([...gastos, { fecha: "", descripcion: "", monto: 0 }]);
+    setSuccess(null); // Limpiar mensajes previos
   };
 
-  // Eliminar gasto
-  const eliminarGasto = async (index: number) => {
+  // Eliminar gasto (Prepara la eliminación)
+  const eliminarGasto = (index: number) => {
     const gasto = gastos[index];
 
-    // Si el gasto tiene ID, eliminarlo del backend
+    // Si tiene ID, pedir confirmación
     if (gasto.id_gasto) {
-      try {
-        setSaving(true);
-        await apiClient.delete(`/gastos/${gasto.id_gasto}`);
-        setGastos(gastos.filter((_, i) => i !== index));
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'Error al eliminar el gasto');
-        console.error('Error eliminando gasto:', err);
-      } finally {
-        setSaving(false);
-      }
+      setDeleteTargetIndex(index);
+      setShowDeleteDialog(true);
     } else {
-      // Si no tiene ID, solo quitarlo del array local
+      // Si no tiene ID, borrar directo del estado local
       setGastos(gastos.filter((_, i) => i !== index));
+    }
+  };
+
+  // Confirmar eliminación (Ejecuta la acción real)
+  const confirmarEliminacion = async () => {
+    if (deleteTargetIndex === null) return;
+
+    const index = deleteTargetIndex;
+    const gasto = gastos[index];
+
+    try {
+      setSaving(true);
+      await apiClient.delete(`/gastos/${gasto.id_gasto}`);
+      setGastos(gastos.filter((_, i) => i !== index));
+      setSuccess('Gasto eliminado correctamente');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al eliminar el gasto');
+      console.error('Error eliminando gasto:', err);
+    } finally {
+      setSaving(false);
+      setShowDeleteDialog(false);
+      setDeleteTargetIndex(null);
     }
   };
 
@@ -132,6 +157,20 @@ export default function ActividadGastos() {
       return;
     }
 
+    // Validar presupuesto (solo si es nuevo gasto o se edita monto - aqui asumimos nuevo porque button save es solo para nuevos)
+    // El montoDisponible ya resta los gastos actuales.
+    // Al ser un gasto nuevo en el array (pero no en BD), su monto YA ESTÁ restado en montoDisponible (por el useEffect linea 50).
+    // Espera... el useEffect recalcula 'montoGastado' sumando TODO el array 'gastos'.
+    // Si yo pongo 100 en el input, 'gastos' se actualiza, el useEffect corre, y 'montoDisponible' baja.
+    // Si 'montoDisponible' se vuelve negativo, significa que me pasé.
+
+    // Verificación:
+    // Si montoDisponible < 0, significa que con este gasto nos estamos pasando.
+    if (montoDisponible < 0) {
+      setError(`El gasto excede el presupuesto disponible. Exceso: $${Math.abs(montoDisponible).toFixed(2)}`);
+      return;
+    }
+
     // Si ya tiene ID, no hacer nada (ya está guardado)
     if (gasto.id_gasto) {
       return;
@@ -140,6 +179,7 @@ export default function ActividadGastos() {
     try {
       setSaving(true);
       setError(null);
+      setSuccess(null);
 
       const response = await apiClient.post(`/actividades/${id}/gastos`, {
         fecha_gasto: gasto.fecha,
@@ -154,6 +194,10 @@ export default function ActividadGastos() {
         id_gasto: response.data.id_gasto
       };
       setGastos(copia);
+      setSuccess('Gasto guardado correctamente');
+
+      // Auto-ocultar mensaje éxito
+      setTimeout(() => setSuccess(null), 3000);
 
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al guardar el gasto');
@@ -224,6 +268,22 @@ export default function ActividadGastos() {
           <Divider variant="gradient" />
 
           {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
+
+          {success && (
+            <div style={{
+              background: 'rgba(39, 174, 96, 0.15)',
+              border: '1px solid #27ae60',
+              color: '#27ae60',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <span>✅</span> {success}
+            </div>
+          )}
 
           {loading ? (
             <LoadingSpinner size="lg" fullScreen={false} />
@@ -378,15 +438,24 @@ export default function ActividadGastos() {
                   Los montos se reflejan en el disponible de la actividad y en el tablero general de proyectos (en el sistema final).
                 </div>
                 <div>
-                  <Button variant="main" type="button" onClick={() => alert("Simulación: Guardado global")} disabled={saving}>
-                    💾 Guardar (simulado)
-                  </Button>
+                  {/* Botón eliminado a petición del usuario */}
                 </div>
               </div>
             </>
           )}
+
+          <ConfirmDialog
+            isOpen={showDeleteDialog}
+            title="Eliminar Gasto"
+            message="¿Está seguro de que desea eliminar este gasto? Esta acción liberará el presupuesto asignado pero no se puede deshacer."
+            confirmText="Sí, eliminar"
+            cancelText="Cancelar"
+            confirmVariant="danger"
+            onConfirm={confirmarEliminacion}
+            onCancel={() => setShowDeleteDialog(false)}
+          />
         </Card>
       </main>
-    </div>
+    </div >
   );
 }

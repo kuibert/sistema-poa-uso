@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { NavBar, Card, Divider, Grid, Section, Label, Button, ErrorMessage, Input, TextArea, Select, Table, Checkbox } from '../components/common';
+import { NavBar, Card, Divider, Grid, Section, Label, Button, ErrorMessage, SuccessMessage, Input, TextArea, Select, Table, Checkbox } from '../components/common';
+
 import apiClient from '../services/apiClient';
 
 // Tipos auxiliares
@@ -36,6 +37,9 @@ export const ProyectoPOA: React.FC = () => {
   // Estados de UI
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+
 
   // Información del proyecto (valores por defecto)
   const [projectData, setProjectData] = useState({
@@ -504,9 +508,14 @@ export const ProyectoPOA: React.FC = () => {
         costos: costosFinales
       });
 
-      navigate('/dashboard');
+      setSuccessMsg(id ? 'Datos actualizados' : 'Agregado con éxito el proyecto');
+
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
 
     } catch (err: any) {
+
       setError(err.response?.data?.error || 'Error al guardar el proyecto');
       console.error(err);
     } finally {
@@ -667,8 +676,10 @@ export const ProyectoPOA: React.FC = () => {
           </div>
 
           {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
+          {successMsg && <SuccessMessage message={successMsg} onDismiss={() => setSuccessMsg(null)} />}
 
           <Divider variant="gradient" />
+
 
           <form>
             {/* ESTRATÉGICO */}

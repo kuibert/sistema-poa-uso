@@ -2,8 +2,9 @@ import { query } from '../db';
 
 export const proyectosService = {
   // Dashboard (Page0)
-  async getDashboard(anio: number) {
+  async getDashboard(anio: number, mes: number) {
     // 1. Proyectos con presupuesto y gasto
+    // Nota: actividadesMes ahora cuenta SI existe plan para ese mes
     const proyectosResult = await query(
       `
     SELECT 
@@ -11,22 +12,35 @@ export const proyectosService = {
       p.nombre,
       p.anio,
       u.nombre_completo AS responsable,
-      COUNT(DISTINCT a.id) AS "actividadesMes",
+      COUNT(DISTINCT CASE WHEN amp.planificado = true THEN a.id END) AS "actividadesMes",
       COALESCE(SUM(g.monto), 0) AS "gastado",
       COALESCE(p.presupuesto_total, 0) AS "presupuestoAprobado"
     FROM proyecto p
     LEFT JOIN usuario u ON p.id_responsable = u.id
     LEFT JOIN actividad a ON a.id_proyecto = p.id
+    LEFT JOIN actividad_mes_plan amp ON amp.id_actividad = a.id AND amp.mes = $2
     LEFT JOIN gasto_actividad g ON g.id_actividad = a.id
     WHERE p.anio = $1
+    AND (
+      EXTRACT(MONTH FROM p.created_at) >= $2
+      OR
+      EXISTS (
+        SELECT 1 
+        FROM actividad a2
+        JOIN actividad_mes_plan amp2 ON amp2.id_actividad = a2.id
+        WHERE a2.id_proyecto = p.id 
+          AND amp2.mes >= $2 
+          AND amp2.planificado = true
+      )
+    )
     GROUP BY p.id, u.nombre_completo
     ORDER BY p.created_at DESC
     `,
-      [anio]
+      [anio, mes]
     );
 
-    // 2. Actividades del año con seguimiento + KPI
-    const actividadesResult = await query(
+    // 2. Actividades del año para la LISTA (Filtrado por MES seleccionado)
+    const actividadesMesResult = await query(
       `
     SELECT 
       a.id,
@@ -35,9 +49,7 @@ export const proyectosService = {
       p.nombre AS "proyectoNombre",
       u.nombre_completo AS responsable,
       COALESCE(ams.estado, 'P') AS estado,
-      -- KPI REAL de la base
       ia.porcentaje_cumplimiento AS "logroKpiActividad",
-      -- Avance operativo según estado
       CASE ams.estado
         WHEN 'P' THEN 0
         WHEN 'I' THEN 50
@@ -47,39 +59,77 @@ export const proyectosService = {
     FROM actividad a
     LEFT JOIN proyecto p ON a.id_proyecto = p.id
     LEFT JOIN usuario u ON a.id_responsable = u.id
-    LEFT JOIN actividad_mes_seguimiento ams ON ams.id_actividad = a.id
+    LEFT JOIN actividad_mes_seguimiento ams ON ams.id_actividad = a.id AND ams.mes = $2
+    -- Solo mostramos actividades PLANIFICADAS para este mes
+    JOIN actividad_mes_plan amp ON amp.id_actividad = a.id AND amp.mes = $2 AND amp.planificado = true
     LEFT JOIN indicador_actividad ia ON ia.id_actividad = a.id
     WHERE EXTRACT(YEAR FROM a.created_at) = $1
     `,
+      [anio, mes]
+    );
+
+    // 3. Stats ANUALES por proyecto (Para la tabla de proyectos, independiente del mes)
+    // Calcula el promedio de avance y logro de TODAS las actividades del proyecto en el año
+    const statsResult = await query(
+      `
+      WITH ActivityStats AS (
+         SELECT
+            a.id AS id_actividad,
+            COUNT(amp.mes) as total_plan,
+            COALESCE(SUM(
+                CASE
+                  WHEN ams.estado = 'F' THEN 1.0
+                  WHEN ams.estado = 'I' THEN 0.5
+                  ELSE 0.0
+                END
+            ), 0) as puntos_ganados
+         FROM actividad a
+         LEFT JOIN actividad_mes_plan amp ON amp.id_actividad = a.id AND amp.planificado = true
+         LEFT JOIN actividad_mes_seguimiento ams ON ams.id_actividad = a.id AND ams.mes = amp.mes
+         GROUP BY a.id
+      )
+      SELECT 
+        p.id as "proyectoId",
+        AVG(COALESCE(ia.porcentaje_cumplimiento, 0))::numeric as "logroKpi",
+        AVG(
+          CASE
+            WHEN s.total_plan > 0 THEN (s.puntos_ganados / s.total_plan::numeric) * 100
+            ELSE 0
+          END
+        )::numeric as "avanceOperativo"
+      FROM proyecto p
+      JOIN actividad a ON a.id_proyecto = p.id
+      LEFT JOIN indicador_actividad ia ON ia.id_actividad = a.id
+      LEFT JOIN ActivityStats s ON s.id_actividad = a.id
+      WHERE p.anio = $1
+      GROUP BY p.id
+      `,
       [anio]
     );
 
-    // 3. Cálculo por proyecto
+
+    // Map stats to dictionary for easy access
+    const statsMap: Record<number, { avance: number, logro: number }> = {};
+    statsResult.rows.forEach((s: any) => {
+      statsMap[s.proyectoId] = {
+        avance: Math.round(Number(s.avanceOperativo)),
+        logro: Math.round(Number(s.logroKpi))
+      };
+    });
+
+    // 4. Cálculo por proyecto (Mezclar datos)
     const proyectos = proyectosResult.rows.map((p: any) => {
-      const actividades = actividadesResult.rows.filter((a: any) => a.proyectoId === p.id);
-
-      const avanceOperativo = actividades.length
-        ? Math.round(
-          actividades.reduce((sum: number, a: any) => sum + Number(a.avanceActividad), 0) /
-          actividades.length
-        )
-        : 0;
-
-      const logroKpi = actividades.length
-        ? Math.round(
-          actividades.reduce(
-            (sum: number, a: any) => sum + (Number(a.logroKpiActividad) || 0),
-            0
-          ) / actividades.length
-        )
-        : 0;
-
-      return { ...p, avanceOperativo, logroKpi };
+      const stats = statsMap[p.id] || { avance: 0, logro: 0 };
+      return {
+        ...p,
+        avanceOperativo: stats.avance,
+        logroKpi: stats.logro
+      };
     });
 
     return {
       proyectos,
-      actividadesMes: actividadesResult.rows
+      actividadesMes: actividadesMesResult.rows
     };
   },
 
@@ -290,11 +340,18 @@ export const proyectosService = {
   async updatePlanMensual(actividadId: number, meses: any[]) {
     await query('DELETE FROM actividad_mes_plan WHERE id_actividad = $1', [actividadId]);
 
-    for (const mes of meses) {
-      if (mes.planificado) {
+    for (const item of meses) {
+      let mesNum: number | null = null;
+      if (typeof item === 'number') {
+        mesNum = item;
+      } else if (item && item.planificado) {
+        mesNum = item.mes;
+      }
+
+      if (mesNum) {
         await query(
           'INSERT INTO actividad_mes_plan (id_actividad, mes, planificado) VALUES ($1, $2, true)',
-          [actividadId, mes.mes]
+          [actividadId, mesNum]
         );
       }
     }
@@ -304,12 +361,22 @@ export const proyectosService = {
 
   async crearIndicador(actividadId: number, data: any) {
     const result = await query(
-      `INSERT INTO indicador_actividad (id_actividad, nombre, unidad_medida, meta, valor_logrado, porcentaje_cumplimiento, beneficiarios_directos, beneficiarios_indirectos)
-       VALUES ($1, $2, $3, $4, 0, 0, $5, $6) RETURNING *`,
-      [actividadId, data.nombre, data.unidad_medida, data.meta, data.beneficiarios_directos, data.beneficiarios_indirectos]
+      `INSERT INTO indicador_actividad (
+        id_actividad, categoria, descripcion_especifica, meta_valor, unidad_medida, beneficiarios, valor_logrado, porcentaje_cumplimiento
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, 0, 0) RETURNING *`,
+      [
+        actividadId,
+        data.categoria || 'Generico',
+        data.descripcion_especifica,
+        data.meta_valor,
+        data.unidad_medida,
+        data.beneficiarios
+      ]
     );
     return result.rows[0];
   },
+
 
   // Seguimiento (Page2)
   async getSeguimientoProyecto(proyectoId: number) {
@@ -490,15 +557,15 @@ export const proyectosService = {
         );
       } else {
         // Crear si no existe (raro en update, pero posible)
+        // Crear si no existe (raro en update, pero posible)
         await this.crearIndicador(id, {
-          nombre: data.indicador.descripcion,
+          categoria: data.indicador.categoria,
+          descripcion_especifica: data.indicador.descripcion,
           unidad_medida: data.indicador.unidad,
-          meta: data.indicador.meta,
-          beneficiarios_directos: 0, // Ajustar según modelo
-          beneficiarios_indirectos: 0 // Ajustar según modelo
-          // Nota: el metodo crearIndicador usa otros nombres de parametros, cuidado. 
-          // Mejor reimplementar insert directo aquí para evitar confusión de firmas
+          meta_valor: data.indicador.meta,
+          beneficiarios: data.indicador.beneficiarios
         });
+
         await query(
           `INSERT INTO indicador_actividad (
                   id_actividad, categoria, descripcion_especifica, meta_valor, unidad_medida, beneficiarios, valor_logrado, porcentaje_cumplimiento

@@ -22,7 +22,8 @@ router.get('/responsables', authMiddleware, async (req, res, next) => {
 router.get('/dashboard', authMiddleware, async (req, res, next) => {
   try {
     const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
-    const dashboard = await proyectosService.getDashboard(anio);
+    const mes = parseInt(req.query.mes as string) || (new Date().getMonth() + 1);
+    const dashboard = await proyectosService.getDashboard(anio, mes);
     res.json(dashboard);
   } catch (error) {
     next(error);

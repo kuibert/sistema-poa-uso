@@ -5,11 +5,19 @@ import proyectosRoutes from './routes/proyectos.routes';
 import gastosRoutes from './routes/gastos.routes';
 import evidenciasRoutes from './routes/evidencias.routes';
 
+import cookieParser from 'cookie-parser';
+
+// ... imports ...
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000', // Frontend URL
+  credentials: true // Allow cookies
+}));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -11,6 +11,8 @@ export const NavBar: React.FC<NavBarProps> = ({ userName }) => {
     const location = useLocation();
     const [displayName, setDisplayName] = React.useState<string>(userName || "Usuario");
 
+    const [userRole, setUserRole] = React.useState<string>('VIEWER');
+
     React.useEffect(() => {
         if (userName) {
             setDisplayName(userName);
@@ -20,6 +22,7 @@ export const NavBar: React.FC<NavBarProps> = ({ userName }) => {
                 try {
                     const parsed = JSON.parse(storedUser);
                     setDisplayName(parsed.nombre || "Usuario");
+                    setUserRole(parsed.rol || "VIEWER");
                 } catch (e) {
                     console.error("Error parsing user", e);
                 }
@@ -37,6 +40,7 @@ export const NavBar: React.FC<NavBarProps> = ({ userName }) => {
         { path: '/seguimiento', label: 'Seguimiento' },
         { path: '/gastos', label: 'Gastos' },
         { path: '/evidencias', label: 'Evidencias' },
+        ...(userRole === 'ADMIN' ? [{ path: '/admin/usuarios', label: 'Usuarios' }] : [])
     ];
 
     const isActive = (path: string) => location.pathname === path;

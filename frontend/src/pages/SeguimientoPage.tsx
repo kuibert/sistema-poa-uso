@@ -41,6 +41,13 @@ export const SeguimientoPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Role Logic
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : {};
+  const userRol = user.rol || 'VIEWER';
+  const isAdmin = userRol === 'ADMIN';
+  const canEdit = userRol === 'ADMIN' || userRol === 'EDITOR'; // Editor or Admin
+
   // Estados
   const [proyectos, setProyectos] = useState<any[]>([]);
   const [proyectoSel, setProyectoSel] = useState<number>(0);
@@ -494,19 +501,23 @@ export const SeguimientoPage: React.FC = () => {
                   />
                   {!id && (
                     <div style={{ marginTop: '0.5rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={() => navigate(`/proyectos/${seguimiento.id_proyecto}`)}
-                        style={{ background: 'none', border: 'none', color: 'var(--verde-hoja)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-                      >
-                        ✏️ Editar Proyecto
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => seguimiento && navigate(`/proyectos/${seguimiento.id_proyecto}`)}
+                          style={{ background: 'none', border: 'none', color: 'var(--verde-hoja)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                          ✏️ Editar Proyecto
+                        </button>
+                      )}
 
-                      <button
-                        onClick={deleteProyecto}
-                        style={{ background: 'none', border: 'none', color: '#e74c3c', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-                      >
-                        🗑️ Eliminar Proyecto
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={deleteProyecto}
+                          style={{ background: 'none', border: 'none', color: '#e74c3c', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                          🗑️ Eliminar Proyecto
+                        </button>
+                      )}
 
                       <button
                         onClick={() => { setSeguimiento(null); setProyectoSel(0); }}
@@ -578,11 +589,11 @@ export const SeguimientoPage: React.FC = () => {
                       <div style={{ marginLeft: '1.2rem' }}>
                         {/* Nombre y Responsable */}
                         <div style={{ marginBottom: '0.6rem' }}>
-                          <Input type="text" value={act.nombre} readOnly style={{ background: '#081529', fontWeight: 600 }} />
+                          <Input type="text" value={act.nombre || ''} readOnly style={{ background: '#081529', fontWeight: 600 }} />
                         </div>
                         <div style={{ marginBottom: '0.6rem' }}>
                           <Label>Responsable de la actividad</Label>
-                          <Input type="text" value={act.responsable_nombre} readOnly placeholder="Nombre del responsable" />
+                          <Input type="text" value={act.responsable_nombre || ''} readOnly placeholder="Nombre del responsable" />
                         </div>
 
                         {/* Meses */}
@@ -591,7 +602,7 @@ export const SeguimientoPage: React.FC = () => {
                             seguimientoMensual={mergedSeguimiento}
                             onStatusChange={(mes, status) => actualizarEstadoMes(act.id_actividad, mes + 1, status)}
                             onStatusClick={() => { }} // Legacy
-                            disabled={saving}
+                            disabled={saving || !canEdit}
                           />
                         </div>
 
@@ -635,15 +646,15 @@ export const SeguimientoPage: React.FC = () => {
                                 </div>
                                 <div>
                                   <Label>Meta</Label>
-                                  <Input type="text" value={indicador.meta} readOnly />
+                                  <Input type="text" value={indicador.meta || ''} readOnly />
                                 </div>
                                 <div>
                                   <Label>Unidad</Label>
-                                  <Input type="text" value={indicador.unidad_medida} readOnly />
+                                  <Input type="text" value={indicador.unidad_medida || ''} readOnly />
                                 </div>
                                 <div style={{ gridColumn: '1/-1' }}>
                                   <Label>Descripción específica del indicador</Label>
-                                  <Input type="text" value={indicador.nombre} readOnly />
+                                  <Input type="text" value={indicador.nombre || ''} readOnly />
                                 </div>
                               </div>
 
@@ -655,7 +666,8 @@ export const SeguimientoPage: React.FC = () => {
                                     min="0"
                                     step="0.01"
                                     placeholder="0"
-                                    value={indicador.valor_logrado}
+                                    value={indicador.valor_logrado || 0}
+                                    readOnly={!canEdit}
                                     onChange={(e) => actualizarIndicador(act.id_actividad, indicador.id_indicador, Number(e.target.value))}
                                   />
                                 </div>
@@ -685,22 +697,26 @@ export const SeguimientoPage: React.FC = () => {
                               💰 Gastos
                             </Button>
                             <div style={{ flex: 1 }}></div>
-                            <Button
-                              variant="alt"
-                              size="sm"
-                              onClick={() => handleEditClick(act)}
-                              title="Editar detalles de la actividad"
-                            >
-                              ✏️ Editar
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteActivity(act)}
-                              title="Eliminar actividad permanentemente"
-                            >
-                              🗑️ Eliminar
-                            </Button>
+                            {canEdit && (
+                              <Button
+                                variant="alt"
+                                size="sm"
+                                onClick={() => handleEditClick(act)}
+                                title="Editar detalles de la actividad"
+                              >
+                                ✏️ Editar
+                              </Button>
+                            )}
+                            {isAdmin && (
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDeleteActivity(act)}
+                                title="Eliminar actividad permanentemente"
+                              >
+                                🗑️ Eliminar
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>

@@ -4,7 +4,7 @@ export interface Usuario {
   id_usuario: number;
   nombre: string;
   email: string;
-  rol_sistema: 'ADMIN' | 'USUARIO';
+  rol: 'ADMIN' | 'EDITOR' | 'VIEWER';
   activo: boolean;
 }
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { NavBar, Card, LoadingSpinner, ErrorMessage, Select, Input, Label, Button, Modal, FormGroup, ConfirmDialog } from '../components/common';
+import { Card, LoadingSpinner, ErrorMessage, Select, Input, Label, Button, Modal, FormGroup, ConfirmDialog, PageLayout, Section, Divider, ProgressBar, Grid, Flex, Typography } from '../components/common';
 import { Status } from '../components/poa';
 import { MonthlyGanttView } from '../components/Seguimiento';
 import apiClient from '../services/apiClient';
@@ -412,183 +412,121 @@ export const SeguimientoPage: React.FC = () => {
   const formatoDinero = (n: number) => `$ ${n.toLocaleString("es-SV", { minimumFractionDigits: 2 })}`;
 
   // Estilos
-  const containerStyle: React.CSSProperties = {
-    background: 'var(--fondo-azul)',
-    color: 'var(--texto-claro)',
-    minHeight: '100vh',
-  };
-
-  const mainStyle: React.CSSProperties = {
-    maxWidth: '1150px',
-    margin: '1.5rem auto 0',
-    padding: '0 1rem 1rem',
-  };
-
-  const sectionTitleStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.4rem',
-    fontWeight: 600,
-    marginBottom: '0.2rem',
-    fontSize: '1rem' // Default h2 size aprox
-  };
-
-  const sectionDividerStyle: React.CSSProperties = {
-    height: '1px',
-    background: 'var(--verde-hoja)',
-    opacity: 0.4,
-    margin: '0.4rem 0 0.8rem'
-  };
-
-  // Bar styles
-  const barBgStyle: React.CSSProperties = {
-    width: '130px',
-    height: '6px',
-    borderRadius: '999px',
-    background: 'rgba(255,255,255,0.15)',
-    overflow: 'hidden',
-  };
-
-  const barFillStyle = (pct: number): React.CSSProperties => ({
-    height: '100%',
-    width: `${pct}%`,
-    background: 'var(--verde-hoja)',
-    transition: 'width 0.25s ease-out'
-  });
-
 
   return (
-    <div style={containerStyle}>
-      <NavBar />
+    <PageLayout>
+      <Card padding="1.8rem">
+        {/* Header */}
+        <Flex justify="space-between" align="center" gap="0.8rem" style={{ marginBottom: '0.5rem' }}>
+          <Typography variant="h1">Avance por actividad</Typography>
+          <Button
+            variant="alt"
+            size="sm"
+            onClick={() => window.print()}
+            title="Imprimir tablero"
+          >
+            🖨 Imprimir tablero
+          </Button>
+        </Flex>
+        <Typography variant="body" style={{ marginTop: '0.2rem', marginBottom: '1.5rem' }}>
+          Gantt mensual, responsable y cumplimiento de indicadores de logro.
+        </Typography>
 
-      <main style={mainStyle}>
-        <Card padding="1.8rem">
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem', marginBottom: '1rem' }}>
-            <div>
-              <h1 style={{ fontSize: '1.2rem', margin: 0 }}>Avance por actividad</h1>
-              <p style={{ color: 'var(--texto-sec)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
-                Gantt mensual, responsable y cumplimiento de indicadores de logro.
-              </p>
-            </div>
-            <button
-              className="btn-alt" // Assuming global class or style below
-              onClick={() => window.print()}
-              style={{
-                border: '1px solid var(--verde-hoja)',
-                color: 'var(--verde-hoja)',
-                background: 'transparent',
-                borderRadius: '999px',
-                padding: '0.35rem 0.9rem',
-                cursor: 'pointer',
-                fontSize: '0.78rem'
-              }}
-            >
-              🖨 Imprimir tablero
-            </button>
-          </div>
+        <Divider />
 
-          {/* Divider */}
-          <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent, var(--verde-hoja), transparent)', margin: '1.2rem 0' }} />
+        {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
-          {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
-
-          {/* Proyecto Seleccionado */}
-          <div>
-            <h2 style={sectionTitleStyle}>
-              <span style={{ width: '4px', height: '18px', background: 'var(--verde-hoja)', borderRadius: '10px', display: 'inline-block' }}></span>
-              Proyecto seleccionado
-            </h2>
-            <div style={sectionDividerStyle}></div>
-
-            {!seguimiento && !loading ? (
-              /* Selector Mode if no project loaded */
-              <div style={{ marginBottom: '1rem' }}>
-                <Label>Seleccione un proyecto para ver su seguimiento:</Label>
-                <Select
-                  value={proyectoSel}
-                  onChange={(e) => setProyectoSel(parseInt(e.target.value))}
-                  disabled={loading}
-                >
-                  <option value={0}>Seleccione...</option>
-                  {proyectos.map(p => (
-                    <option key={p.id} value={p.id}>{p.nombre}</option>
-                  ))}
-                </Select>
-              </div>
-            ) : (
-              /* ReadOnly Mode (HTML Design) */
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                <div>
-                  <Label>Proyecto</Label>
-                  <Input type="text" value={seguimiento?.nombre || ''} readOnly style={{ background: '#081529' }} />
-                </div>
-                <div>
-                  <Label>Año</Label>
-                  <Input
-                    type="number"
-                    value={seguimiento?.anio || 2025}
-                    onChange={(e) => seguimiento && setSeguimiento({ ...seguimiento, anio: parseInt(e.target.value) })}
-                    style={{
-                      background: '#081529',
-                      border: '1px solid var(--verde-hoja)',
-                      color: 'var(--texto-claro)'
-                    }}
-                  />
-                  {!id && (
-                    <div style={{ marginTop: '0.5rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                      {canEdit && (
-                        <button
-                          onClick={() => seguimiento && navigate(`/proyectos/${seguimiento.id_proyecto}`)}
-                          style={{ background: 'none', border: 'none', color: 'var(--verde-hoja)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-                        >
-                          ✏️ Editar Proyecto
-                        </button>
-                      )}
-
-                      {isAdmin && (
-                        <button
-                          onClick={handleDeleteProyectoClick}
-                          style={{ background: 'none', border: 'none', color: '#e74c3c', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-                        >
-                          🗑️ Eliminar Proyecto
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => { setSeguimiento(null); setProyectoSel(0); }}
-                        style={{ background: 'none', border: 'none', color: 'var(--texto-sec)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+        {/* Proyecto Seleccionado */}
+        <Section title="Proyecto seleccionado">
+          {!seguimiento && !loading ? (
+            /* Selector Mode if no project loaded */
+            <Flex direction="column" style={{ marginBottom: '1rem' }}>
+              <Label>Seleccione un proyecto para ver su seguimiento:</Label>
+              <Select
+                value={proyectoSel}
+                onChange={(e) => setProyectoSel(parseInt(e.target.value))}
+                disabled={loading}
+              >
+                <option value={0}>Seleccione...</option>
+                {proyectos.map(p => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                ))}
+              </Select>
+            </Flex>
+          ) : (
+            /* ReadOnly Mode (HTML Design) */
+            /* ReadOnly Mode (HTML Design) */
+            <Grid columns={2} gap="1rem">
+              <Flex direction="column">
+                <Label>Proyecto</Label>
+                <Input type="text" value={seguimiento?.nombre || ''} readOnly style={{ background: '#081529' }} />
+              </Flex>
+              <Flex direction="column">
+                <Label>Año</Label>
+                <Input
+                  type="number"
+                  value={seguimiento?.anio || 2025}
+                  onChange={(e) => seguimiento && setSeguimiento({ ...seguimiento, anio: parseInt(e.target.value) })}
+                  style={{
+                    background: '#081529',
+                    border: '1px solid var(--verde-hoja)',
+                    color: 'var(--texto-claro)'
+                  }}
+                />
+                {!id && (
+                  <Flex justify="flex-end" gap="0.5rem" wrap="wrap" style={{ marginTop: '0.5rem' }}>
+                    {canEdit && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => seguimiento && navigate(`/proyectos/${seguimiento.id_proyecto}`)}
+                        style={{ color: 'var(--verde-hoja)', textDecoration: 'underline' }}
                       >
-                        Cambiar proyecto
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+                        ✏️ Editar Proyecto
+                      </Button>
+                    )}
 
-          <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent, var(--verde-hoja), transparent)', margin: '1.2rem 0' }} />
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDeleteProyectoClick}
+                        style={{ color: '#e74c3c', textDecoration: 'underline' }}
+                      >
+                        🗑️ Eliminar Proyecto
+                      </Button>
+                    )}
 
-          {loading ? (
-            <LoadingSpinner size="lg" fullScreen={false} />
-          ) : seguimiento ? (
-            <>
-              {/* Description Text */}
-              <div>
-                <h2 style={sectionTitleStyle}>
-                  <span style={{ width: '4px', height: '18px', background: 'var(--verde-hoja)', borderRadius: '10px', display: 'inline-block' }}></span>
-                  Actividades, indicadores y avance
-                </h2>
-                <p style={{ fontSize: '0.8rem', color: 'var(--texto-sec)', marginBottom: '0.4rem' }}>
-                  Estados mensuales: <strong>-</strong> (no aplica), <strong style={{ color: 'var(--P)' }}>P</strong> (pendiente), <strong style={{ color: 'var(--I)' }}>I</strong> (iniciado), <strong style={{ color: 'var(--F)' }}>F</strong> (finalizado).<br />
-                  El progreso de la actividad se calcula con los meses P/I/F. El cumplimiento del indicador se calcula a partir del valor alcanzado y la meta definida en la página 1.
-                </p>
-                <div style={sectionDividerStyle}></div>
-              </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setSeguimiento(null); setProyectoSel(0); }}
+                      style={{ color: 'var(--texto-sec)', textDecoration: 'underline' }}
+                    >
+                      Cambiar proyecto
+                    </Button>
+                  </Flex>
+                )}
+              </Flex>
+            </Grid>
+          )}
+        </Section>
+
+        <Divider />
+
+        {loading ? (
+          <LoadingSpinner size="lg" fullScreen={false} />
+        ) : seguimiento ? (
+          <>
+            {/* Description Text */}
+            {/* Description Text */}
+            <Section
+              title="Actividades, indicadores y avance"
+              description="Estados mensuales: - (no aplica), P (pendiente), I (iniciado), F (finalizado). El progreso de la actividad se calcula con los meses P/I/F. El cumplimiento del indicador se calcula a partir del valor alcanzado y la meta definida en la página 1."
+            >
 
               {/* Lista de Actividades */}
-              <div id="lista-actividades">
+              <Flex direction="column" gap="1rem" id="lista-actividades">
                 {seguimiento.actividades.map((act, idx) => {
                   const progreso = calcularProgreso(act.seguimiento_mensual, act.plan_mensual);
 
@@ -609,7 +547,8 @@ export const SeguimientoPage: React.FC = () => {
                   }
 
                   return (
-                    <div
+                    <Flex
+                      direction="column"
                       key={act.id_actividad}
                       ref={(el) => { activityRefs.current[act.id_actividad] = el }}
                       style={{
@@ -620,82 +559,75 @@ export const SeguimientoPage: React.FC = () => {
                         borderRadius: '8px'
                       }}
                     >
-                      <div style={{ color: 'var(--verde-hoja)', fontWeight: 700, fontSize: '0.98rem', marginLeft: '0.2rem', marginBottom: '0.35rem' }}>
+                      <Typography variant="h3" color="var(--verde-hoja)" style={{ marginLeft: '0.2rem', marginBottom: '0.35rem' }}>
                         Actividad {idx + 1}
-                      </div>
-                      <div style={{ marginLeft: '1.2rem' }}>
+                      </Typography>
+                      <Flex direction="column" gap="0.6rem" style={{ marginLeft: '1.2rem' }}>
                         {/* Nombre y Responsable */}
-                        <div style={{ marginBottom: '0.6rem' }}>
-                          <Input type="text" value={act.nombre || ''} readOnly style={{ background: '#081529', fontWeight: 600 }} />
-                        </div>
-                        <div style={{ marginBottom: '0.6rem' }}>
+                        <Input type="text" value={act.nombre || ''} readOnly style={{ background: '#081529', fontWeight: 600 }} />
+
+                        <Flex direction="column">
                           <Label>Responsable de la actividad</Label>
                           <Input type="text" value={act.responsable_nombre || ''} readOnly placeholder="Nombre del responsable" />
-                        </div>
+                        </Flex>
 
                         {/* Meses */}
-                        <div style={{ marginBottom: '0.6rem' }}>
-                          <MonthlyGanttView
-                            seguimientoMensual={mergedSeguimiento}
-                            onStatusChange={(mes, status) => actualizarEstadoMes(act.id_actividad, mes + 1, status)}
-                            onStatusClick={() => { }} // Legacy
-                            disabled={saving || !canEdit}
-                          />
-                        </div>
+                        <MonthlyGanttView
+                          seguimientoMensual={mergedSeguimiento}
+                          onStatusChange={(mes, status) => actualizarEstadoMes(act.id_actividad, mes + 1, status)}
+                          onStatusClick={() => { }} // Legacy
+                          disabled={saving || !canEdit}
+                        />
 
                         {/* Progreso + Presupuesto */}
-                        <div style={{ marginBottom: '0.6rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem', fontSize: '0.78rem', color: 'var(--texto-sec)' }}>
-                            <strong style={{ color: 'var(--texto-claro)' }}>Progreso:</strong>
-                            <div style={barBgStyle}>
-                              <div style={barFillStyle(progreso)}></div>
-                            </div>
-                            <strong style={{ color: 'var(--texto-claro)' }}>{progreso}%</strong>
-                            <strong style={{ color: 'var(--texto-claro)' }}>{progreso}%</strong>
-                            <span>| Presupuestado: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(act.presupuesto_asignado)}</strong></span>
-                            <span>| Gastado: <strong style={{ color: '#e74c3c' }}>{formatoDinero(act.total_gastado)}</strong></span>
-                            <span>| Disponible: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(disponible)}</strong></span>
-                          </div>
-                        </div>
+                        <Flex align="center" wrap="wrap" gap="0.4rem" style={{ fontSize: '0.78rem', color: 'var(--texto-sec)' }}>
+                          <Flex align="center" gap="0.5rem" style={{ flex: 1, minWidth: '200px' }}>
+                            <Typography variant="label" color="var(--texto-claro)">Progreso:</Typography>
+                            <ProgressBar progress={progreso} showLabel />
+                          </Flex>
+                          <Typography variant="caption">| Presupuestado: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(act.presupuesto_asignado)}</strong></Typography>
+                          <Typography variant="caption">| Gastado: <strong style={{ color: '#e74c3c' }}>{formatoDinero(act.total_gastado)}</strong></Typography>
+                          <Typography variant="caption">| Disponible: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(disponible)}</strong></Typography>
+                        </Flex>
 
                         {/* Indicador de logro */}
                         {indicador && (
-                          <div style={{ marginBottom: '0.6rem' }}>
-                            <div style={{
+                          <Flex direction="column" style={{ marginBottom: '0.6rem' }}>
+                            <Flex direction="column" style={{
                               borderRadius: '10px',
                               border: '1px solid rgba(255,255,255,.06)',
                               background: 'rgba(0,0,0,.14)',
                               padding: '0.7rem 0.75rem',
                               marginTop: '0.3rem'
                             }}>
-                              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--verde-hoja)', marginBottom: '0.4rem' }}>
+                              <Typography variant="label" weight={600} color="var(--verde-hoja)" style={{ marginBottom: '0.4rem' }}>
                                 Indicador de logro de la actividad
-                              </div>
+                              </Typography>
 
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                <div>
+                              <Grid columns={3} gap="0.5rem" style={{ marginBottom: '0.5rem' }}>
+                                <Flex direction="column">
                                   <Label>Categoría</Label>
                                   <Input type="text" value={indicador.categoria || ''} readOnly />
-                                </div>
-                                <div>
+                                </Flex>
+                                <Flex direction="column">
                                   <Label>Beneficiarios</Label>
                                   <Input type="text" value={indicador.beneficiarios || '-'} readOnly />
-                                </div>
-                                <div>
+                                </Flex>
+                                <Flex direction="column">
                                   <Label>Meta</Label>
                                   <Input type="text" value={indicador.meta || ''} readOnly />
-                                </div>
-                                <div>
+                                </Flex>
+                                <Flex direction="column">
                                   <Label>Unidad</Label>
                                   <Input type="text" value={indicador.unidad_medida || ''} readOnly />
-                                </div>
-                                <div style={{ gridColumn: '1/-1' }}>
+                                </Flex>
+                                <Flex direction="column" style={{ gridColumn: '1/-1' }}>
                                   <Label>Descripción específica del indicador</Label>
                                   <Input type="text" value={indicador.nombre || ''} readOnly />
-                                </div>
-                              </div>
+                                </Flex>
+                              </Grid>
 
-                              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '0.7rem', fontSize: '0.78rem' }}>
+                              <Flex wrap="wrap" align="flex-end" gap="0.7rem" style={{ fontSize: '0.78rem' }}>
                                 <div style={{ minWidth: '150px' }}>
                                   <Label>Valor alcanzado a la fecha</Label>
                                   <Input
@@ -708,17 +640,17 @@ export const SeguimientoPage: React.FC = () => {
                                     onChange={(e) => actualizarIndicador(act.id_actividad, indicador.id_indicador, Number(e.target.value))}
                                   />
                                 </div>
-                                <div style={{ color: 'var(--texto-sec)', paddingBottom: '0.4rem' }}>
+                                <Typography variant="caption" style={{ paddingBottom: '0.4rem' }}>
                                   Cumplimiento del indicador: <strong style={{ color: 'var(--texto-claro)' }}>{indicador.porcentaje_cumplimiento}%</strong>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                                </Typography>
+                              </Flex>
+                            </Flex>
+                          </Flex>
                         )}
 
                         {/* Action Buttons */}
-                        <div style={{ marginBottom: '0.6rem' }}>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.6rem' }}>
+                        <Flex direction="column" style={{ marginBottom: '0.6rem' }}>
+                          <Flex wrap="wrap" gap="0.5rem" style={{ marginTop: '0.6rem' }}>
                             <Button
                               variant="alt"
                               size="sm"
@@ -733,7 +665,7 @@ export const SeguimientoPage: React.FC = () => {
                             >
                               💰 Gastos
                             </Button>
-                            <div style={{ flex: 1 }}></div>
+                            <Flex style={{ flex: 1 }} />
                             {canEdit && (
                               <Button
                                 variant="alt"
@@ -754,18 +686,19 @@ export const SeguimientoPage: React.FC = () => {
                                 🗑️ Eliminar
                               </Button>
                             )}
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ height: '3px', background: 'var(--verde-hoja)', borderRadius: '999px', margin: '1rem 0 0.6rem' }}></div>
-                    </div>
+                          </Flex>
+                        </Flex>
+                      </Flex>
+                      <Divider variant="thick" />
+                    </Flex>
                   );
                 })}
-              </div>
-            </>
-          ) : null}
-        </Card>
-      </main>
+              </Flex>
+            </Section>
+          </>
+        ) : null}
+      </Card>
+
 
       {/* Modal de Edición */}
       <Modal
@@ -773,7 +706,7 @@ export const SeguimientoPage: React.FC = () => {
         onClose={() => setEditModalOpen(false)}
         title="Editar Actividad"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: '300px' }}>
+        <Flex direction="column" gap="1rem" style={{ minWidth: '300px' }}>
           <FormGroup>
             <Label>Nombre de la actividad</Label>
             <Input
@@ -813,13 +746,13 @@ export const SeguimientoPage: React.FC = () => {
             />
           </FormGroup>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+          <Flex justify="flex-end" gap="0.5rem" style={{ marginTop: '1rem' }}>
             <Button variant="ghost" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
             <Button variant="main" onClick={handleSaveActivity} disabled={saving}>
               {saving ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       </Modal >
 
       <ConfirmDialog
@@ -832,6 +765,6 @@ export const SeguimientoPage: React.FC = () => {
         confirmText="Sí, eliminar"
         cancelText="Cancelar"
       />
-    </div >
+    </PageLayout >
   );
 };

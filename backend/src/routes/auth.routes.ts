@@ -45,8 +45,8 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res, next) => {
 
 router.post('/register', authMiddleware, requireRole(['ADMIN']), async (req, res, next) => {
   try {
-    const { nombre, email, rol } = req.body;
-    const user = await authService.register(nombre, email, rol);
+    const { nombre, email, rol, password } = req.body;
+    const user = await authService.register(nombre, email, rol, password);
     res.status(201).json(user);
   } catch (error) {
     next(error);

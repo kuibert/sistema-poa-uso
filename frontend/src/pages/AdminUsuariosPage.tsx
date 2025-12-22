@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavBar, Card, LoadingSpinner, ErrorMessage, Button, Input, Label, Select, Modal, FormGroup, Table } from '../components/common';
+import { PageLayout, Card, LoadingSpinner, ErrorMessage, Button, Input, Label, Select, Modal, FormGroup, Table, Flex, Typography, Badge } from '../components/common';
 import apiClient from '../services/apiClient';
 import { Usuario } from '../types';
 
@@ -13,12 +13,10 @@ export const AdminUsuariosPage: React.FC = () => {
     const [newUserA, setNewUserA] = useState({
         nombre: '',
         email: '',
+        password: '',
         rol: 'VIEWER' as 'ADMIN' | 'EDITOR' | 'VIEWER'
     });
     const [creating, setCreating] = useState(false);
-
-    // Update State (for Role change)
-    const [editingUser, setEditingUser] = useState<Usuario | null>(null);
 
     useEffect(() => {
         loadUsuarios();
@@ -41,7 +39,7 @@ export const AdminUsuariosPage: React.FC = () => {
             setCreating(true);
             await apiClient.post('/auth/register', newUserA);
             setModalOpen(false);
-            setNewUserA({ nombre: '', email: '', rol: 'VIEWER' });
+            setNewUserA({ nombre: '', email: '', password: '', rol: 'VIEWER' });
             loadUsuarios();
             alert('Usuario creado correctamente');
         } catch (err: any) {
@@ -52,7 +50,7 @@ export const AdminUsuariosPage: React.FC = () => {
     };
 
     const handleUpdateRole = async (userId: number, newRole: string) => {
-        if (!window.confirm(`¿Estás seguro de cambiar el rol a ${newRole}?`)) return;
+        // if (!window.confirm(`¿Estás seguro de cambiar el rol a ${newRole}?`)) return; // Commented for smoother UX or use ConfirmDialog
         try {
             await apiClient.put(`/auth/users/${userId}/rol`, { rol: newRole });
             loadUsuarios();
@@ -71,110 +69,92 @@ export const AdminUsuariosPage: React.FC = () => {
         }
     };
 
-    const styles = {
-        container: {
-            background: 'var(--fondo-azul)',
-            color: 'var(--texto-claro)',
-            minHeight: '100vh',
-        },
-        main: {
-            maxWidth: '1000px',
-            margin: '2rem auto',
-            padding: '0 1rem',
+    const getRoleBadgeStyle = (rol: string) => {
+        switch (rol) {
+            case 'ADMIN': return { background: 'rgba(231, 76, 60, 0.2)', color: '#e74c3c' };
+            case 'EDITOR': return { background: 'rgba(52, 152, 219, 0.2)', color: '#3498db' };
+            default: return { background: 'rgba(46, 204, 113, 0.15)', color: 'var(--verde-hoja)' };
         }
     };
 
     return (
-        <div style={styles.container}>
-            <NavBar />
-            <main style={styles.main}>
-                <Card padding="2rem">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <div>
-                            <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Administración de Usuarios</h1>
-                            <p style={{ color: 'var(--texto-sec)' }}>Gestión de accesos y roles del sistema.</p>
-                        </div>
-                        <Button variant="main" onClick={() => setModalOpen(true)}>
-                            + Nuevo Usuario
-                        </Button>
-                    </div>
+        <PageLayout>
+            <Flex justify="space-between" align="center" style={{ marginBottom: '1.5rem', marginTop: '1rem' }}>
+                <Flex direction="column">
+                    <Typography variant="h1">Administración de Usuarios</Typography>
+                    <Typography variant="body" style={{ color: 'var(--texto-sec)' }}>Gestión de accesos y roles del sistema.</Typography>
+                </Flex>
+                <Button variant="main" onClick={() => setModalOpen(true)}>
+                    + Nuevo Usuario
+                </Button>
+            </Flex>
 
-                    {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
+            <Card padding="2rem">
+                {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
-                    {loading ? (
-                        <LoadingSpinner />
-                    ) : (
-                        <div style={{ overflowX: 'auto' }}>
-                            <Table variant="default">
-                                <Table.Header>
-                                    <Table.Row>
-                                        <Table.Cell header>Nombre</Table.Cell>
-                                        <Table.Cell header>Correo</Table.Cell>
-                                        <Table.Cell header>Rol Actual</Table.Cell>
-                                        <Table.Cell header>Acciones</Table.Cell>
-                                    </Table.Row>
-                                </Table.Header>
-                                <Table.Body>
-                                    {usuarios.map(u => (
-                                        <Table.Row key={u.id_usuario || (u as any).id}>
-                                            <Table.Cell>{u.nombre || (u as any).nombre_completo}</Table.Cell>
-                                            <Table.Cell>{u.email || (u as any).correo}</Table.Cell>
-                                            <Table.Cell>
-                                                <span style={{
-                                                    padding: '0.2rem 0.6rem',
-                                                    borderRadius: '4px',
-                                                    background: u.rol === 'ADMIN' ? 'rgba(231, 76, 60, 0.2)' : 'rgba(46, 204, 113, 0.15)',
-                                                    color: u.rol === 'ADMIN' ? '#e74c3c' : 'var(--verde-hoja)',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 600
-                                                }}>
-                                                    {u.rol}
-                                                </span>
-                                            </Table.Cell>
-                                            <Table.Cell>
-                                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                    <div style={{ width: '120px' }}>
-                                                        <Select
-                                                            value={u.rol}
-                                                            onChange={(e) => handleUpdateRole(u.id_usuario || (u as any).id, e.target.value)}
-                                                            style={{
-                                                                padding: '0.3rem',
-                                                                fontSize: '0.85rem',
-                                                                background: '#081529',
-                                                                borderColor: 'var(--borde)'
-                                                            }}
-                                                        >
-                                                            <option value="ADMIN">ADMIN</option>
-                                                            <option value="EDITOR">EDITOR</option>
-                                                            <option value="VIEWER">VIEWER</option>
-                                                        </Select>
-                                                    </div>
-                                                    <Button
-                                                        variant="danger"
-                                                        onClick={() => handleDeleteUser(u.id_usuario || (u as any).id)}
+                {loading ? (
+                    <LoadingSpinner />
+                ) : (
+                    <Flex style={{ overflowX: 'auto' }}>
+                        <Table variant="default">
+                            <Table.Header>
+                                <Table.Row>
+                                    <Table.Cell header>Nombre</Table.Cell>
+                                    <Table.Cell header>Correo</Table.Cell>
+                                    <Table.Cell header>Rol Actual</Table.Cell>
+                                    <Table.Cell header>Acciones</Table.Cell>
+                                </Table.Row>
+                            </Table.Header>
+                            <Table.Body>
+                                {usuarios.map(u => (
+                                    <Table.Row key={u.id_usuario || (u as any).id}>
+                                        <Table.Cell>{u.nombre || (u as any).nombre_completo}</Table.Cell>
+                                        <Table.Cell>{u.email || (u as any).correo}</Table.Cell>
+                                        <Table.Cell>
+                                            <Badge variant="pill" style={getRoleBadgeStyle(u.rol)}>
+                                                {u.rol}
+                                            </Badge>
+                                        </Table.Cell>
+                                        <Table.Cell>
+                                            <Flex gap="0.5rem" align="center">
+                                                <Flex style={{ width: '120px' }}>
+                                                    <Select
+                                                        value={u.rol}
+                                                        onChange={(e) => handleUpdateRole(u.id_usuario || (u as any).id, e.target.value)}
                                                         style={{
-                                                            padding: '0.3rem 0.5rem',
-                                                            fontSize: '0.8rem',
-                                                            background: 'rgba(231, 76, 60, 0.2)',
-                                                            color: '#e74c3c',
-                                                            border: '1px solid rgba(231, 76, 60, 0.3)'
+                                                            padding: '0.3rem',
+                                                            fontSize: '0.85rem',
                                                         }}
                                                     >
-                                                        🗑️
-                                                    </Button>
-                                                </div>
-                                            </Table.Cell>
-                                        </Table.Row>
-                                    ))}
-                                </Table.Body>
-                            </Table>
-                        </div>
-                    )}
-                </Card>
-            </main>
+                                                        <option value="ADMIN">ADMIN</option>
+                                                        <option value="EDITOR">EDITOR</option>
+                                                        <option value="VIEWER">VIEWER</option>
+                                                    </Select>
+                                                </Flex>
+                                                <Button
+                                                    variant="danger"
+                                                    onClick={() => handleDeleteUser(u.id_usuario || (u as any).id)}
+                                                    style={{
+                                                        padding: '0.3rem 0.5rem',
+                                                        fontSize: '0.8rem',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                    }}
+                                                    title="Eliminar usuario"
+                                                >
+                                                    🗑️
+                                                </Button>
+                                            </Flex>
+                                        </Table.Cell>
+                                    </Table.Row>
+                                ))}
+                            </Table.Body>
+                        </Table>
+                    </Flex>
+                )}
+            </Card>
 
             <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Registrar Nuevo Usuario">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: '350px' }}>
+                <Flex direction="column" gap="1rem" style={{ minWidth: '350px' }}>
                     <FormGroup>
                         <Label>Nombre Completo</Label>
                         <Input
@@ -192,6 +172,15 @@ export const AdminUsuariosPage: React.FC = () => {
                         />
                     </FormGroup>
                     <FormGroup>
+                        <Label>Contraseña</Label>
+                        <Input
+                            type="password"
+                            value={newUserA.password}
+                            onChange={e => setNewUserA({ ...newUserA, password: e.target.value })}
+                            placeholder="Mínimo 6 caracteres"
+                        />
+                    </FormGroup>
+                    <FormGroup>
                         <Label>Rol Asignado</Label>
                         <Select
                             value={newUserA.rol}
@@ -203,14 +192,14 @@ export const AdminUsuariosPage: React.FC = () => {
                         </Select>
                     </FormGroup>
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+                    <Flex justify="flex-end" gap="0.5rem" style={{ marginTop: '1rem' }}>
                         <Button variant="ghost" onClick={() => setModalOpen(false)}>Cancelar</Button>
                         <Button variant="main" onClick={handleCreateUser} disabled={creating}>
                             {creating ? 'Creando...' : 'Crear Usuario'}
                         </Button>
-                    </div>
-                </div>
+                    </Flex>
+                </Flex>
             </Modal>
-        </div>
+        </PageLayout>
     );
 };

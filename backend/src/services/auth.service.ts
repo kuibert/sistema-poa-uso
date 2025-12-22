@@ -6,7 +6,7 @@ import { config } from '../config';
 export const authService = {
   async login(email: string, password: string) {
     const result = await query(
-      'SELECT id, nombre_completo, correo, rol FROM usuario WHERE correo = $1 AND activo = true',
+      'SELECT id, nombre_completo, correo, rol, contrasena FROM usuario WHERE correo = $1 AND activo = true',
       [email]
     );
 
@@ -16,6 +16,12 @@ export const authService = {
 
     const user = result.rows[0];
 
+    // Verify Password
+    const validPassword = await bcrypt.compare(password, user.contrasena || '');
+    if (!validPassword) {
+      throw { statusCode: 401, message: 'Credenciales inválidas' };
+    }
+
     const token = jwt.sign(
       {
         id: user.id,
@@ -23,7 +29,7 @@ export const authService = {
         rol: user.rol // Include role in token
       },
       config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
+      { expiresIn: config.jwt.expiresIn as any }
     );
 
     return {
@@ -37,7 +43,7 @@ export const authService = {
     };
   },
 
-  async register(nombre: string, email: string, rol: string) {
+  async register(nombre: string, email: string, rol: string, password?: string) {
     // Check if user exists
     const check = await query('SELECT id FROM usuario WHERE correo = $1', [email]);
     if (check.rows.length > 0) {
@@ -45,18 +51,18 @@ export const authService = {
     }
 
     // Insert new user
-    // Note: Password handling is missing in current implementation logic (auth.service login doesn't check it).
-    // For now we will insert with a default dummy password or similar if the column exists.
-    // Inspecting schema earlier showed: id, nombre_completo, correo, rol, activo... 
-    // We need to know if there is a password column. The Previous schema check was truncated?
-    // Let's assume there is valid column or handle it. 
-    // Actually, I'll just insert name, email, rol, and active=true.
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    // Use provided password or default '123456'
+    const passwordToHash = password || '123456';
+    const hashedPassword = await bcrypt.hash(passwordToHash, salt);
 
     const result = await query(
-      `INSERT INTO usuario (nombre_completo, correo, rol, activo) 
-       VALUES ($1, $2, $3, true) 
+      `INSERT INTO usuario (nombre_completo, correo, rol, activo, contrasena) 
+       VALUES ($1, $2, $3, true, $4) 
        RETURNING id, nombre_completo, correo, rol`,
-      [nombre, email, rol]
+      [nombre, email, rol, hashedPassword]
     );
 
     return result.rows[0];

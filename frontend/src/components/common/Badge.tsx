@@ -6,12 +6,14 @@ interface BadgeProps {
     children: React.ReactNode;
     variant?: BadgeVariant;
     className?: string;
+    style?: React.CSSProperties;
 }
 
 export const Badge: React.FC<BadgeProps> = ({
     children,
     variant = 'circle',
-    className = ''
+    className = '',
+    style
 }) => {
     const variantStyles: Record<BadgeVariant, React.CSSProperties> = {
         circle: {
@@ -33,12 +35,12 @@ export const Badge: React.FC<BadgeProps> = ({
             borderRadius: '999px',
             fontSize: '0.75rem',
             fontWeight: 600,
-            border: '1px solid rgba(255, 255, 255, 0.3)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
         },
     };
 
     return (
-        <span style={variantStyles[variant]} className={className}>
+        <span style={{ ...variantStyles[variant], ...style }} className={className}>
             {children}
         </span>
     );

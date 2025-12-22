@@ -19,3 +19,7 @@ export { Checkbox } from './Checkbox';
 export { Modal } from './Modal';
 export { LoginCard, LoginHeader, LoginForm, LoginFooter } from './LoginComponents';
 export { SuccessMessage } from './SuccessMessage';
+export { ProgressBar } from './ProgressBar';
+export { PageLayout } from './PageLayout';
+export { Flex } from './Flex';
+export { Typography } from './Typography';

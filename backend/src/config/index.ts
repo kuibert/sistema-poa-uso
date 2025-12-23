@@ -1,0 +1,27 @@
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+export const config = {
+    port: process.env.PORT || 5000,
+    nodeEnv: process.env.NODE_ENV || 'development',
+
+    db: {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432'),
+        database: process.env.DB_NAME || 'poa_db',
+        user: process.env.DB_USER || 'postgres',
+        password: process.env.DB_PASSWORD || '',
+    },
+
+    jwt: {
+        secret: process.env.JWT_SECRET || 'tu_secreto_jwt_aqui',
+        expiresIn: '24h',
+        refreshExpiresIn: '7d',
+    },
+
+    upload: {
+        maxSize: 10 * 1024 * 1024, // 10MB
+        allowedTypes: ['image/jpeg', 'image/png', 'application/pdf', 'application/msword'],
+    }
+};

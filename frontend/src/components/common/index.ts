@@ -23,3 +23,6 @@ export { ProgressBar } from './ProgressBar';
 export { PageLayout } from './PageLayout';
 export { Flex } from './Flex';
 export { Typography } from './Typography';
+export { GanttChart } from './GanttChart';
+export { Pagination } from './Pagination';
+export { SearchBar } from './SearchBar';

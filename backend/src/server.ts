@@ -4,6 +4,7 @@ import authRoutes from './routes/auth.routes';
 import proyectosRoutes from './routes/proyectos.routes';
 import gastosRoutes from './routes/gastos.routes';
 import evidenciasRoutes from './routes/evidencias.routes';
+import { query } from './config/db';
 
 import cookieParser from 'cookie-parser';
 
@@ -47,7 +48,13 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`📊 API disponible en http://localhost:${PORT}/api`);
+
+  // Verificar conexión a Base de Datos
+  query('SELECT NOW()')
+    .then(() => console.log('🔌 Base de datos conectada correctamente'))
+    .catch((err: any) => console.error('❌ Error fatal al conectar a la BD:', err));
 });
 
 export default app;

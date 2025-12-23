@@ -121,34 +121,3 @@ Sistema de Gestión POA
 
 **Última actualización:** Diciembre 2024
 
----
-
-## 🔄 Guía de Actualización para el Equipo
-
-Si estás descargando cambios recientes (especialmente relacionados con **seguridad**), sigue estos pasos:
-
-1.  **Descargar Código**:
-    ```bash
-    git pull origin <tu-rama>
-    ```
-
-2.  **Actualizar Dependencias (Backend)**:
-    ```bash
-    cd backend
-    npm install
-    ```
-
-3.  **Migración de Base de Datos**:
-    *   Ejecuta el script para agregar contraseñas seguras automáticamente:
-    ```bash
-    # Desde carpeta backend/
-    npx ts-node src/migrate_password.ts
-    ```
-
-4.  **Actualizar Frontend**:
-    ```bash
-    cd ../frontend
-    npm install
-    ```
-
-5.  **Listo**: Reinicia tus servidores (`npm run dev`). La contraseña por defecto para usuarios existentes será `123456`.

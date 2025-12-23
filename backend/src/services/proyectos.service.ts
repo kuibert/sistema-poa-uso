@@ -1,4 +1,4 @@
-import { query } from '../db';
+import { query } from '../config/db';
 
 export const proyectosService = {
   // Dashboard (Page0)

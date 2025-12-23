@@ -1,4 +1,4 @@
-import { query } from '../db';
+import { query } from '../config/db';
 
 export const permisosService = {
   async getRolUsuario(userId: number, proyectoId: number): Promise<string | null> {

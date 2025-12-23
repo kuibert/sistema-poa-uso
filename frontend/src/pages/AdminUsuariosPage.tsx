@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PageLayout, Card, LoadingSpinner, ErrorMessage, Button, Input, Label, Select, Modal, FormGroup, Table, Flex, Typography, Badge, ConfirmDialog } from '../components/common';
+import { PageLayout, Card, LoadingSpinner, ErrorMessage, Button, Input, Label, Select, Modal, FormGroup, Table, Flex, Typography, Badge, ConfirmDialog, Pagination, SearchBar } from '../components/common';
 import apiClient from '../services/apiClient';
 import { Usuario } from '../types';
 
@@ -18,9 +18,11 @@ export const AdminUsuariosPage: React.FC = () => {
     });
     const [creating, setCreating] = useState(false);
 
-    useEffect(() => {
-        loadUsuarios();
-    }, []);
+    // Filter & Pagination State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [roleFilter, setRoleFilter] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6; // Ajustar según necesidad
 
     const loadUsuarios = async () => {
         try {
@@ -33,6 +35,36 @@ export const AdminUsuariosPage: React.FC = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        loadUsuarios();
+    }, []);
+
+    useEffect(() => {
+        setCurrentPage(1); // Reset page on search or filter
+    }, [searchTerm, roleFilter]);
+
+    // Derived state
+    const filteredUsuarios = usuarios.filter(u => {
+        const matchesSearch = (u.nombre || (u as any).nombre_completo || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (u.email || (u as any).correo || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesRole = roleFilter ? u.rol === roleFilter : true;
+        return matchesSearch && matchesRole;
+    });
+
+    const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage);
+    const paginatedUsuarios = filteredUsuarios.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handlePageChange = (page: number) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
+
 
     const handleCreateUser = async () => {
         try {
@@ -107,7 +139,27 @@ export const AdminUsuariosPage: React.FC = () => {
                 {loading ? (
                     <LoadingSpinner />
                 ) : (
-                    <Flex style={{ overflowX: 'auto' }}>
+                    <Flex style={{ overflowX: 'auto', flexDirection: 'column' }}>
+                        <Flex justify="flex-end" gap="1rem" style={{ marginBottom: '1rem', flexWrap: 'wrap' }}>
+                            <div style={{ width: '200px' }}>
+                                <Select
+                                    value={roleFilter}
+                                    onChange={(e) => setRoleFilter(e.target.value)}
+                                >
+                                    <option value="">Todos los Roles</option>
+                                    <option value="ADMIN">Administrador</option>
+                                    <option value="EDITOR">Editor</option>
+                                    <option value="VIEWER">Visualizador</option>
+                                </Select>
+                            </div>
+                            <SearchBar
+                                value={searchTerm}
+                                onChange={setSearchTerm}
+                                placeholder="🔍 Buscar usuarios..."
+                                width="300px"
+                            />
+                        </Flex>
+
                         <Table variant="default">
                             <Table.Header>
                                 <Table.Row>
@@ -118,7 +170,7 @@ export const AdminUsuariosPage: React.FC = () => {
                                 </Table.Row>
                             </Table.Header>
                             <Table.Body>
-                                {usuarios.map(u => (
+                                {paginatedUsuarios.map(u => (
                                     <Table.Row key={u.id_usuario || (u as any).id}>
                                         <Table.Cell>{u.nombre || (u as any).nombre_completo}</Table.Cell>
                                         <Table.Cell>{u.email || (u as any).correo}</Table.Cell>
@@ -161,6 +213,12 @@ export const AdminUsuariosPage: React.FC = () => {
                                 ))}
                             </Table.Body>
                         </Table>
+
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                        />
                     </Flex>
                 )}
             </Card>

@@ -1,5 +1,5 @@
 
-import { query } from './db';
+import { query } from './config/db';
 import bcrypt from 'bcryptjs';
 
 const runMigration = async () => {

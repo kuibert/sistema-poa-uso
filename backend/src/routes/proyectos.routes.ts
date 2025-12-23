@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { proyectosService } from '../services/proyectos.service';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { requireRole } from '../middleware/role.middleware';
-import { query } from '../db';
+import { query } from '../config/db';
 
 
 const router = Router();

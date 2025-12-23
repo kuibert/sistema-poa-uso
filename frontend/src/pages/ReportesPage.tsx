@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PageLayout, Card, Typography, Section, Grid, Button, Select, Label, Divider, LoadingSpinner, Table, Badge, Flex, Input } from '../components/common';
+import { PageLayout, Card, Typography, Section, Grid, Button, Select, Label, Divider, LoadingSpinner, Table, Badge, Flex, Input, GanttChart } from '../components/common';
 import { poaApi } from '../services/poaApi';
 
 interface ReporteData {
@@ -62,16 +62,7 @@ export const ReportesPage: React.FC = () => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(monto || 0));
     };
 
-    const getStatusGantt = (mes: number, mesesPlan: number[], seguimiento: any[]) => {
-        const planificado = mesesPlan?.includes(mes);
-        const estadoMes = seguimiento?.find((s: any) => s.mes === mes)?.estado;
-
-        if (estadoMes === 'F') return { bg: '#27ae60', title: 'Finalizado' }; // Verde
-        if (estadoMes === 'I') return { bg: '#f1c40f', title: 'Iniciado' }; // Amarillo
-        if (estadoMes === 'P') return { bg: '#e74c3c', title: 'Pendiente' }; // Rojo
-        if (planificado) return { bg: '#3498db', title: 'Planificado' }; // Azul (Planificado pero sin seguimiento aun)
-        return { bg: 'transparent', title: '' };
-    };
+    // Helper functions moved to components or cleaned up
 
     return (
         <PageLayout>
@@ -80,8 +71,8 @@ export const ReportesPage: React.FC = () => {
 
                 <Card padding="1.5rem">
                     <Section title="Configuración del Reporte" description="Ingrese el año y seleccione el proyecto para generar el informe.">
-                        <Grid columns={3}>
-                            <div>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                            <div style={{ flex: '0 0 120px' }}>
                                 <Label>Año</Label>
                                 <Input
                                     type="number"
@@ -90,7 +81,7 @@ export const ReportesPage: React.FC = () => {
                                     placeholder="Ej. 2025"
                                 />
                             </div>
-                            <div>
+                            <div style={{ flex: '1', minWidth: '300px', position: 'relative' }}>
                                 <Label>Seleccionar Proyecto</Label>
                                 <Select
                                     value={selectedProyectoId}
@@ -102,22 +93,20 @@ export const ReportesPage: React.FC = () => {
                                         <option key={p.id} value={p.id}>{p.nombre}</option>
                                     ))}
                                 </Select>
-                                <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', color: '#666' }}>
+                                <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', color: '#666', position: 'absolute', top: '100%', left: 0, width: '100%' }}>
                                     {loadingProyectos ? 'Cargando...' : `${proyectos.length} proyectos encontrados`}
                                     {errorMsg && <span style={{ color: 'red', marginLeft: '0.5rem' }}>{errorMsg}</span>}
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem' }}>
-                                <Button variant="main" onClick={handleGenerarReporte} disabled={!selectedProyectoId || loading}>
-                                    {loading ? 'Generando...' : 'Generar Reporte'}
+                            <Button variant="main" onClick={handleGenerarReporte} disabled={!selectedProyectoId || loading}>
+                                {loading ? 'Generando...' : 'Generar Reporte'}
+                            </Button>
+                            {reporte && (
+                                <Button variant="alt" onClick={handlePrint}>
+                                    🖨 Imprimir / Guardar PDF
                                 </Button>
-                                {reporte && (
-                                    <Button variant="alt" onClick={handlePrint}>
-                                        🖨 Imprimir / Guardar PDF
-                                    </Button>
-                                )}
-                            </div>
-                        </Grid>
+                            )}
+                        </div>
                     </Section>
                 </Card>
                 <Divider variant="solid" />
@@ -130,35 +119,49 @@ export const ReportesPage: React.FC = () => {
 
                     {/* ENCABEZADO REPORTE PROFESIONAL */}
                     <div className="report-header" style={{ marginBottom: '2rem', borderBottom: '3px solid #1a3a5c', paddingBottom: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <Flex justify="space-between" align="flex-start" style={{ marginBottom: '1rem' }}>
                             <div>
-                                <h2 style={{ margin: 0, color: '#1a3a5c', fontSize: '1.4rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Universidad de Sonsonate</h2>
-                                <h3 style={{ margin: '0.2rem 0 0', color: '#555', fontSize: '0.9rem', fontWeight: 500 }}>Dirección de Planificación y Desarrollo Institucional</h3>
-                                <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#777' }}>Sistema de Gestión POA</p>
+                                <Typography variant="h2" style={{ margin: 0, color: '#1a3a5c', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    Universidad de Sonsonate
+                                </Typography>
+                                <Typography variant="h3" style={{ margin: '0.2rem 0 0', color: '#555', fontWeight: 500 }}>
+                                    Dirección de Planificación y Desarrollo Institucional
+                                </Typography>
+                                <Typography variant="caption" style={{ margin: '0.2rem 0 0', color: '#777' }}>
+                                    Sistema de Gestión POA
+                                </Typography>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.2rem' }}>Fecha de generación:</div>
-                                <div style={{ fontWeight: 600 }}>{new Date().toLocaleDateString()}</div>
+                                <Typography variant="caption" style={{ color: '#666', marginBottom: '0.2rem' }}>
+                                    Fecha de generación:
+                                </Typography>
+                                <Typography variant="body" style={{ fontWeight: 600 }}>
+                                    {new Date().toLocaleDateString()}
+                                </Typography>
                             </div>
-                        </div>
+                        </Flex>
 
                         <div style={{ textAlign: 'center', marginTop: '2rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
-                            <h1 style={{ fontSize: '1.3rem', margin: 0, color: '#2c3e50', fontWeight: 700 }}>INFORME DE SEGUIMIENTO Y EVALUACIÓN</h1>
-                            <h2 style={{ fontSize: '1.5rem', color: '#1a3a5c', margin: '0.8rem 0', fontWeight: 600 }}>{reporte.proyecto.nombre}</h2>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', fontSize: '0.9rem', color: '#555' }}>
+                            <Typography variant="h1" style={{ fontSize: '1.3rem', margin: 0, color: '#2c3e50', fontWeight: 700 }}>
+                                INFORME DE SEGUIMIENTO Y EVALUACIÓN
+                            </Typography>
+                            <Typography variant="h2" style={{ fontSize: '1.5rem', color: '#1a3a5c', margin: '0.8rem 0', fontWeight: 600 }}>
+                                {reporte.proyecto.nombre}
+                            </Typography>
+                            <Flex justify="center" gap="2rem" style={{ fontSize: '0.9rem', color: '#555' }}>
                                 <span><strong>Año:</strong> {reporte.proyecto.anio}</span>
                                 <span><strong>Responsable:</strong> {reporte.proyecto.responsable_nombre}</span>
-                            </div>
+                            </Flex>
                         </div>
                     </div>
 
                     {/* 1. INFORMACIÓN GENERAL */}
                     <Section title="1. Información General" description="">
                         <Grid columns={2}>
-                            <div><strong>Unidad/Facultad:</strong> {reporte.proyecto.unidad_facultad}</div>
-                            <div><strong>Objetivo Estratégico:</strong> {reporte.proyecto.objetivo_estrategico || 'N/A'}</div>
-                            <div><strong>Responsable:</strong> {reporte.proyecto.responsable_nombre} ({reporte.proyecto.responsable_cargo || 'Sin cargo'})</div>
-                            <div><strong>Objetivo del Proyecto:</strong> {reporte.proyecto.objetivo_proyecto}</div>
+                            <Flex direction="column"><Typography variant="body" weight={600} color="#000000">Unidad/Facultad:</Typography> <Typography variant="body" color="#000000">{reporte.proyecto.unidad_facultad}</Typography></Flex>
+                            <Flex direction="column"><Typography variant="body" weight={600} color="#000000">Objetivo Estratégico:</Typography> <Typography variant="body" color="#000000">{reporte.proyecto.objetivo_estrategico || 'N/A'}</Typography></Flex>
+                            <Flex direction="column"><Typography variant="body" weight={600} color="#000000">Responsable:</Typography> <Typography variant="body" color="#000000">{reporte.proyecto.responsable_nombre} ({reporte.proyecto.responsable_cargo || 'Sin cargo'})</Typography></Flex>
+                            <Flex direction="column"><Typography variant="body" weight={600} color="#000000">Objetivo del Proyecto:</Typography> <Typography variant="body" color="#000000">{reporte.proyecto.objetivo_proyecto}</Typography></Flex>
                         </Grid>
                     </Section>
                     <Divider variant="solid" color="#eee" />
@@ -187,7 +190,7 @@ export const ReportesPage: React.FC = () => {
                             </Table.Body>
                         </Table>
 
-                        <h4 style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>Detalle de Costos Planificados</h4>
+                        <Typography variant="h4" style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>Detalle de Costos Planificados</Typography>
                         <Table variant="compact">
                             <Table.Header>
                                 <Table.Row>
@@ -212,14 +215,18 @@ export const ReportesPage: React.FC = () => {
                     {/* 3. ACTIVIDADES */}
                     <Section title="3. Actividades del Proyecto" description="">
                         {reporte.actividades.map((act, i) => (
-                            <div key={i} style={{ marginBottom: '1.5rem', background: '#f9f9f9', padding: '1rem', borderRadius: '4px' }}>
-                                <h4 style={{ margin: '0 0 0.5rem 0', color: '#2c3e50' }}>{i + 1}. {act.nombre}</h4>
-                                <p style={{ fontSize: '0.9rem', color: '#7f8c8d' }}>{act.descripcion}</p>
+                            <Card key={i} style={{ marginBottom: '1.5rem', background: '#f9f9f9' }} padding="1rem">
+                                <Typography variant="h4" style={{ margin: '0 0 0.5rem 0', color: '#2c3e50' }}>
+                                    {i + 1}. {act.nombre}
+                                </Typography>
+                                <Typography variant="body" style={{ fontSize: '0.9rem', color: '#7f8c8d' }}>
+                                    {act.descripcion}
+                                </Typography>
                                 <Grid columns={2} style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-                                    <div><strong>Responsable:</strong> {act.responsable || 'N/A'}</div>
-                                    <div><strong>Presupuesto:</strong> {formatoDinero(act.presupuesto_asignado)}</div>
+                                    <Flex gap="0.5rem"><strong>Responsable:</strong> {act.responsable || 'N/A'}</Flex>
+                                    <Flex gap="0.5rem"><strong>Presupuesto:</strong> {formatoDinero(act.presupuesto_asignado)}</Flex>
                                 </Grid>
-                            </div>
+                            </Card>
                         ))}
                     </Section>
                     <Divider variant="solid" color="#eee" />
@@ -227,45 +234,7 @@ export const ReportesPage: React.FC = () => {
                     {/* 4. CRONOGRAMA GANTT */}
                     {/* page-break-inside: avoid para intentar que no corte la tabla a la mitad al imprimir */}
                     <Section title="4. Cronograma de Ejecución (Gantt)" description="">
-                        <div style={{ overflowX: 'auto', pageBreakInside: 'avoid' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                                <thead>
-                                    <tr>
-                                        <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', width: '30%' }}>Actividad</th>
-                                        {[...Array(12)].map((_, m) => (
-                                            <th key={m} style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center', minWidth: '30px' }}>{m + 1}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {reporte.actividades.map((act, i) => (
-                                        <tr key={i}>
-                                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{act.nombre}</td>
-                                            {[...Array(12)].map((_, m) => {
-                                                const mesIdx = m + 1;
-                                                const style = getStatusGantt(mesIdx, act.meses_plan, act.seguimiento);
-                                                return (
-                                                    <td key={m} style={{ border: '1px solid #ddd', padding: '0', textAlign: 'center' }}>
-                                                        <div style={{
-                                                            width: '100%',
-                                                            height: '24px',
-                                                            background: style.bg,
-                                                            opacity: 0.8
-                                                        }} title={style.title}></div>
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', fontSize: '0.8rem' }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '12px', height: '12px', background: '#3498db' }}></div> Planificado</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '12px', height: '12px', background: '#f1c40f' }}></div> Iniciado</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '12px', height: '12px', background: '#27ae60' }}></div> Finalizado</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '12px', height: '12px', background: '#e74c3c' }}></div> Pendiente</span>
-                            </div>
-                        </div>
+                        <GanttChart actividades={reporte.actividades} />
                     </Section>
                     <div style={{ pageBreakAfter: 'always' }}></div> {/* Salto de página sugerido */}
 
@@ -370,13 +339,13 @@ export const ReportesPage: React.FC = () => {
                     <Section title="8. Equipo del Proyecto" description="">
                         <Grid columns={3}>
                             {reporte.equipo.map((u, i) => (
-                                <div key={i} style={{ padding: '0.8rem', border: '1px solid #eee', borderRadius: '4px' }}>
-                                    <div style={{ fontWeight: 600 }}>{u.nombre_completo}</div>
-                                    <div style={{ fontSize: '0.85rem', color: '#666' }}>{u.email}</div>
+                                <Card key={i} padding="0.8rem" style={{ border: '1px solid #eee', background: 'white' }}>
+                                    <Typography variant="body" color="#000000" style={{ fontWeight: 600 }}>{u.nombre_completo}</Typography>
+                                    <Typography variant="caption" style={{ color: '#444444' }}>{u.email}</Typography>
                                     <div style={{ marginTop: '0.4rem' }}>
                                         <Badge variant="pill">{u.rol}</Badge>
                                     </div>
-                                </div>
+                                </Card>
                             ))}
                         </Grid>
                     </Section>

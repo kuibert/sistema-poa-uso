@@ -246,7 +246,7 @@ export default function ActividadGastos() {
 
   return (
     <div style={containerStyle}>
-      <NavBar userName="Carlos Roberto Martínez Martínez" />
+      <NavBar />
 
       <main style={mainStyle}>
         <Card padding="1.8rem">

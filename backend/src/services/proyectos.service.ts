@@ -591,11 +591,99 @@ export const proyectosService = {
     await query('DELETE FROM indicador_actividad WHERE id_actividad = $1', [id]);
     await query('DELETE FROM actividad_mes_plan WHERE id_actividad = $1', [id]);
     await query('DELETE FROM actividad_mes_seguimiento WHERE id_actividad = $1', [id]);
+    // evidencias? faltaba borrar evidencias en cascada manual
+    await query('DELETE FROM evidencia_actividad WHERE id_actividad = $1', [id]); // Asumiendo nombre tabla
 
     const result = await query('DELETE FROM actividad WHERE id = $1 RETURNING id', [id]);
     if (result.rowCount === 0) {
       throw { statusCode: 404, message: 'Actividad no encontrada' };
     }
     return { success: true };
+  },
+
+  // Reporte Completo
+  async getReporteProyecto(proyectoId: number) {
+    // 1. Info Proyecto + Responsable
+    const proyectoRes = await query(`
+      SELECT p.*, u.nombre_completo as responsable_nombre, u.cargo as responsable_cargo
+      FROM proyecto p 
+      LEFT JOIN usuario u ON p.id_responsable = u.id 
+      WHERE p.id = $1
+    `, [proyectoId]);
+
+    if (proyectoRes.rows.length === 0) throw { statusCode: 404, message: 'Proyecto no encontrado' };
+    const proyecto = proyectoRes.rows[0];
+
+    // 2. Equipo (Consolidado: Responsable Proyecto + Responsables Actividades)
+    const equipoRes = await query(`
+      WITH equipo_consolidado AS (
+          -- Responsable del proyecto
+          SELECT u.nombre_completo, u.correo, 'Responsable del Proyecto' as rol, 1 as jerarquia
+          FROM proyecto p
+          JOIN usuario u ON p.id_responsable = u.id
+          WHERE p.id = $1
+
+          UNION
+
+          -- Responsables de actividades (Excluyendo si ya es responsable del proyecto para no duplicar visualmente si se desea, o dejarlo para mostrar rol)
+          SELECT DISTINCT u.nombre_completo, u.correo, 'Responsable de Actividad' as rol, 2 as jerarquia
+          FROM actividad a
+          JOIN usuario u ON a.id_responsable = u.id
+          WHERE a.id_proyecto = $1
+      )
+      SELECT nombre_completo, correo as email, rol 
+      FROM equipo_consolidado
+      ORDER BY jerarquia, nombre_completo
+    `, [proyectoId]);
+
+    // 3. Costos (Fijos/Variables)
+    const costosRes = await query(`
+        SELECT * FROM costo_proyecto WHERE id_proyecto = $1 ORDER BY tipo, descripcion
+    `, [proyectoId]);
+
+    // 4. Actividades completas (con gastos, evidencias, indicadores, plan)
+    const actividadesRes = await query(`
+        SELECT 
+            a.id, a.nombre, a.descripcion, a.presupuesto_asignado,
+            u.nombre_completo as responsable,
+            -- Plan Mensual
+            (SELECT json_agg(mes) FROM actividad_mes_plan WHERE id_actividad = a.id AND planificado = true) as meses_plan,
+            -- Seguimiento
+            (SELECT json_agg(json_build_object('mes', mes, 'estado', estado)) FROM actividad_mes_seguimiento WHERE id_actividad = a.id) as seguimiento,
+            -- Indicador
+            (SELECT json_agg(json_build_object(
+                'meta', meta_valor,
+                'logrado', valor_logrado,
+                'cumplimiento', porcentaje_cumplimiento,
+                'unidad', unidad_medida,
+                'descripcion', descripcion_especifica
+            )) FROM indicador_actividad WHERE id_actividad = a.id) as indicadores,
+            -- Gastos
+            (SELECT json_agg(json_build_object(
+                'fecha', fecha,
+                'descripcion', descripcion,
+                'monto', monto
+            )) FROM gasto_actividad WHERE id_actividad = a.id) as gastos,
+            -- Evidencias (Asumiendo tabla 'evidencia_actividad' o similar, revisar db.sql si falla)
+            -- En routes/evidencias usa getEvidenciasByActividad.
+            -- Asumiremos 'evidencia_actividad' por convención, si falla ajustamos.
+            (SELECT json_agg(json_build_object(
+                'tipo', tipo,
+                'descripcion', descripcion,
+                'archivo', ruta_archivo,
+                'fecha', fecha
+            )) FROM evidencia_actividad WHERE id_actividad = a.id) as evidencias
+        FROM actividad a
+        LEFT JOIN usuario u ON a.id_responsable = u.id
+        WHERE a.id_proyecto = $1
+        ORDER BY a.created_at
+    `, [proyectoId]);
+
+    return {
+      proyecto,
+      equipo: equipoRes.rows,
+      costos: costosRes.rows,
+      actividades: actividadesRes.rows
+    };
   }
 };

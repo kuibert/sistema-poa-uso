@@ -59,6 +59,15 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
   }
 });
 
+router.get('/:id/reporte', authMiddleware, async (req, res, next) => {
+  try {
+    const reporte = await proyectosService.getReporteProyecto(parseInt(req.params.id));
+    res.json(reporte);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.put('/:id', authMiddleware, requireRole(['ADMIN', 'EDITOR']), async (req, res, next) => {
   try {
     const proyecto = await proyectosService.updateProyecto(parseInt(req.params.id), req.body);

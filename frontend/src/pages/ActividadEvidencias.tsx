@@ -192,7 +192,7 @@ export default function ActividadEvidencias() {
   if (!id) {
     return (
       <div style={containerStyle}>
-        <NavBar userName="Carlos Roberto Martínez Martínez" />
+        <NavBar />
         <main style={mainStyle}>
           <Card padding="1.8rem">
             <h1 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Gestión de Evidencias</h1>

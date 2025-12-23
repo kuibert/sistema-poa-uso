@@ -4,6 +4,7 @@ import { DashboardPOA } from './pages/DashboardPOA';
 import { ProyectoPOA } from './pages/ProyectoPOA';
 import { SeguimientoPage } from './pages/SeguimientoPage';
 import { AdminUsuariosPage } from './pages/AdminUsuariosPage'; // New Import
+import { ReportesPage } from './pages/ReportesPage';
 import ActividadGastos from './pages/ActividadGastos';
 import ActividadEvidencias from './pages/ActividadEvidencias';
 import { authApi } from './services/authApi';
@@ -132,6 +133,16 @@ function App() {
           element={
             <ProtectedRoute>
               <AdminUsuariosPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Reportes */}
+        <Route
+          path="/reportes"
+          element={
+            <ProtectedRoute>
+              <ReportesPage />
             </ProtectedRoute>
           }
         />

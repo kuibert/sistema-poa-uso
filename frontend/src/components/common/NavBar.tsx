@@ -40,6 +40,7 @@ export const NavBar: React.FC<NavBarProps> = ({ userName }) => {
         { path: '/seguimiento', label: 'Seguimiento' },
         { path: '/gastos', label: 'Gastos' },
         { path: '/evidencias', label: 'Evidencias' },
+        { path: '/reportes', label: 'Reporte' },
         ...(userRole === 'ADMIN' ? [{ path: '/admin/usuarios', label: 'Usuarios' }] : [])
     ];
 

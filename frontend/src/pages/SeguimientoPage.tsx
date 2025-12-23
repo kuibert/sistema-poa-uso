@@ -51,6 +51,7 @@ export const SeguimientoPage: React.FC = () => {
   // Estados
   const [proyectos, setProyectos] = useState<any[]>([]);
   const [proyectoSel, setProyectoSel] = useState<number>(0);
+  const [anio, setAnio] = useState(new Date().getFullYear()); // Year state
   const [seguimiento, setSeguimiento] = useState<ProyectoSeguimiento | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export const SeguimientoPage: React.FC = () => {
   // Cargar lista de proyectos
   useEffect(() => {
     loadProyectos();
-  }, []);
+  }, [anio]);
 
   // Leer Query Params (proyectoId y actividad)
   useEffect(() => {
@@ -123,7 +124,7 @@ export const SeguimientoPage: React.FC = () => {
 
   const loadProyectos = async () => {
     try {
-      const response = await apiClient.get('/proyectos');
+      const response = await apiClient.get(`/proyectos?anio=${anio}`);
       setProyectos(response.data);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al cargar proyectos');
@@ -441,17 +442,30 @@ export const SeguimientoPage: React.FC = () => {
           {!seguimiento && !loading ? (
             /* Selector Mode if no project loaded */
             <Flex direction="column" style={{ marginBottom: '1rem' }}>
-              <Label>Seleccione un proyecto para ver su seguimiento:</Label>
-              <Select
-                value={proyectoSel}
-                onChange={(e) => setProyectoSel(parseInt(e.target.value))}
-                disabled={loading}
-              >
-                <option value={0}>Seleccione...</option>
-                {proyectos.map(p => (
-                  <option key={p.id} value={p.id}>{p.nombre}</option>
-                ))}
-              </Select>
+              <Grid columns={2} gap="1rem">
+                <div>
+                  <Label>Año:</Label>
+                  <Input
+                    type="number"
+                    value={anio}
+                    onChange={e => setAnio(Number(e.target.value))}
+                    placeholder="Ej. 2025"
+                  />
+                </div>
+                <div>
+                  <Label>Seleccione un proyecto para ver su seguimiento:</Label>
+                  <Select
+                    value={proyectoSel}
+                    onChange={(e) => setProyectoSel(parseInt(e.target.value))}
+                    disabled={loading}
+                  >
+                    <option value={0}>Seleccione...</option>
+                    {proyectos.map(p => (
+                      <option key={p.id} value={p.id}>{p.nombre}</option>
+                    ))}
+                  </Select>
+                </div>
+              </Grid>
             </Flex>
           ) : (
             /* ReadOnly Mode (HTML Design) */

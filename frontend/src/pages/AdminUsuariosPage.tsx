@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PageLayout, Card, LoadingSpinner, ErrorMessage, Button, Input, Label, Select, Modal, FormGroup, Table, Flex, Typography, Badge } from '../components/common';
+import { PageLayout, Card, LoadingSpinner, ErrorMessage, Button, Input, Label, Select, Modal, FormGroup, Table, Flex, Typography, Badge, ConfirmDialog } from '../components/common';
 import apiClient from '../services/apiClient';
 import { Usuario } from '../types';
 
@@ -59,13 +59,25 @@ export const AdminUsuariosPage: React.FC = () => {
         }
     };
 
-    const handleDeleteUser = async (userId: number) => {
-        if (!window.confirm('¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer.')) return;
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+
+    const handleDeleteUser = (userId: number) => {
+        setDeleteTargetId(userId);
+        setShowDeleteDialog(true);
+    };
+
+    const confirmDeleteUser = async () => {
+        if (!deleteTargetId) return;
         try {
-            await apiClient.delete(`/auth/users/${userId}`);
+            await apiClient.delete(`/auth/users/${deleteTargetId}`);
             loadUsuarios();
+            alert('Usuario eliminado correctamente'); // Optional: replace with toast if available, but alert is fine for success feedback for now or just silent refresh
         } catch (err: any) {
             setError(err.response?.data?.error || 'Error al eliminar usuario');
+        } finally {
+            setShowDeleteDialog(false);
+            setDeleteTargetId(null);
         }
     };
 
@@ -200,6 +212,18 @@ export const AdminUsuariosPage: React.FC = () => {
                     </Flex>
                 </Flex>
             </Modal>
-        </PageLayout>
+
+
+            <ConfirmDialog
+                isOpen={showDeleteDialog}
+                title="Eliminar Usuario"
+                message="¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer."
+                confirmText="Sí, eliminar"
+                cancelText="Cancelar"
+                confirmVariant="danger"
+                onConfirm={confirmDeleteUser}
+                onCancel={() => setShowDeleteDialog(false)}
+            />
+        </PageLayout >
     );
 };

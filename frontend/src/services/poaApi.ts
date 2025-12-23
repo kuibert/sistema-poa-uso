@@ -4,114 +4,117 @@ import { Proyecto, Actividad, Gasto, Evidencia, Indicador, MesPlan, MesSeguimien
 export const poaApi = {
   // ==================== DASHBOARD (Page0) ====================
   getDashboard: (anio: number) =>
-    apiClient.get(`/api/proyectos/dashboard?anio=${anio}`),
+    apiClient.get(`/proyectos/dashboard?anio=${anio}`),
 
   getProyectos: (anio: number) =>
-    apiClient.get<Proyecto[]>(`/api/proyectos?anio=${anio}`),
+    apiClient.get<Proyecto[]>(`/proyectos?anio=${anio}`),
 
   // ==================== PLANIFICACIÓN (Page1) ====================
 
   // Proyectos
   crearProyecto: (data: Partial<Proyecto>) =>
-    apiClient.post<Proyecto>('/api/proyectos', data),
+    apiClient.post<Proyecto>('/proyectos', data),
 
   getProyecto: (id: number) =>
-    apiClient.get<Proyecto>(`/api/proyectos/${id}`),
+    apiClient.get<Proyecto>(`/proyectos/${id}`),
 
   updateProyecto: (id: number, data: Partial<Proyecto>) =>
-    apiClient.put<Proyecto>(`/api/proyectos/${id}`, data),
+    apiClient.put<Proyecto>(`/proyectos/${id}`, data),
 
   deleteProyecto: (id: number) =>
-    apiClient.delete(`/api/proyectos/${id}`),
+    apiClient.delete(`/proyectos/${id}`),
+
+  getReporte: (id: number) =>
+    apiClient.get<any>(`/proyectos/${id}/reporte`),
 
   // Actividades
   crearActividad: (proyectoId: number, data: Partial<Actividad>) =>
-    apiClient.post<Actividad>(`/api/proyectos/${proyectoId}/actividades`, data),
+    apiClient.post<Actividad>(`/proyectos/${proyectoId}/actividades`, data),
 
   updateActividad: (id: number, data: Partial<Actividad>) =>
-    apiClient.put<Actividad>(`/api/actividades/${id}`, data),
+    apiClient.put<Actividad>(`/actividades/${id}`, data),
 
   deleteActividad: (id: number) =>
-    apiClient.delete(`/api/actividades/${id}`),
+    apiClient.delete(`/actividades/${id}`),
 
   // Planificación mensual
   updatePlanMensual: (actividadId: number, meses: MesPlan[]) =>
-    apiClient.put(`/api/proyectos/actividades/${actividadId}/plan-mensual`, { meses }),
+    apiClient.put(`/proyectos/actividades/${actividadId}/plan-mensual`, { meses }),
 
   // Indicadores
   crearIndicador: (actividadId: number, data: Partial<Indicador>) =>
-    apiClient.post<Indicador>(`/api/proyectos/actividades/${actividadId}/indicadores`, data),
+    apiClient.post<Indicador>(`/proyectos/actividades/${actividadId}/indicadores`, data),
 
   updateIndicador: (id: number, data: Partial<Indicador>) =>
-    apiClient.put<Indicador>(`/api/proyectos/indicadores/${id}`, data),
+    apiClient.put<Indicador>(`/proyectos/indicadores/${id}`, data),
 
   deleteIndicador: (id: number) =>
-    apiClient.delete(`/api/proyectos/indicadores/${id}`),
+    apiClient.delete(`/proyectos/indicadores/${id}`),
 
   // Costos
   crearCosto: (proyectoId: number, data: any) =>
-    apiClient.post(`/api/proyectos/${proyectoId}/costos`, data),
+    apiClient.post(`/proyectos/${proyectoId}/costos`, data),
 
   updateCosto: (id: number, data: any) =>
-    apiClient.put(`/api/proyectos/costos/${id}`, data),
+    apiClient.put(`/proyectos/costos/${id}`, data),
 
   deleteCosto: (id: number) =>
-    apiClient.delete(`/api/proyectos/costos/${id}`),
+    apiClient.delete(`/proyectos/costos/${id}`),
 
   // ==================== SEGUIMIENTO (Page2) ====================
 
   getSeguimiento: (proyectoId: number) =>
-    apiClient.get<any>(`/api/proyectos/${proyectoId}/seguimiento`),
+    apiClient.get<any>(`/proyectos/${proyectoId}/seguimiento`),
 
   getActividadSeguimiento: (actividadId: number) =>
-    apiClient.get<Actividad>(`/api/proyectos/actividades/${actividadId}/seguimiento`),
+    apiClient.get<Actividad>(`/proyectos/actividades/${actividadId}/seguimiento`),
 
   updateSeguimientoMensual: (actividadId: number, seguimiento: MesSeguimiento[]) =>
-    apiClient.put(`/api/proyectos/actividades/${actividadId}/seguimiento-mensual`, { seguimiento }),
+    apiClient.put(`/proyectos/actividades/${actividadId}/seguimiento-mensual`, { seguimiento }),
 
   updateAvanceIndicador: (indicadorId: number, data: { valor_logrado: number; porcentaje_cumplimiento: number }) =>
-    apiClient.put<Indicador>(`/api/proyectos/indicadores/${indicadorId}/avance`, data),
+    apiClient.put<Indicador>(`/proyectos/indicadores/${indicadorId}/avance`, data),
 
   // ==================== GASTOS ====================
 
   getGastos: (actividadId: number) =>
-    apiClient.get<Gasto[]>(`/api/actividades/${actividadId}/gastos`),
+    apiClient.get<Gasto[]>(`/actividades/${actividadId}/gastos`),
 
   crearGasto: (actividadId: number, data: Partial<Gasto>) =>
-    apiClient.post<Gasto>(`/api/actividades/${actividadId}/gastos`, data),
+    apiClient.post<Gasto>(`/actividades/${actividadId}/gastos`, data),
 
   updateGasto: (id: number, data: Partial<Gasto>) =>
-    apiClient.put<Gasto>(`/api/gastos/${id}`, data),
+    apiClient.put<Gasto>(`/gastos/${id}`, data),
 
   deleteGasto: (id: number) =>
-    apiClient.delete(`/api/gastos/${id}`),
+    apiClient.delete(`/gastos/${id}`),
 
   // ==================== EVIDENCIAS ====================
 
   getEvidencias: (actividadId: number) =>
-    apiClient.get<Evidencia[]>(`/api/actividades/${actividadId}/evidencias`),
+    apiClient.get<Evidencia[]>(`/actividades/${actividadId}/evidencias`),
 
   subirEvidencia: (actividadId: number, formData: FormData) =>
-    apiClient.post<Evidencia>(`/api/actividades/${actividadId}/evidencias`, formData, {
+    apiClient.post<Evidencia>(`/actividades/${actividadId}/evidencias`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     }),
 
   deleteEvidencia: (id: number) =>
-    apiClient.delete(`/api/evidencias/${id}`),
+    apiClient.delete(`/evidencias/${id}`),
 
   // ==================== PERMISOS ====================
 
   getPermisos: (proyectoId: number) =>
-    apiClient.get(`/api/proyectos/${proyectoId}/permisos`),
+    apiClient.get(`/proyectos/${proyectoId}/permisos`),
 
   agregarPermiso: (proyectoId: number, data: { id_usuario: number; rol: string }) =>
-    apiClient.post(`/api/proyectos/${proyectoId}/permisos`, data),
+    apiClient.post(`/proyectos/${proyectoId}/permisos`, data),
 
   updatePermiso: (proyectoId: number, userId: number, rol: string) =>
-    apiClient.put(`/api/proyectos/${proyectoId}/permisos/${userId}`, { rol }),
+    apiClient.put(`/proyectos/${proyectoId}/permisos/${userId}`, { rol }),
 
   deletePermiso: (proyectoId: number, userId: number) =>
-    apiClient.delete(`/api/proyectos/${proyectoId}/permisos/${userId}`)
+    apiClient.delete(`/proyectos/${proyectoId}/permisos/${userId}`)
 };

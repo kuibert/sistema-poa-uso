@@ -56,14 +56,22 @@ export const SeguimientoPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [responsables, setResponsables] = useState<any[]>([]); // New State
 
   // Edit State
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Actividad | null>(null);
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm] = useState<{
+    nombre: string;
+    presupuesto: number;
+    responsable_nombre: string;
+    id_responsable?: number; // New field
+    cargo_responsable: string;
+    unidad_responsable: string;
+  }>({
     nombre: '',
     presupuesto: 0,
-    responsable_nombre: '', // Visual only for now if we don't have full user list here
+    responsable_nombre: '',
     cargo_responsable: '',
     unidad_responsable: ''
   });
@@ -81,9 +89,10 @@ export const SeguimientoPage: React.FC = () => {
   const activityRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
 
-  // Cargar lista de proyectos
+  // Cargar lista de proyectos y responsables
   useEffect(() => {
     loadProyectos();
+    loadResponsables(); // New fetch
   }, [anio]);
 
   // Leer Query Params (proyectoId y actividad)
@@ -132,12 +141,22 @@ export const SeguimientoPage: React.FC = () => {
     }
   };
 
+  const loadResponsables = async () => {
+    try {
+      const response = await apiClient.get('/proyectos/responsables');
+      setResponsables(response.data);
+    } catch (err: any) {
+      console.error('Error cargando responsables:', err);
+    }
+  };
+
   const handleEditClick = (act: Actividad) => {
     setEditingActivity(act);
     setEditForm({
       nombre: act.nombre,
       presupuesto: act.presupuesto_asignado,
       responsable_nombre: act.responsable_nombre || '',
+      id_responsable: act.id_responsable, // Capture existing ID
       cargo_responsable: act.cargo_responsable || '',
       unidad_responsable: act.unidad_responsable || ''
     });
@@ -156,8 +175,8 @@ export const SeguimientoPage: React.FC = () => {
         presupuesto_asignado: editForm.presupuesto,
         // Send other fields if needed or kept as is
         cargo_responsable: editForm.cargo_responsable,
-        unidad_responsable: editForm.unidad_responsable
-        // id_responsable: editingActivity.id_responsable // Keep same responsible
+        unidad_responsable: editForm.unidad_responsable,
+        id_responsable: editForm.id_responsable // Send selected ID
       });
 
       setEditModalOpen(false);
@@ -714,7 +733,6 @@ export const SeguimientoPage: React.FC = () => {
       </Card>
 
 
-      {/* Modal de Edición */}
       <Modal
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
@@ -741,6 +759,39 @@ export const SeguimientoPage: React.FC = () => {
           </FormGroup>
 
           <FormGroup>
+            <Label>Nombre del Responsable</Label>
+            <Input
+              type="text"
+              list="responsables-list"
+              value={editForm.responsable_nombre}
+              onChange={(e) => {
+                const val = e.target.value;
+                const found = responsables.find(u => u.nombre_completo === val);
+                setEditForm({
+                  ...editForm,
+                  responsable_nombre: val,
+                  id_responsable: found ? found.id : undefined,
+                  cargo_responsable: found ? found.cargo : editForm.cargo_responsable // Auto-fill cargo if found
+                });
+              }}
+              placeholder="Escriba para buscar..."
+              style={{
+                borderColor: (editForm.responsable_nombre && !editForm.id_responsable) ? '#e74c3c' : undefined
+              }}
+            />
+            <datalist id="responsables-list">
+              {responsables.map(u => (
+                <option key={u.id} value={u.nombre_completo} />
+              ))}
+            </datalist>
+            {(editForm.responsable_nombre && !editForm.id_responsable) && (
+              <Typography variant="caption" style={{ color: '#e74c3c', marginTop: '0.2rem' }}>
+                ⚠️ Usuario no registrado
+              </Typography>
+            )}
+          </FormGroup>
+
+          <FormGroup>
             <Label>Cargo del responsable</Label>
             <Input
               type="text"
@@ -750,15 +801,7 @@ export const SeguimientoPage: React.FC = () => {
             />
           </FormGroup>
 
-          <FormGroup>
-            <Label>Unidad responsable</Label>
-            <Input
-              type="text"
-              value={editForm.unidad_responsable}
-              onChange={e => setEditForm({ ...editForm, unidad_responsable: e.target.value })}
-              placeholder="Ej. Facultad de Ingeniería"
-            />
-          </FormGroup>
+          {/* Unidad Responsable removed as per requirement */}
 
           <Flex justify="flex-end" gap="0.5rem" style={{ marginTop: '1rem' }}>
             <Button variant="ghost" onClick={() => setEditModalOpen(false)}>Cancelar</Button>

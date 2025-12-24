@@ -12,6 +12,7 @@ type InputProps = {
   max?: number | string;
   step?: number | string;
   style?: React.CSSProperties;
+  list?: string;
 };
 
 export const Input: React.FC<InputProps> = ({
@@ -26,6 +27,7 @@ export const Input: React.FC<InputProps> = ({
   max,
   step,
   style,
+  list,
 }) => {
   const baseStyle: React.CSSProperties = {
     width: '100%',
@@ -53,6 +55,7 @@ export const Input: React.FC<InputProps> = ({
       max={max}
       step={step}
       style={baseStyle}
+      list={list}
     />
   );
 };

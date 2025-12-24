@@ -15,9 +15,23 @@ export default function ActividadGastos() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Valores iniciales
-  // const [proyecto] = useState("Gestión de acreditación de la Carrera de Ingeniería Industrial");
-  // const [actividad] = useState("Acercamiento y entendimiento con ACAAI");
+  // Obtener usuario y permisos
+  const [canEdit, setCanEdit] = useState(false);
+
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        // Permitir solo a ADMIN y EDITOR (ajustar según mayúsculas/minúsculas de tu DB)
+        const role = user.rol?.toUpperCase();
+        setCanEdit(role === 'ADMIN' || role === 'EDITOR');
+      }
+    } catch (e) {
+      console.error("Error leyendo usuario", e);
+      setCanEdit(false);
+    }
+  }, []);
 
   const [headerInfo, setHeaderInfo] = useState({
     proyecto: '',
@@ -95,6 +109,7 @@ export default function ActividadGastos() {
 
   // Agregar fila vacía para nuevo gasto
   const agregarFila = () => {
+    if (!canEdit) return;
     if (montoDisponible <= 0) {
       setError('No hay presupuesto disponible para agregar más gastos.');
       return;
@@ -105,6 +120,7 @@ export default function ActividadGastos() {
 
   // Eliminar gasto (Prepara la eliminación)
   const eliminarGasto = (index: number) => {
+    if (!canEdit) return;
     const gasto = gastos[index];
 
     // Si tiene ID, pedir confirmación
@@ -120,6 +136,7 @@ export default function ActividadGastos() {
   // Confirmar eliminación (Ejecuta la acción real)
   const confirmarEliminacion = async () => {
     if (deleteTargetIndex === null) return;
+    if (!canEdit) return;
 
     const index = deleteTargetIndex;
     const gasto = gastos[index];
@@ -142,6 +159,7 @@ export default function ActividadGastos() {
 
   // Actualizar campo de gasto
   const actualizarFila = (index: number, campo: keyof Gasto, valor: string | number) => {
+    if (!canEdit) return;
     const copia = [...gastos];
     (copia[index] as any)[campo] = valor;
     setGastos(copia);
@@ -149,6 +167,7 @@ export default function ActividadGastos() {
 
   // Guardar nuevo gasto en el backend
   const guardarGasto = async (index: number) => {
+    if (!canEdit) return;
     const gasto = gastos[index];
 
     // Validar que tenga datos
@@ -319,6 +338,8 @@ export default function ActividadGastos() {
                         step="0.01"
                         min="0"
                         style={{ textAlign: 'right' }}
+                        // También restringir editar el monto asignado si es necesario
+                        readOnly={!canEdit}
                       />
                     </div>
                     <div>
@@ -345,9 +366,11 @@ export default function ActividadGastos() {
                   title="Lista simple de gastos"
                   description="Fecha, descripción y monto."
                   headerAction={
-                    <Button variant="main" size="sm" type="button" onClick={agregarFila} disabled={saving}>
-                      ➕ Agregar gasto
-                    </Button>
+                    canEdit ? (
+                      <Button variant="main" size="sm" type="button" onClick={agregarFila} disabled={saving}>
+                        ➕ Agregar gasto
+                      </Button>
+                    ) : null
                   }
                 >
                   <Table variant="compact">
@@ -367,7 +390,7 @@ export default function ActividadGastos() {
                               type="date"
                               value={g.fecha}
                               onChange={(e) => actualizarFila(i, "fecha", e.target.value)}
-                              disabled={saving}
+                              disabled={saving || !canEdit}
                               style={{ padding: '0.3rem', fontSize: '0.85rem' }}
                             />
                           </Table.Cell>
@@ -377,7 +400,7 @@ export default function ActividadGastos() {
                               placeholder="Detalle del gasto"
                               value={g.descripcion}
                               onChange={(e) => actualizarFila(i, "descripcion", e.target.value)}
-                              disabled={saving}
+                              disabled={saving || !canEdit}
                               style={{ padding: '0.3rem', fontSize: '0.85rem' }}
                             />
                           </Table.Cell>
@@ -388,13 +411,13 @@ export default function ActividadGastos() {
                               min="0"
                               value={g.monto}
                               onChange={(e) => actualizarFila(i, "monto", Number(e.target.value))}
-                              disabled={saving}
+                              disabled={saving || !canEdit}
                               style={{ padding: '0.3rem', fontSize: '0.85rem', textAlign: 'right' }}
                             />
                           </Table.Cell>
                           <Table.Cell center>
                             <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center' }}>
-                              {!g.id_gasto && (
+                              {!g.id_gasto && canEdit && (
                                 <Button
                                   variant="main"
                                   size="sm"
@@ -406,16 +429,18 @@ export default function ActividadGastos() {
                                   💾
                                 </Button>
                               )}
-                              <Button
-                                variant="alt"
-                                size="sm"
-                                type="button"
-                                onClick={() => eliminarGasto(i)}
-                                disabled={saving}
-                                style={{ borderRadius: '50%', width: '32px', height: '32px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                              >
-                                ✖
-                              </Button>
+                              {canEdit && (
+                                <Button
+                                  variant="alt"
+                                  size="sm"
+                                  type="button"
+                                  onClick={() => eliminarGasto(i)}
+                                  disabled={saving}
+                                  style={{ borderRadius: '50%', width: '32px', height: '32px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  ✖
+                                </Button>
+                              )}
                             </div>
                           </Table.Cell>
                         </Table.Row>
@@ -425,7 +450,7 @@ export default function ActividadGastos() {
 
                   {gastos.length === 0 && (
                     <p style={{ textAlign: 'center', color: 'var(--texto-sec)', padding: '2rem' }}>
-                      No hay gastos registrados. Haz clic en el botón superior para agregar.
+                      {canEdit ? 'No hay gastos registrados. Haz clic en el botón superior para agregar.' : 'No hay gastos registrados.'}
                     </p>
                   )}
                 </Section>

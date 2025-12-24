@@ -15,9 +15,23 @@ export default function ActividadEvidencias() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Valores iniciales
-  // const [proyecto] = useState("Gestión de acreditación de la Carrera de Ingeniería Industrial");
-  // const [actividad] = useState("Acercamiento y entendimiento con ACAAI");
+  // Obtener usuario y permisos
+  const [canEdit, setCanEdit] = useState(false);
+
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        // Permitir solo a ADMIN y EDITOR
+        const role = user.rol?.toUpperCase();
+        setCanEdit(role === 'ADMIN' || role === 'EDITOR');
+      }
+    } catch (e) {
+      console.error("Error leyendo usuario", e);
+      setCanEdit(false);
+    }
+  }, []);
 
   const [headerInfo, setHeaderInfo] = useState({
     proyecto: '',
@@ -101,6 +115,8 @@ export default function ActividadEvidencias() {
   };
 
   const agregarEvidencia = async () => {
+    if (!canEdit) return;
+
     // Validar campos
     if (!nuevaEvidencia.tipo || !nuevaEvidencia.descripcion || !nuevaEvidencia.archivo) {
       setError('Por favor completa todos los campos de la evidencia');
@@ -144,6 +160,7 @@ export default function ActividadEvidencias() {
   };
 
   const eliminarEvidencia = (index: number) => {
+    if (!canEdit) return;
     const evidencia = evidencias[index];
     if (!evidencia.id_evidencia) return;
 
@@ -153,6 +170,8 @@ export default function ActividadEvidencias() {
 
   const confirmarEliminacion = async () => {
     if (deleteTargetIndex === null) return;
+    if (!canEdit) return;
+
     const index = deleteTargetIndex;
     const evidencia = evidencias[index];
 
@@ -286,73 +305,79 @@ export default function ActividadEvidencias() {
               </Section>
 
               {/* Formulario para agregar evidencia */}
-              <Section
-                title="Registro de nueva evidencia"
-                description="Cada evidencia puede ser un archivo (acta, lista, informe, fotografía, etc.) con su descripción y fecha."
-              >
-                <div style={{ background: 'var(--panel-contenido)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--borde)' }}>
-                  <Grid columns={3} style={{ marginBottom: '1rem' }}>
-                    <div>
-                      <Label>Fecha de la evidencia</Label>
+              {canEdit ? (
+                <Section
+                  title="Registro de nueva evidencia"
+                  description="Cada evidencia puede ser un archivo (acta, lista, informe, fotografía, etc.) con su descripción y fecha."
+                >
+                  <div style={{ background: 'var(--panel-contenido)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--borde)' }}>
+                    <Grid columns={3} style={{ marginBottom: '1rem' }}>
+                      <div>
+                        <Label>Fecha de la evidencia</Label>
+                        <Input
+                          type="date"
+                          value={nuevaEvidencia.fecha ? new Date(nuevaEvidencia.fecha).toISOString().split('T')[0] : ''}
+                          onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, fecha: e.target.value })}
+                          disabled={saving}
+                        />
+                      </div>
+                      <div>
+                        <Label>Tipo de evidencia</Label>
+                        <Select
+                          value={nuevaEvidencia.tipo}
+                          onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, tipo: e.target.value })}
+                          disabled={saving}
+                        >
+                          <option value="">Seleccione...</option>
+                          <option value="Acta / minuta">Acta / minuta</option>
+                          <option value="Informe">Informe</option>
+                          <option value="Lista de asistencia">Lista de asistencia</option>
+                          <option value="Constancia / certificado">Constancia / certificado</option>
+                          <option value="Registro fotográfico">Registro fotográfico</option>
+                          <option value="Otro">Otro</option>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Archivo</Label>
+                        <Input
+                          type="file"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setNuevaEvidencia({ ...nuevaEvidencia, archivo: file.name });
+                            }
+                          }}
+                          disabled={saving}
+                        />
+                      </div>
+                    </Grid>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <Label>Descripción de la evidencia</Label>
                       <Input
-                        type="date"
-                        value={nuevaEvidencia.fecha ? new Date(nuevaEvidencia.fecha).toISOString().split('T')[0] : ''}
-                        onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, fecha: e.target.value })}
+                        type="text"
+                        placeholder="Describe brevemente qué evidencia es, qué actividad documenta y en qué contexto."
+                        value={nuevaEvidencia.descripcion}
+                        onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, descripcion: e.target.value })}
                         disabled={saving}
                       />
                     </div>
-                    <div>
-                      <Label>Tipo de evidencia</Label>
-                      <Select
-                        value={nuevaEvidencia.tipo}
-                        onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, tipo: e.target.value })}
-                        disabled={saving}
-                      >
-                        <option value="">Seleccione...</option>
-                        <option value="Acta / minuta">Acta / minuta</option>
-                        <option value="Informe">Informe</option>
-                        <option value="Lista de asistencia">Lista de asistencia</option>
-                        <option value="Constancia / certificado">Constancia / certificado</option>
-                        <option value="Registro fotográfico">Registro fotográfico</option>
-                        <option value="Otro">Otro</option>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Archivo</Label>
-                      <Input
-                        type="file"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setNuevaEvidencia({ ...nuevaEvidencia, archivo: file.name });
-                          }
-                        }}
-                        disabled={saving}
-                      />
-                    </div>
-                  </Grid>
 
-                  <div style={{ marginBottom: '1rem' }}>
-                    <Label>Descripción de la evidencia</Label>
-                    <Input
-                      type="text"
-                      placeholder="Describe brevemente qué evidencia es, qué actividad documenta y en qué contexto."
-                      value={nuevaEvidencia.descripcion}
-                      onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, descripcion: e.target.value })}
-                      disabled={saving}
-                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                      <Button variant="alt" type="button" onClick={limpiarCampos} disabled={saving}>
+                        ↺ Limpiar campos
+                      </Button>
+                      <Button variant="main" type="button" onClick={agregarEvidencia} disabled={saving}>
+                        ➕ Agregar evidencia
+                      </Button>
+                    </div>
                   </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                    <Button variant="alt" type="button" onClick={limpiarCampos} disabled={saving}>
-                      ↺ Limpiar campos
-                    </Button>
-                    <Button variant="main" type="button" onClick={agregarEvidencia} disabled={saving}>
-                      ➕ Agregar evidencia
-                    </Button>
-                  </div>
-                </div>
-              </Section>
+                </Section>
+              ) : (
+                <p style={{ textAlign: 'center', color: 'var(--texto-sec)', padding: '1rem', background: 'var(--panel-contenido)', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid var(--borde)' }}>
+                  🔒 Solo los administradores o editores pueden agregar nuevas evidencias.
+                </p>
+              )}
 
               {/* Lista de evidencias */}
               <Section
@@ -361,7 +386,7 @@ export default function ActividadEvidencias() {
               >
                 {evidencias.length === 0 ? (
                   <p style={{ textAlign: 'center', color: 'var(--texto-sec)', padding: '2rem' }}>
-                    No hay evidencias registradas. Agrega la primera evidencia arriba.
+                    {canEdit ? 'No hay evidencias registradas. Agrega la primera evidencia arriba.' : 'No hay evidencias registradas.'}
                   </p>
                 ) : (
                   <Table variant="compact">
@@ -384,7 +409,9 @@ export default function ActividadEvidencias() {
                           <Table.Cell center>
                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                               <Button variant="main" size="sm" type="button" onClick={() => alert("Función de descarga no implementada aún")}>⬇</Button>
-                              <Button variant="alt" size="sm" type="button" onClick={() => eliminarEvidencia(i)}>✖</Button>
+                              {canEdit && (
+                                <Button variant="alt" size="sm" type="button" onClick={() => eliminarEvidencia(i)}>✖</Button>
+                              )}
                             </div>
                           </Table.Cell>
                         </Table.Row>

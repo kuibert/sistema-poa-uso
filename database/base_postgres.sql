@@ -6,7 +6,9 @@ BEGIN;
 CREATE TABLE usuario (
     id                  BIGSERIAL PRIMARY KEY,
     nombre_completo     TEXT        NOT NULL,
-    correo              TEXT        UNIQUE,
+    email               TEXT        UNIQUE NOT NULL,
+    contrasena          TEXT        NOT NULL,
+    rol                 VARCHAR(20) NOT NULL DEFAULT 'VIEWER' CHECK (rol IN ('ADMIN', 'EDITOR', 'VIEWER')),
     cargo               TEXT,
     unidad              TEXT,
     activo              BOOLEAN     NOT NULL DEFAULT TRUE,

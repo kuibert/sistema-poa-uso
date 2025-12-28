@@ -7,7 +7,7 @@ type Evidencia = {
   id_evidencia?: number;
   tipo: string;
   descripcion: string;
-  archivo: string;
+  archivo: string | File; // Can be filename string or File object
   fecha?: string;
 };
 
@@ -128,10 +128,21 @@ export default function ActividadEvidencias() {
       setError(null);
       setSuccess(null);
 
-      const response = await apiClient.post(`/actividades/${id}/evidencias`, {
-        tipo_evidencia: nuevaEvidencia.tipo,
-        descripcion: nuevaEvidencia.descripcion,
-        ruta_archivo: nuevaEvidencia.archivo
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('tipo_evidencia', nuevaEvidencia.tipo);
+      formData.append('descripcion', nuevaEvidencia.descripcion);
+      if (nuevaEvidencia.archivo instanceof File) {
+        formData.append('archivo', nuevaEvidencia.archivo);
+      }
+      if (nuevaEvidencia.fecha) {
+        formData.append('fecha', nuevaEvidencia.fecha);
+      }
+
+      const response = await apiClient.post(`/actividades/${id}/evidencias`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       // Agregar la nueva evidencia a la lista
@@ -141,8 +152,8 @@ export default function ActividadEvidencias() {
           id_evidencia: response.data.id_evidencia,
           tipo: nuevaEvidencia.tipo,
           descripcion: nuevaEvidencia.descripcion,
-          archivo: nuevaEvidencia.archivo,
-          fecha: new Date().toISOString()
+          archivo: response.data.ruta_archivo || (nuevaEvidencia.archivo instanceof File ? nuevaEvidencia.archivo.name : nuevaEvidencia.archivo),
+          fecha: response.data.fecha_subida || nuevaEvidencia.fecha || new Date().toISOString()
         }
       ]);
 
@@ -188,6 +199,42 @@ export default function ActividadEvidencias() {
       setSaving(false);
       setShowDeleteDialog(false);
       setDeleteTargetIndex(null);
+    }
+  };
+
+  const handleDownload = async (archivo: string | File) => {
+    if (archivo instanceof File) {
+      // If it's a File object (not yet uploaded), can't download
+      setError('El archivo aún no ha sido subido');
+      return;
+    }
+
+    try {
+      // Clean filename: remove /uploads/ prefix if present
+      const filename = archivo.startsWith('/uploads/')
+        ? archivo.substring(9)
+        : archivo.startsWith('uploads/')
+          ? archivo.substring(8)
+          : archivo;
+
+      // Fetch file with credentials
+      const response = await apiClient.get(`/uploads/${filename}`, {
+        responseType: 'blob'
+      });
+
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename; // Use cleaned filename
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError('Error al descargar el archivo: ' + (err.response?.data?.error || err.message));
+      console.error('Error downloading file:', err);
     }
   };
 
@@ -344,7 +391,7 @@ export default function ActividadEvidencias() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              setNuevaEvidencia({ ...nuevaEvidencia, archivo: file.name });
+                              setNuevaEvidencia({ ...nuevaEvidencia, archivo: file });
                             }
                           }}
                           disabled={saving}
@@ -404,11 +451,19 @@ export default function ActividadEvidencias() {
                         <Table.Row key={i}>
                           <Table.Cell>{ev.fecha ? new Date(ev.fecha).toLocaleDateString() : '-'}</Table.Cell>
                           <Table.Cell>{ev.tipo}</Table.Cell>
-                          <Table.Cell>{ev.archivo}</Table.Cell>
+                          <Table.Cell>{ev.archivo instanceof File ? ev.archivo.name : ev.archivo}</Table.Cell>
                           <Table.Cell>{ev.descripcion}</Table.Cell>
                           <Table.Cell center>
                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                              <Button variant="main" size="sm" type="button" onClick={() => alert("Función de descarga no implementada aún")}>⬇</Button>
+                              <Button
+                                variant="main"
+                                size="sm"
+                                type="button"
+                                onClick={() => handleDownload(ev.archivo)}
+                                title="Descargar/Ver archivo"
+                              >
+                                ⬇
+                              </Button>
                               {canEdit && (
                                 <Button variant="alt" size="sm" type="button" onClick={() => eliminarEvidencia(i)}>✖</Button>
                               )}

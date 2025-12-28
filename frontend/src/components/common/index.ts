@@ -26,3 +26,5 @@ export { Typography } from './Typography';
 export { GanttChart } from './GanttChart';
 export { Pagination } from './Pagination';
 export { SearchBar } from './SearchBar';
+export { ReportHeader } from './ReportHeader';
+export { KPICard } from './KPICard';

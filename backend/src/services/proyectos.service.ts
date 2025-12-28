@@ -2,7 +2,7 @@ import { query } from '../config/db';
 
 export const proyectosService = {
   // Dashboard (Page0)
-  async getDashboard(anio: number, mes: number) {
+  async getDashboard(anio: number, mes: number, unidad?: string) {
     // 1. Proyectos con presupuesto y gasto
     // Nota: actividadesMes ahora cuenta SI existe plan para ese mes
     const proyectosResult = await query(
@@ -21,6 +21,7 @@ export const proyectosService = {
     LEFT JOIN actividad_mes_plan amp ON amp.id_actividad = a.id AND amp.mes = $2
     LEFT JOIN gasto_actividad g ON g.id_actividad = a.id
     WHERE p.anio = $1
+    ${unidad ? 'AND p.unidad_facultad = $3' : ''}
     AND (
       EXTRACT(MONTH FROM p.created_at) >= $2
       OR
@@ -36,7 +37,7 @@ export const proyectosService = {
     GROUP BY p.id, u.nombre_completo
     ORDER BY p.created_at DESC
     `,
-      [anio, mes]
+      unidad ? [anio, mes, unidad] : [anio, mes]
     );
 
     // 2. Actividades del año para la LISTA (Filtrado por MES seleccionado)
@@ -140,6 +141,149 @@ export const proyectosService = {
       [anio]
     );
     return result.rows;
+  },
+
+  async getUnidades() {
+    const result = await query(
+      `SELECT DISTINCT unidad_facultad 
+       FROM proyecto 
+       WHERE unidad_facultad IS NOT NULL 
+       ORDER BY unidad_facultad ASC`
+    );
+    return result.rows.map(row => row.unidad_facultad);
+  },
+
+  async getReporteFinanciero(proyectoId: number) {
+    // Get project with budget
+    const proyectoResult = await query(
+      `SELECT p.*, u.nombre_completo as responsable_nombre
+       FROM proyecto p
+       LEFT JOIN usuario u ON p.id_responsable = u.id
+       WHERE p.id = $1`,
+      [proyectoId]
+    );
+
+    if (proyectoResult.rows.length === 0) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    const proyecto = proyectoResult.rows[0];
+
+    // Get activities with their budgets and expenses
+    const actividadesResult = await query(
+      `SELECT 
+        a.id, a.nombre, a.presupuesto_asignado,
+        COALESCE(SUM(g.monto), 0) as gastado
+       FROM actividad a
+       LEFT JOIN gasto_actividad g ON g.id_actividad = a.id
+       WHERE a.id_proyecto = $1
+       GROUP BY a.id, a.nombre, a.presupuesto_asignado
+       ORDER BY a.id`,
+      [proyectoId]
+    );
+
+    const actividades = actividadesResult.rows.map((act: any) => ({
+      ...act,
+      presupuesto_asignado: Number(act.presupuesto_asignado) || 0,
+      gastado: Number(act.gastado) || 0,
+      disponible: (Number(act.presupuesto_asignado) || 0) - (Number(act.gastado) || 0),
+      porcentaje_ejecucion: ((Number(act.gastado) || 0) / (Number(act.presupuesto_asignado) || 1)) * 100
+    }));
+
+    const totalPresupuesto = Number(proyecto.presupuesto_total) || 0;
+    const totalGastado = actividades.reduce((sum, act) => sum + act.gastado, 0);
+    const disponible = totalPresupuesto - totalGastado;
+    const porcentajeEjecucion = (totalGastado / totalPresupuesto) * 100;
+
+    return {
+      proyecto: {
+        ...proyecto,
+        presupuesto_total: totalPresupuesto
+      },
+      resumen: {
+        totalPresupuesto,
+        totalGastado,
+        disponible,
+        porcentajeEjecucion: Math.round(porcentajeEjecucion * 100) / 100
+      },
+      actividades
+    };
+  },
+
+  async getReporteFinancieroUnidades(anio: number) {
+    // Get all projects grouped by unit with financial data
+    const result = await query(
+      `SELECT 
+        p.unidad_facultad,
+        COUNT(p.id) as num_proyectos,
+        COALESCE(SUM(p.presupuesto_total), 0) as presupuesto_total,
+        p.id as proyecto_id,
+        p.nombre as proyecto_nombre,
+        p.presupuesto_total as proyecto_presupuesto
+       FROM proyecto p
+       WHERE p.anio = $1 AND p.unidad_facultad IS NOT NULL
+       GROUP BY p.unidad_facultad, p.id, p.nombre, p.presupuesto_total
+       ORDER BY p.unidad_facultad, p.nombre`,
+      [anio]
+    );
+
+    // Get gastos for all projects
+    const gastosResult = await query(
+      `SELECT 
+        p.id as proyecto_id,
+        COALESCE(SUM(g.monto), 0) as total_gastado
+       FROM proyecto p
+       LEFT JOIN actividad a ON a.id_proyecto = p.id
+       LEFT JOIN gasto_actividad g ON g.id_actividad = a.id
+       WHERE p.anio = $1
+       GROUP BY p.id`,
+      [anio]
+    );
+
+    const gastosMap: Record<number, number> = {};
+    gastosResult.rows.forEach((row: any) => {
+      gastosMap[row.proyecto_id] = Number(row.total_gastado) || 0;
+    });
+
+    // Group by unidad
+    const unidadesMap: Record<string, any> = {};
+
+    result.rows.forEach((row: any) => {
+      const unidad = row.unidad_facultad;
+      if (!unidadesMap[unidad]) {
+        unidadesMap[unidad] = {
+          unidad_facultad: unidad,
+          num_proyectos: 0,
+          presupuesto_total: 0,
+          total_gastado: 0,
+          proyectos: []
+        };
+      }
+
+      const gastado = gastosMap[row.proyecto_id] || 0;
+      const presupuesto = Number(row.proyecto_presupuesto) || 0;
+
+      unidadesMap[unidad].num_proyectos += 1;
+      unidadesMap[unidad].presupuesto_total += presupuesto;
+      unidadesMap[unidad].total_gastado += gastado;
+      unidadesMap[unidad].proyectos.push({
+        id: row.proyecto_id,
+        nombre: row.proyecto_nombre,
+        presupuesto: presupuesto,
+        gastado: gastado,
+        disponible: presupuesto - gastado,
+        porcentaje_ejecucion: (gastado / presupuesto) * 100
+      });
+    });
+
+    // Convert to array and calculate additional metrics
+    const unidades = Object.values(unidadesMap).map((unidad: any) => ({
+      ...unidad,
+      disponible: unidad.presupuesto_total - unidad.total_gastado,
+      porcentaje_ejecucion: (unidad.total_gastado / unidad.presupuesto_total) * 100
+    }));
+
+    return unidades;
   },
 
   // Planificación (Page1)

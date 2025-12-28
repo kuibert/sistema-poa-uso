@@ -9,14 +9,17 @@ export const DashboardPOA: React.FC = () => {
   const [proyectos, setProyectos] = useState<any[]>([]);
   const [actividadesMes, setActividadesMes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unidades, setUnidades] = useState<string[]>([]);
 
   // Estados de los Inputs (Interfaz de usuario)
   const [inputMonth, setInputMonth] = useState<number>(12);
   const [inputYear, setInputYear] = useState<string>("2025");
+  const [inputUnidad, setInputUnidad] = useState<string>("");
 
   // Estados de los Filtros Aplicados (Para la query)
   const [appliedMonth, setAppliedMonth] = useState<number>(12);
   const [appliedYear, setAppliedYear] = useState<number>(2025);
+  const [appliedUnidad, setAppliedUnidad] = useState<string>("");
 
   const months = [
     { value: 1, label: 'Enero' },
@@ -37,11 +40,25 @@ export const DashboardPOA: React.FC = () => {
   //  CARGAR DATOS DESDE BACKEND
   // ============================
   useEffect(() => {
+    const loadUnidades = async () => {
+      try {
+        const { data } = await apiClient.get('/proyectos/unidades');
+        setUnidades(data);
+      } catch (error) {
+        console.error("Error cargando unidades:", error);
+      }
+    };
+    loadUnidades();
+  }, []);
+
+  useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
         // Usar los filtros APLICADOS
-        const { data } = await apiClient.get(`/proyectos/dashboard?anio=${appliedYear}&mes=${appliedMonth}`);
+        const params: any = { anio: appliedYear, mes: appliedMonth };
+        if (appliedUnidad) params.unidad = appliedUnidad;
+        const { data } = await apiClient.get('/proyectos/dashboard', { params });
 
         setProyectos(data.proyectos || []);
         setActividadesMes(data.actividadesMes || []);
@@ -52,13 +69,14 @@ export const DashboardPOA: React.FC = () => {
     };
 
     load();
-  }, [appliedYear, appliedMonth]); // Dependencias: solo cambia cuando se aplican
+  }, [appliedYear, appliedMonth, appliedUnidad]); // Dependencias: solo cambia cuando se aplican
 
   const handleApplyFilters = () => {
     const yearParsed = parseInt(inputYear, 10);
     if (!isNaN(yearParsed) && yearParsed > 1900 && yearParsed < 2100) {
       setAppliedYear(yearParsed);
       setAppliedMonth(inputMonth);
+      setAppliedUnidad(inputUnidad);
     }
   };
 
@@ -284,6 +302,17 @@ export const DashboardPOA: React.FC = () => {
                     style={{ width: '70px', padding: '4px 8px', fontSize: '0.9rem' }}
                     placeholder="Año"
                   />
+
+                  <Select
+                    value={inputUnidad}
+                    onChange={(e) => setInputUnidad(e.target.value)}
+                    style={{ width: '200px', padding: '4px 8px', fontSize: '0.9rem' }}
+                  >
+                    <option value="">Todas las unidades</option>
+                    {unidades.map((u, idx) => (
+                      <option key={idx} value={u}>{u}</option>
+                    ))}
+                  </Select>
 
                   <Button
                     onClick={handleApplyFilters}

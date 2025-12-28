@@ -23,8 +23,18 @@ router.get('/dashboard', authMiddleware, async (req, res, next) => {
   try {
     const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
     const mes = parseInt(req.query.mes as string) || (new Date().getMonth() + 1);
-    const dashboard = await proyectosService.getDashboard(anio, mes);
+    const unidad = req.query.unidad as string | undefined;
+    const dashboard = await proyectosService.getDashboard(anio, mes, unidad);
     res.json(dashboard);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/unidades', authMiddleware, async (req, res, next) => {
+  try {
+    const unidades = await proyectosService.getUnidades();
+    res.json(unidades);
   } catch (error) {
     next(error);
   }
@@ -35,6 +45,26 @@ router.get('/', authMiddleware, async (req, res, next) => {
     const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
     const proyectos = await proyectosService.getProyectos(anio);
     res.json(proyectos);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Financial reports
+router.get('/reporte-financiero/:id', authMiddleware, async (req, res, next) => {
+  try {
+    const reporte = await proyectosService.getReporteFinanciero(parseInt(req.params.id));
+    res.json(reporte);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/reporte-financiero-unidades', authMiddleware, async (req, res, next) => {
+  try {
+    const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
+    const reporte = await proyectosService.getReporteFinancieroUnidades(anio);
+    res.json(reporte);
   } catch (error) {
     next(error);
   }

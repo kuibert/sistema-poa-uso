@@ -9,11 +9,11 @@ BEGIN;
 -- ========================================
 -- 1. MÁS USUARIOS
 -- ========================================
-INSERT INTO usuario (nombre_completo, correo, cargo, unidad, activo) VALUES
-('Ana María Rodríguez', 'ana.rodriguez@uso.edu.sv', 'Decana', 'Facultad de Ciencias Económicas', true),
-('Roberto Carlos Gómez', 'roberto.gomez@uso.edu.sv', 'Jefe de Departamento', 'Facultad de Medicina', true),
-('Laura Patricia Hernández', 'laura.hernandez@uso.edu.sv', 'Coordinadora de Investigación', 'Facultad de Ingeniería', true),
-('Miguel Ángel Torres', 'miguel.torres@uso.edu.sv', 'Asistente Académico', 'Facultad de Ciencias Económicas', true);
+INSERT INTO usuario (nombre_completo, correo, cargo, unidad, activo, contrasena) VALUES
+('Ana María Rodríguez', 'ana.rodriguez@uso.edu.sv', 'Decana', 'Facultad de Ciencias Económicas', true, '$2a$10$/bUrFujA/x5LdVeJM555Iu1NJlREvO71V6cLqpkyGTUlQMu0KoWte'),
+('Roberto Carlos Gómez', 'roberto.gomez@uso.edu.sv', 'Jefe de Departamento', 'Facultad de Medicina', true, '$2a$10$/bUrFujA/x5LdVeJM555Iu1NJlREvO71V6cLqpkyGTUlQMu0KoWte'),
+('Laura Patricia Hernández', 'laura.hernandez@uso.edu.sv', 'Coordinadora de Investigación', 'Facultad de Ingeniería', true, '$2a$10$/bUrFujA/x5LdVeJM555Iu1NJlREvO71V6cLqpkyGTUlQMu0KoWte'),
+('Miguel Ángel Torres', 'miguel.torres@uso.edu.sv', 'Asistente Académico', 'Facultad de Ciencias Económicas', true, '$2a$10$/bUrFujA/x5LdVeJM555Iu1NJlREvO71V6cLqpkyGTUlQMu0KoWte');
 
 -- ========================================
 -- 2. MÁS PROYECTOS (2025)

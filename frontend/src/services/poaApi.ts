@@ -27,6 +27,9 @@ export const poaApi = {
   getReporte: (id: number) =>
     apiClient.get<any>(`/proyectos/${id}/reporte`),
 
+  getReporteMetricasAnual: (anio: number) =>
+    apiClient.get<any[]>(`/proyectos/reporte-metricas-anual?anio=${anio}`),
+
   // Actividades
   crearActividad: (proyectoId: number, data: Partial<Actividad>) =>
     apiClient.post<Actividad>(`/proyectos/${proyectoId}/actividades`, data),

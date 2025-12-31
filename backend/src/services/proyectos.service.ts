@@ -64,7 +64,7 @@ export const proyectosService = {
     -- Solo mostramos actividades PLANIFICADAS para este mes
     JOIN actividad_mes_plan amp ON amp.id_actividad = a.id AND amp.mes = $2 AND amp.planificado = true
     LEFT JOIN indicador_actividad ia ON ia.id_actividad = a.id
-    WHERE EXTRACT(YEAR FROM a.created_at) = $1
+    WHERE p.anio = $1
     `,
       [anio, mes]
     );
@@ -284,6 +284,93 @@ export const proyectosService = {
     }));
 
     return unidades;
+  },
+
+  async getReporteMetricasAnual(anio: number) {
+    // 1. Obtener proyectos basicos
+    const proyectosResult = await query(
+      `SELECT p.id, p.nombre, p.unidad_facultad, p.presupuesto_total, 
+              u.nombre_completo as responsable_nombre
+       FROM proyecto p
+       LEFT JOIN usuario u ON p.id_responsable = u.id
+       WHERE p.anio = $1
+       ORDER BY p.nombre`,
+      [anio]
+    );
+
+    // 2. Calcular metricas para cada proyecto
+    const reporte = [];
+
+    for (const p of proyectosResult.rows) {
+      // Gastos
+      const gastoRes = await query(
+        `SELECT COALESCE(SUM(g.monto), 0) as total_gastado
+         FROM gasto_actividad g
+         JOIN actividad a ON g.id_actividad = a.id
+         WHERE a.id_proyecto = $1`,
+        [p.id]
+      );
+      const totalGastado = Number(gastoRes.rows[0].total_gastado) || 0;
+      const presupuesto = Number(p.presupuesto_total) || 0;
+      const avanceFinanciero = presupuesto > 0 ? (totalGastado / presupuesto) * 100 : 0;
+
+      // Avance Fisico (Promedio de todas las actividades del año)
+      // Logica similar al dashboard:
+      // Puntos: F=100, I=50, P=0. Promedio simple sobre el total de actividades PLANIFICADAS en el año.
+      const avanceFisicoRes = await query(`
+        WITH ActivityStats AS (
+           SELECT
+              a.id AS id_actividad,
+              COUNT(amp.mes) as total_plan,
+              COALESCE(SUM(
+                  CASE
+                    WHEN ams.estado = 'F' THEN 1.0
+                    WHEN ams.estado = 'I' THEN 0.5
+                    ELSE 0.0
+                  END
+              ), 0) as puntos_ganados
+           FROM actividad a
+           JOIN actividad_mes_plan amp ON amp.id_actividad = a.id AND amp.planificado = true
+           LEFT JOIN actividad_mes_seguimiento ams ON ams.id_actividad = a.id AND ams.mes = amp.mes
+           WHERE a.id_proyecto = $1
+           GROUP BY a.id
+        )
+        SELECT 
+          AVG(
+            CASE
+              WHEN s.total_plan > 0 THEN (s.puntos_ganados / s.total_plan::numeric) * 100
+              ELSE 0
+            END
+          )::numeric as avance_fisico
+        FROM ActivityStats s
+      `, [p.id]);
+
+      const avanceFisico = Number(avanceFisicoRes.rows[0]?.avance_fisico) || 0;
+
+      // Logro KPI (Promedio de indicadores)
+      const kpiRes = await query(`
+        SELECT AVG(COALESCE(ia.porcentaje_cumplimiento, 0))::numeric as logro_kpi
+        FROM actividad a
+        JOIN indicador_actividad ia ON ia.id_actividad = a.id
+        WHERE a.id_proyecto = $1
+      `, [p.id]);
+
+      const logroKpi = Number(kpiRes.rows[0]?.logro_kpi) || 0;
+
+      reporte.push({
+        id: p.id,
+        proyecto: p.nombre,
+        unidad: p.unidad_facultad,
+        responsable: p.responsable_nombre,
+        presupuesto: presupuesto,
+        gastado: totalGastado,
+        avanceFinanciero: Math.round(avanceFinanciero * 100) / 100,
+        avanceFisico: Math.round(avanceFisico * 100) / 100,
+        logroKpi: Math.round(logroKpi * 100) / 100
+      });
+    }
+
+    return reporte;
   },
 
   // Planificación (Page1)
@@ -829,5 +916,101 @@ export const proyectosService = {
       costos: costosRes.rows,
       actividades: actividadesRes.rows
     };
+  },
+  async duplicarPOA(anioOrigen: number, anioDestino: number, userId: number) {
+    const client = await import('../config/db').then(m => m.pool.connect());
+
+    try {
+      await client.query('BEGIN');
+
+      // 1. Obtener proyectos del año origen
+      const proyectosRes = await client.query('SELECT * FROM proyecto WHERE anio = $1', [anioOrigen]);
+      const proyectos = proyectosRes.rows;
+
+      if (proyectos.length === 0) {
+        throw { statusCode: 400, message: `No hay proyectos en el año ${anioOrigen} para duplicar.` };
+      }
+
+      // 2. Verificar si ya existen proyectos en el año destino (Advertencia o Bloqueo? Por ahora permitimos, pero el usuario debe saber)
+      // Opcional: const existe = await client.query('SELECT 1 FROM proyecto WHERE anio = $1 LIMIT 1', [anioDestino]);
+
+      for (const p of proyectos) {
+        // A. Insertar Proyecto Copia
+        const nuevoPRes = await client.query(`
+          INSERT INTO proyecto (
+            anio, unidad_facultad, linea_estrategica, objetivo_estrategico, 
+            accion_estrategica, nombre, objetivo_proyecto, presupuesto_total, id_responsable, activo
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
+          RETURNING id
+        `, [
+          anioDestino, p.unidad_facultad, p.linea_estrategica, p.objetivo_estrategico,
+          p.accion_estrategica, p.nombre, p.objetivo_proyecto, p.presupuesto_total, p.id_responsable
+        ]);
+        const nuevoId = nuevoPRes.rows[0].id;
+
+        // B. Asignar Rol al OWNER (Mismo usuario que creó o el responsable original? Usaremos el que ejecuta la acción como owner administrativo)
+        await client.query(`
+          INSERT INTO proyecto_usuario_rol (id_proyecto, id_usuario, rol) VALUES ($1, $2, 'OWNER')
+        `, [nuevoId, userId]);
+
+        // C. Copiar Costos
+        const costosRes = await client.query('SELECT * FROM costo_proyecto WHERE id_proyecto = $1', [p.id]);
+        for (const c of costosRes.rows) {
+          await client.query(`
+            INSERT INTO costo_proyecto (id_proyecto, tipo, descripcion, precio_unitario, cantidad, costo_total, unidad, id_actividad)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          `, [nuevoId, c.tipo, c.descripcion, c.precio_unitario, c.cantidad, c.costo_total, c.unidad, null]); // id_actividad set to null to avoid old references
+        }
+
+        // D. Copiar Actividades
+        const actRes = await client.query('SELECT * FROM actividad WHERE id_proyecto = $1', [p.id]);
+        for (const a of actRes.rows) {
+          const nuevaActRes = await client.query(`
+            INSERT INTO actividad (
+              id_proyecto, nombre, descripcion, id_responsable, cargo_responsable, 
+              unidad_responsable, presupuesto_asignado
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id
+          `, [
+            nuevoId, a.nombre, a.descripcion, a.id_responsable, a.cargo_responsable,
+            a.unidad_responsable, a.presupuesto_asignado
+          ]);
+          const nuevaActId = nuevaActRes.rows[0].id;
+
+          // E. Copiar Plan Mensual
+          const planRes = await client.query('SELECT * FROM actividad_mes_plan WHERE id_actividad = $1 AND planificado = true', [a.id]);
+          for (const plan of planRes.rows) {
+            await client.query(`
+              INSERT INTO actividad_mes_plan (id_actividad, mes, planificado)
+              VALUES ($1, $2, true)
+            `, [nuevaActId, plan.mes]);
+          }
+
+          // F. Copiar Indicadores (Sin valores logrados)
+          const indRes = await client.query('SELECT * FROM indicador_actividad WHERE id_actividad = $1', [a.id]);
+          for (const ind of indRes.rows) {
+            await client.query(`
+              INSERT INTO indicador_actividad (
+                id_actividad, categoria, descripcion_especifica, meta_valor, 
+                unidad_medida, beneficiarios, valor_logrado, porcentaje_cumplimiento
+              ) VALUES ($1, $2, $3, $4, $5, $6, 0, 0)
+            `, [
+              nuevaActId, ind.categoria, ind.descripcion_especifica, ind.meta_valor,
+              ind.unidad_medida, ind.beneficiarios
+            ]);
+          }
+        }
+      }
+
+      await client.query('COMMIT');
+      return { success: true, message: `POA duplicado correctamente al año ${anioDestino}` };
+
+    } catch (e) {
+      await client.query('ROLLBACK');
+      console.error('Error duplicando POA:', e);
+      throw e;
+    } finally {
+      client.release();
+    }
   }
 };

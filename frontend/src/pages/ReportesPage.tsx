@@ -6,9 +6,10 @@ import { poaApi } from '../services/poaApi';
 import { ReporteDetallado } from './reportes/ReporteDetallado';
 import { ReporteFinancieroProyecto } from './reportes/ReporteFinancieroProyecto';
 import { ReporteFinancieroUnidad } from './reportes/ReporteFinancieroUnidad';
+import { ReporteMetricasAnual } from './reportes/ReporteMetricasAnual';
 
 export const ReportesPage: React.FC = () => {
-    const [tipoReporte, setTipoReporte] = useState<'detallado' | 'financiero'>('detallado');
+    const [tipoReporte, setTipoReporte] = useState<'detallado' | 'financiero' | 'metricas'>('detallado');
     const [vistaFinanciera, setVistaFinanciera] = useState<'proyecto' | 'unidad'>('proyecto');
 
     const [proyectos, setProyectos] = useState<any[]>([]);
@@ -22,6 +23,25 @@ export const ReportesPage: React.FC = () => {
     useEffect(() => {
         loadProyectos();
     }, [anio]);
+
+    useEffect(() => {
+        if (tipoReporte === 'metricas') {
+            loadReporteMetricas();
+        }
+    }, [tipoReporte, anio]);
+
+    const loadReporteMetricas = async () => {
+        try {
+            setLoading(true);
+            const { data } = await poaApi.getReporteMetricasAnual(anio);
+            setReporte(data);
+        } catch (error) {
+            console.error("Error cargando reporte metricas", error);
+            setErrorMsg("Error al cargar reporte de métricas.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const loadProyectos = async () => {
         try {
@@ -61,7 +81,7 @@ export const ReportesPage: React.FC = () => {
     };
 
     // Determine if we have data to show print button
-    const hasReportData = reporte || (tipoReporte === 'financiero' && selectedProyectoId);
+    const hasReportData = reporte || (tipoReporte === 'financiero' && selectedProyectoId) || (tipoReporte === 'financiero' && vistaFinanciera === 'unidad');
 
     return (
         <PageLayout>
@@ -91,6 +111,15 @@ export const ReportesPage: React.FC = () => {
                                     }}
                                 >
                                     💰 Reporte Financiero
+                                </Button>
+                                <Button
+                                    variant={tipoReporte === 'metricas' ? 'main' : 'alt'}
+                                    onClick={() => {
+                                        setTipoReporte('metricas');
+                                        setReporte(null);
+                                    }}
+                                >
+                                    📊 Métricas Anuales
                                 </Button>
                             </Flex>
                         </div>
@@ -177,6 +206,10 @@ export const ReportesPage: React.FC = () => {
 
             {tipoReporte === 'financiero' && vistaFinanciera === 'unidad' && (
                 <ReporteFinancieroUnidad anio={anio} />
+            )}
+
+            {tipoReporte === 'metricas' && reporte && (
+                <ReporteMetricasAnual reporte={reporte} anio={anio} />
             )}
 
             {/* Estilos para impresión */}

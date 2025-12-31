@@ -11,12 +11,38 @@ const pool = new Pool({
     password: process.env.DB_PASSWORD
 });
 
-const sqlFile = path.join(__dirname, '..', 'database', 'test_data_extra.sql');
-const sql = fs.readFileSync(sqlFile, 'utf8');
+const sqlFileBase = path.join(__dirname, '..', '..', 'database', 'test_data.sql');
+const sqlFileExtra = path.join(__dirname, '..', '..', 'database', 'test_data_extra.sql');
 
-console.log('📊 Insertando datos adicionales de prueba...');
+const sqlBase = fs.readFileSync(sqlFileBase, 'utf8');
+const sqlExtra = fs.readFileSync(sqlFileExtra, 'utf8');
 
-pool.query(sql)
+console.log('🧹 Limpiando base de datos (Truncate)...');
+
+pool.query(`
+    TRUNCATE TABLE 
+        proyecto_usuario_rol, 
+        evidencia_actividad, 
+        gasto_actividad, 
+        indicador_actividad, 
+        actividad_mes_seguimiento, 
+        actividad_mes_plan, 
+        costo_proyecto,
+        actividad, 
+        proyecto, 
+        usuario
+    RESTART IDENTITY CASCADE;
+`)
+    .then(() => {
+        console.log('✅ Base de datos limpiada.');
+        console.log('📊 Insertando datos base (test_data.sql)...');
+        return pool.query(sqlBase);
+    })
+    .then(() => {
+        console.log('✅ Datos base insertados.');
+        console.log('📊 Insertando datos adicionales (test_data_extra.sql)...');
+        return pool.query(sqlExtra);
+    })
     .then(() => {
         console.log('✅ Datos adicionales insertados correctamente');
         console.log('\n📈 Resumen de datos en la base de datos:');

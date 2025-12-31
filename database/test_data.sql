@@ -8,11 +8,12 @@ BEGIN;
 -- ========================================
 -- 1. USUARIOS DE PRUEBA
 -- ========================================
-INSERT INTO usuario (nombre_completo, correo, cargo, unidad, activo) VALUES
-('Carlos Roberto Martínez Martínez', 'carlos.martinez@uso.edu.sv', 'Director de Ingeniería', 'Facultad de Ingeniería', true),
-('Marvin Adonay Alarcón', 'marvin.alarcon@uso.edu.sv', 'Coordinador de Acreditación', 'Facultad de Ingeniería', true),
-('Henry Manuel Pérez', 'henry.perez@uso.edu.sv', 'Docente Investigador', 'Facultad de Ingeniería', true),
-('Gabriela López', 'gabriela.lopez@uso.edu.sv', 'Asistente Administrativa', 'Facultad de Ingeniería', true);
+INSERT INTO usuario (nombre_completo, correo, cargo, unidad, activo, contrasena, rol) VALUES
+('Administrador Sistema', 'admin@uso.edu.sv', 'Admin', 'Gerencia', true, '$2a$10$/bUrFujA/x5LdVeJM555Iu1NJlREvO71V6cLqpkyGTUlQMu0KoWte', 'ADMIN'),
+('Carlos Roberto Martínez Martínez', 'carlos.martinez@uso.edu.sv', 'Director de Ingeniería', 'Facultad de Ingeniería', true, '$2a$10$/bUrFujA/x5LdVeJM555Iu1NJlREvO71V6cLqpkyGTUlQMu0KoWte', 'EDITOR'),
+('Marvin Adonay Alarcón', 'marvin.alarcon@uso.edu.sv', 'Coordinador de Acreditación', 'Facultad de Ingeniería', true, '$2a$10$/bUrFujA/x5LdVeJM555Iu1NJlREvO71V6cLqpkyGTUlQMu0KoWte', 'EDITOR'),
+('Henry Manuel Pérez', 'henry.perez@uso.edu.sv', 'Docente Investigador', 'Facultad de Ingeniería', true, '$2a$10$/bUrFujA/x5LdVeJM555Iu1NJlREvO71V6cLqpkyGTUlQMu0KoWte', 'EDITOR'),
+('Gabriela López', 'gabriela.lopez@uso.edu.sv', 'Asistente Administrativa', 'Facultad de Ingeniería', true, '$2a$10$/bUrFujA/x5LdVeJM555Iu1NJlREvO71V6cLqpkyGTUlQMu0KoWte', 'VIEWER');
 
 -- ========================================
 -- 2. PROYECTOS DE PRUEBA (2025)

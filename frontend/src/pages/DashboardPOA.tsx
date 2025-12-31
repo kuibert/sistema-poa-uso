@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavBar, Card, Divider, Grid, Table, Badge, Select, Input } from '../components/common';
+import { NavBar, Card, Divider, Grid, Table, Badge, Select, Input, Modal, FormGroup, Label, SuccessMessage } from '../components/common';
 import { KPICard, StatusPill, Status } from '../components/poa';
 import { Button } from '../components/common/Button';
 import apiClient from '../services/apiClient';
@@ -20,6 +20,13 @@ export const DashboardPOA: React.FC = () => {
   const [appliedMonth, setAppliedMonth] = useState<number>(12);
   const [appliedYear, setAppliedYear] = useState<number>(2025);
   const [appliedUnidad, setAppliedUnidad] = useState<string>("");
+
+  // Estados para Duplicación
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateTargetYear, setDuplicateTargetYear] = useState<string>((new Date().getFullYear() + 1).toString());
+  const [duplicating, setDuplicating] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [confirmStep, setConfirmStep] = useState(false);
 
   const months = [
     { value: 1, label: 'Enero' },
@@ -77,6 +84,42 @@ export const DashboardPOA: React.FC = () => {
       setAppliedYear(yearParsed);
       setAppliedMonth(inputMonth);
       setAppliedUnidad(inputUnidad);
+    }
+  };
+
+  const handleDuplicatePOA = async () => {
+    if (!duplicateTargetYear) return;
+
+    if (!duplicateTargetYear) return;
+
+    try {
+      setDuplicating(true);
+
+      await apiClient.post('/proyectos/duplicar', {
+        anioOrigen: appliedYear,
+        anioDestino: parseInt(duplicateTargetYear)
+      });
+
+      setSuccessMsg('POA duplicado correctamente.');
+      setTimeout(() => setSuccessMsg(null), 3000);
+      setShowDuplicateModal(false);
+
+      // Opcional: Cambiar al nuevo año
+      setInputYear(duplicateTargetYear);
+      setAppliedYear(parseInt(duplicateTargetYear));
+
+    } catch (error: any) {
+      console.error(error);
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.message || 'Error al duplicar POA',
+        icon: 'error',
+        confirmButtonColor: '#3fa65b',
+        background: '#1e293b',
+        color: '#fff'
+      });
+    } finally {
+      setDuplicating(false);
     }
   };
 
@@ -252,6 +295,7 @@ export const DashboardPOA: React.FC = () => {
 
       <main style={mainStyle}>
         <Card>
+          {successMsg && <SuccessMessage message={successMsg} onDismiss={() => setSuccessMsg(null)} />}
 
           {/* PANEL SUPERIOR */}
           <div style={cardHeaderStyle}>
@@ -262,9 +306,14 @@ export const DashboardPOA: React.FC = () => {
               </p>
             </div>
 
-            <Button variant="alt" onClick={() => window.print()}>
-              🖨 Imprimir dashboard
-            </Button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <Button onClick={() => setShowDuplicateModal(true)}>
+                📋 Duplicar POA
+              </Button>
+              <Button variant="alt" onClick={() => window.print()}>
+                🖨 Imprimir dashboard
+              </Button>
+            </div>
           </div>
 
           <Divider variant="gradient" />
@@ -469,6 +518,67 @@ export const DashboardPOA: React.FC = () => {
           </Card>
         </Card>
       </main>
+
+      {/* MODAL DUPLICAR POA */}
+      <Modal
+        isOpen={showDuplicateModal}
+        onClose={() => { setShowDuplicateModal(false); setConfirmStep(false); }}
+        title="Duplicar POA (Copia de Estructura)"
+      >
+        {!confirmStep ? (
+          <>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
+              Está a punto de copiar <strong>todos los proyectos</strong> del año <strong>{appliedYear}</strong> al año destino seleccionado.
+              <br /><br />
+              <strong>¿Qué se copia?</strong> <br />
+              Proyectos, Objetivos, Costos, Actividades, Indicadores y Planificación Mensual.
+              <br /><br />
+              <strong>¿Qué NO se copia?</strong> <br />
+              Ejecución (Gastos, Evidencias, Avance Real).
+            </p>
+
+            <FormGroup>
+              <Label>Año Origen (Base para la copia)</Label>
+              <Input value={appliedYear.toString()} disabled />
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Año Destino (Nuevo Año)</Label>
+              <Input
+                type="number"
+                value={duplicateTargetYear}
+                onChange={(e) => setDuplicateTargetYear(e.target.value)}
+              />
+            </FormGroup>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
+              <Button variant="alt" onClick={() => setShowDuplicateModal(false)}>Cancelar</Button>
+              <Button onClick={() => setConfirmStep(true)}>Continuar</Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+              <p style={{ fontSize: '1rem', color: '#e74c3c', fontWeight: 'bold', marginBottom: '1rem' }}>
+                ⚠️ ¿Está seguro de realizar esta acción?
+              </p>
+              <p style={{ fontSize: '0.9rem', color: '#555' }}>
+                Se crearán copias de todos los proyectos del año {appliedYear} para el año {duplicateTargetYear}.
+                <br />
+                Verifique que el año destino sea el correcto.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1.5rem' }}>
+              <Button variant="alt" onClick={() => setConfirmStep(false)}>Atrás</Button>
+              <Button onClick={handleDuplicatePOA} loading={duplicating} variant="main">
+                Sí, Confirmar Duplicación
+              </Button>
+            </div>
+          </>
+        )}
+      </Modal>
+
     </div>
   );
 };

@@ -43,7 +43,7 @@ export const authService = {
     };
   },
 
-  async register(nombre: string, email: string, rol: string, password?: string) {
+  async register(nombre: string, email: string, rol: string, password?: string, cargo?: string, unidad?: string) {
     // Check if user exists
     const check = await query('SELECT id FROM usuario WHERE correo = $1', [email]);
     if (check.rows.length > 0) {
@@ -59,10 +59,10 @@ export const authService = {
     const hashedPassword = await bcrypt.hash(passwordToHash, salt);
 
     const result = await query(
-      `INSERT INTO usuario (nombre_completo, correo, rol, activo, contrasena) 
-       VALUES ($1, $2, $3, true, $4) 
-       RETURNING id, nombre_completo, correo, rol`,
-      [nombre, email, rol, hashedPassword]
+      `INSERT INTO usuario (nombre_completo, correo, rol, activo, contrasena, cargo, unidad) 
+       VALUES ($1, $2, $3, true, $4, $5, $6) 
+       RETURNING id, nombre_completo, correo, rol, cargo, unidad`,
+      [nombre, email, rol, hashedPassword, cargo || null, unidad || null]
     );
 
     return result.rows[0];

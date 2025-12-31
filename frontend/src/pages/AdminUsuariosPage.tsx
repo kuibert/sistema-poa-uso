@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PageLayout, Card, LoadingSpinner, ErrorMessage, Button, Input, Label, Select, Modal, FormGroup, Table, Flex, Typography, Badge, ConfirmDialog, Pagination, SearchBar } from '../components/common';
+import { PageLayout, Card, LoadingSpinner, ErrorMessage, SuccessMessage, Button, Input, Label, Select, Modal, FormGroup, Table, Flex, Typography, Badge, ConfirmDialog, Pagination, SearchBar } from '../components/common';
 import apiClient from '../services/apiClient';
 import { Usuario } from '../types';
 
@@ -7,6 +7,7 @@ export const AdminUsuariosPage: React.FC = () => {
     const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
     // Create State
     const [modalOpen, setModalOpen] = useState(false);
@@ -14,9 +15,13 @@ export const AdminUsuariosPage: React.FC = () => {
         nombre: '',
         email: '',
         password: '',
-        rol: 'VIEWER' as 'ADMIN' | 'EDITOR' | 'VIEWER'
+        rol: 'VIEWER' as 'ADMIN' | 'EDITOR' | 'VIEWER',
+        cargo: '',
+        unidad: ''
     });
     const [creating, setCreating] = useState(false);
+
+
 
     // Filter & Pagination State
     const [searchTerm, setSearchTerm] = useState('');
@@ -71,9 +76,11 @@ export const AdminUsuariosPage: React.FC = () => {
             setCreating(true);
             await apiClient.post('/auth/register', newUserA);
             setModalOpen(false);
-            setNewUserA({ nombre: '', email: '', password: '', rol: 'VIEWER' });
+            setNewUserA({ nombre: '', email: '', password: '', rol: 'VIEWER', cargo: '', unidad: '' });
             loadUsuarios();
-            alert('Usuario creado correctamente');
+            loadUsuarios();
+            setSuccessMsg('Usuario creado correctamente');
+            setTimeout(() => setSuccessMsg(null), 3000);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Error al crear usuario');
         } finally {
@@ -134,6 +141,7 @@ export const AdminUsuariosPage: React.FC = () => {
             </Flex>
 
             <Card padding="2rem">
+                {successMsg && <SuccessMessage message={successMsg} onDismiss={() => setSuccessMsg(null)} />}
                 {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
                 {loading ? (
@@ -260,6 +268,24 @@ export const AdminUsuariosPage: React.FC = () => {
                             <option value="EDITOR">EDITOR (Operativo)</option>
                             <option value="ADMIN">ADMIN (Control Total)</option>
                         </Select>
+                    </FormGroup>
+                    <FormGroup>
+                        <Label>Cargo</Label>
+                        <Input
+                            type="text"
+                            value={newUserA.cargo}
+                            onChange={e => setNewUserA({ ...newUserA, cargo: e.target.value })}
+                            placeholder="Ej. Docente, Decana"
+                        />
+                    </FormGroup>
+                    <FormGroup>
+                        <Label>Unidad / Facultad</Label>
+                        <Input
+                            type="text"
+                            value={newUserA.unidad}
+                            onChange={e => setNewUserA({ ...newUserA, unidad: e.target.value })}
+                            placeholder="Ej. Facultad de Ingeniería"
+                        />
                     </FormGroup>
 
                     <Flex justify="flex-end" gap="0.5rem" style={{ marginTop: '1rem' }}>

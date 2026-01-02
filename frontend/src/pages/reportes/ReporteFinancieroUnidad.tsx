@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Section, Table, Flex, ReportHeader, ProgressBar } from '../../components/common';
 import apiClient from '../../services/apiClient';
+import logoUso from '../../assets/images/logo_uso.png';
 
 interface ReporteFinancieroUnidadProps {
     anio: number;
@@ -47,6 +48,7 @@ export const ReporteFinancieroUnidad: React.FC<ReporteFinancieroUnidadProps> = (
             <ReportHeader
                 title="INFORME FINANCIERO CONSOLIDADO POR UNIDAD"
                 year={anio}
+                logo={logoUso}
                 description="Resumen financiero de todos los proyectos agrupados por Unidad/Facultad"
             />
 

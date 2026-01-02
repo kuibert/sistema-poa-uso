@@ -72,6 +72,8 @@ export const ReportesPage: React.FC = () => {
         }
     };
 
+
+
     const handlePrint = () => {
         window.print();
     };
@@ -82,6 +84,8 @@ export const ReportesPage: React.FC = () => {
 
     // Determine if we have data to show print button
     const hasReportData = reporte || (tipoReporte === 'financiero' && selectedProyectoId) || (tipoReporte === 'financiero' && vistaFinanciera === 'unidad');
+
+
 
     return (
         <PageLayout>
@@ -181,6 +185,8 @@ export const ReportesPage: React.FC = () => {
                                     )}
                                 </>
                             )}
+
+
 
                             {hasReportData && (
                                 <Button variant="alt" onClick={handlePrint}>

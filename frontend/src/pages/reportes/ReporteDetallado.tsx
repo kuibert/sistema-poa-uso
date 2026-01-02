@@ -1,5 +1,6 @@
 import React from 'react';
 import { Section, Table, Divider, Grid, Card, Typography, Badge, GanttChart, ReportHeader } from '../../components/common';
+import logoUso from '../../assets/images/logo_uso.png';
 
 interface ReporteDetalladoProps {
     reporte: any;
@@ -15,6 +16,7 @@ export const ReporteDetallado: React.FC<ReporteDetalladoProps> = ({ reporte, for
             <ReportHeader
                 title="PLAN OPERATIVO ANUAL (POA)"
                 subtitle={reporte.proyecto.nombre}
+                logo={logoUso}
                 metadata={[
                     { label: 'Año', value: reporte.proyecto.anio },
                     { label: 'Responsable', value: reporte.proyecto.responsable }

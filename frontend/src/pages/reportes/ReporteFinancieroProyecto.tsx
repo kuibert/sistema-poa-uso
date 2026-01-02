@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Section, Table, Divider, Grid, Flex, ReportHeader, KPICard, ProgressBar } from '../../components/common';
 import apiClient from '../../services/apiClient';
+import logoUso from '../../assets/images/logo_uso.png';
 
 interface ReporteFinancieroProyectoProps {
     proyectoId: number;
@@ -47,6 +48,7 @@ export const ReporteFinancieroProyecto: React.FC<ReporteFinancieroProyectoProps>
             <ReportHeader
                 title="INFORME FINANCIERO DEL PROYECTO"
                 subtitle={reporteProyecto.proyecto.nombre}
+                logo={logoUso}
                 metadata={[
                     { label: 'Año', value: reporteProyecto.proyecto.anio },
                     { label: 'Responsable', value: reporteProyecto.proyecto.responsable_nombre }

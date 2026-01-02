@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Table, Badge, Grid, ReportHeader, Section, Divider, Typography } from '../../components/common';
+import { Table, Badge, Grid, ReportHeader, Section, Divider, KPICard } from '../../components/common';
 
 import logoUso from '../../assets/images/logo_uso.png';
 
@@ -52,56 +52,40 @@ export const ReporteMetricasAnual: React.FC<ReporteMetricasAnualProps> = ({ repo
             <Section title="1. Resumen Ejecutivo Global" description="">
                 <Grid columns={4} gap="1rem">
                     {/* Avance Operativo - Blue Scheme */}
-                    <Card padding="1rem" style={{ background: '#f0f7ff', border: '1px solid #d4e6ff' }}>
-                        <Typography variant="caption" style={{ color: '#555', marginBottom: '0.5rem', display: 'block' }}>
-                            Avance Operativo Global
-                        </Typography>
-                        <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#1a3a5c', marginBottom: '0.5rem' }}>
-                            {promedioAvanceFisico}%
-                        </div>
-                        <div style={{ background: '#dbeafe', borderRadius: '999px', height: '6px', overflow: 'hidden' }}>
-                            <div style={{ width: `${promedioAvanceFisico}%`, background: '#3b82f6', height: '100%' }}></div>
-                        </div>
-                    </Card>
+                    <KPICard
+                        title="Avance Operativo Global"
+                        value={`${promedioAvanceFisico}%`}
+                        variant="light"
+                        colorScheme="blue"
+                        progress={promedioAvanceFisico}
+                    />
 
                     {/* KPI - Purple/Indigo Scheme */}
-                    <Card padding="1rem" style={{ background: '#f5f3ff', border: '1px solid #ddd6fe' }}>
-                        <Typography variant="caption" style={{ color: '#555', marginBottom: '0.5rem', display: 'block' }}>
-                            Logro Impacto (KPI)
-                        </Typography>
-                        <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#5b21b6', marginBottom: '0.5rem' }}>
-                            {promedioLogroKPI}%
-                        </div>
-                        <div style={{ background: '#ede9fe', borderRadius: '999px', height: '6px', overflow: 'hidden' }}>
-                            <div style={{ width: `${promedioLogroKPI}%`, background: '#8b5cf6', height: '100%' }}></div>
-                        </div>
-                    </Card>
+                    <KPICard
+                        title="Logro Impacto (KPI)"
+                        value={`${promedioLogroKPI}%`}
+                        variant="light"
+                        colorScheme="purple"
+                        progress={promedioLogroKPI}
+                    />
 
                     {/* Eficiencia - Green Scheme */}
-                    <Card padding="1rem" style={{ background: '#f0fdf4', border: '1px solid #86efac' }}>
-                        <Typography variant="caption" style={{ color: '#555', marginBottom: '0.5rem', display: 'block' }}>
-                            Eficiencia Presupuestaria
-                        </Typography>
-                        <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#16a34a', marginBottom: '0.2rem' }}>
-                            {Math.round(eficienciaPresupuestaria)}%
-                        </div>
-                        <Typography variant="caption" style={{ color: '#666', fontSize: '0.75rem', marginBottom: '0.5rem', display: 'block' }}>
-                            Gastado: {formatoDinero(totalGastado)}
-                        </Typography>
-                        <div style={{ background: '#dcfce7', borderRadius: '999px', height: '6px', overflow: 'hidden' }}>
-                            <div style={{ width: `${Math.min(eficienciaPresupuestaria, 100)}%`, background: '#22c55e', height: '100%' }}></div>
-                        </div>
-                    </Card>
+                    <KPICard
+                        title="Eficiencia Presupuestaria"
+                        value={`${Math.round(eficienciaPresupuestaria)}%`}
+                        subValue={`Gastado: ${formatoDinero(totalGastado)}`}
+                        variant="light"
+                        colorScheme="green"
+                        progress={Math.min(eficienciaPresupuestaria, 100)}
+                    />
 
                     {/* Proyectos - Gray/Neutral Scheme */}
-                    <Card padding="1rem" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                        <Typography variant="caption" style={{ color: '#64748b', marginBottom: '0.5rem', display: 'block' }}>
-                            Proyectos Reportados
-                        </Typography>
-                        <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#334155' }}>
-                            {totalProyectos}
-                        </div>
-                    </Card>
+                    <KPICard
+                        title="Proyectos Reportados"
+                        value={totalProyectos}
+                        variant="light"
+                        colorScheme="gray"
+                    />
                 </Grid>
             </Section>
             <Divider variant="solid" color="#eee" />

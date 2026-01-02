@@ -279,9 +279,7 @@ export default function ActividadGastos() {
                 Fecha, descripción y monto, actualizando el disponible de la actividad.
               </p>
             </div>
-            <Button variant="alt" type="button" onClick={() => window.print()}>
-              🖨 Imprimir
-            </Button>
+
           </div>
 
           <Divider variant="gradient" />

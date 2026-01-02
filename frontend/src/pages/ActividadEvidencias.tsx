@@ -293,9 +293,7 @@ export default function ActividadEvidencias() {
                 Tipo, descripción y archivo adjunto de cada evidencia.
               </p>
             </div>
-            <Button variant="alt" type="button" onClick={() => window.print()}>
-              🖨 Imprimir
-            </Button>
+
           </div>
 
           <Divider variant="gradient" />

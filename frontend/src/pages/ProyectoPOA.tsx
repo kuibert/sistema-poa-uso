@@ -671,7 +671,7 @@ export const ProyectoPOA: React.FC = () => {
               <Button variant="alt" type="button" style={{ marginRight: '0.5rem' }} onClick={handleSave} disabled={saving}>
                 {saving ? '💾 Guardando...' : '💾 Guardar'}
               </Button>
-              <Button variant="main" type="button" onClick={() => window.print()}>🖨 Imprimir PDF</Button>
+
             </div>
           </div>
 

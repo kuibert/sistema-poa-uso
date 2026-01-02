@@ -3,6 +3,7 @@ import { NavBar, Card, Divider, Grid, Table, Badge, Select, Input, Modal, FormGr
 import { KPICard, StatusPill, Status } from '../components/poa';
 import { Button } from '../components/common/Button';
 import apiClient from '../services/apiClient';
+import Swal from 'sweetalert2';
 
 export const DashboardPOA: React.FC = () => {
 
@@ -310,9 +311,7 @@ export const DashboardPOA: React.FC = () => {
               <Button onClick={() => setShowDuplicateModal(true)}>
                 📋 Duplicar POA
               </Button>
-              <Button variant="alt" onClick={() => window.print()}>
-                🖨 Imprimir dashboard
-              </Button>
+
             </div>
           </div>
 

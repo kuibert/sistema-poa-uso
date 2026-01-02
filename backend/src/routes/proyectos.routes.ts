@@ -60,6 +60,16 @@ router.get('/reporte-financiero/:id', authMiddleware, async (req, res, next) => 
   }
 });
 
+router.get('/reporte-financiero-unidades', authMiddleware, async (req, res, next) => {
+  try {
+    const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
+    const reporte = await proyectosService.getReporteFinancieroUnidades(anio);
+    res.json(reporte);
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 router.get('/reporte-metricas-anual', authMiddleware, async (req, res, next) => {
   try {

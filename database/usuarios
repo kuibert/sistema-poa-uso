@@ -1,3 +1,11 @@
 admin@uso.edu.sv 
 contraseña: password123
 rol: admin
+
+gabriela.lopez@uso.edu.sv
+contraseña: password123
+rol: VIEWER
+
+ana.rodriguez@uso.edu.sv
+contraseña: password123
+rol: EDITOR

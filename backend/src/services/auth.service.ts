@@ -6,7 +6,7 @@ import { config } from '../config';
 export const authService = {
   async login(email: string, password: string) {
     const result = await query(
-      'SELECT id, nombre_completo, correo, rol, contrasena FROM usuario WHERE correo = $1 AND activo = true',
+      'SELECT id, nombre_completo, email, rol, contrasena FROM usuario WHERE email = $1 AND activo = true',
       [email]
     );
 
@@ -25,7 +25,7 @@ export const authService = {
     const token = jwt.sign(
       {
         id: user.id,
-        email: user.correo,
+        email: user.email,
         rol: user.rol // Include role in token
       },
       config.jwt.secret,
@@ -37,7 +37,7 @@ export const authService = {
       user: {
         id: user.id,
         nombre: user.nombre_completo,
-        email: user.correo,
+        email: user.email,
         rol: user.rol, // Return role to frontend
       },
     };
@@ -45,7 +45,7 @@ export const authService = {
 
   async register(nombre: string, email: string, rol: string, password?: string, cargo?: string, unidad?: string) {
     // Check if user exists
-    const check = await query('SELECT id FROM usuario WHERE correo = $1', [email]);
+    const check = await query('SELECT id FROM usuario WHERE email = $1', [email]);
     if (check.rows.length > 0) {
       throw { statusCode: 400, message: 'El correo ya está registrado' };
     }
@@ -59,9 +59,9 @@ export const authService = {
     const hashedPassword = await bcrypt.hash(passwordToHash, salt);
 
     const result = await query(
-      `INSERT INTO usuario (nombre_completo, correo, rol, activo, contrasena, cargo, unidad) 
+      `INSERT INTO usuario (nombre_completo, email, rol, activo, contrasena, cargo, unidad) 
        VALUES ($1, $2, $3, true, $4, $5, $6) 
-       RETURNING id, nombre_completo, correo, rol, cargo, unidad`,
+       RETURNING id, nombre_completo, email, rol, cargo, unidad`,
       [nombre, email, rol, hashedPassword, cargo || null, unidad || null]
     );
 
@@ -70,7 +70,7 @@ export const authService = {
 
   async listUsers() {
     const result = await query(
-      'SELECT id, nombre_completo, correo, rol, activo FROM usuario WHERE activo = true ORDER BY id ASC'
+      'SELECT id, nombre_completo, email, rol, activo FROM usuario WHERE activo = true ORDER BY id ASC'
     );
     return result.rows;
   },
@@ -88,7 +88,7 @@ export const authService = {
 
   async getUserById(id: number) {
     const result = await query(
-      'SELECT id, nombre_completo, correo, rol FROM usuario WHERE id = $1 AND activo = true',
+      'SELECT id, nombre_completo, email, rol FROM usuario WHERE id = $1 AND activo = true',
       [id]
     );
 

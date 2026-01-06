@@ -22,18 +22,6 @@ export const proyectosService = {
     LEFT JOIN gasto_actividad g ON g.id_actividad = a.id
     WHERE p.anio = $1
     ${unidad ? 'AND p.unidad_facultad = $3' : ''}
-    AND (
-      EXTRACT(MONTH FROM p.created_at) >= $2
-      OR
-      EXISTS (
-        SELECT 1 
-        FROM actividad a2
-        JOIN actividad_mes_plan amp2 ON amp2.id_actividad = a2.id
-        WHERE a2.id_proyecto = p.id 
-          AND amp2.mes >= $2 
-          AND amp2.planificado = true
-      )
-    )
     GROUP BY p.id, u.nombre_completo
     ORDER BY p.created_at DESC
     `,
@@ -849,7 +837,7 @@ export const proyectosService = {
     const equipoRes = await query(`
       WITH equipo_consolidado AS (
           -- Responsable del proyecto
-          SELECT u.nombre_completo, u.correo, 'Responsable del Proyecto' as rol, 1 as jerarquia
+          SELECT u.nombre_completo, u.email, 'Responsable del Proyecto' as rol, 1 as jerarquia
           FROM proyecto p
           JOIN usuario u ON p.id_responsable = u.id
           WHERE p.id = $1
@@ -857,12 +845,12 @@ export const proyectosService = {
           UNION
 
           -- Responsables de actividades (Excluyendo si ya es responsable del proyecto para no duplicar visualmente si se desea, o dejarlo para mostrar rol)
-          SELECT DISTINCT u.nombre_completo, u.correo, 'Responsable de Actividad' as rol, 2 as jerarquia
+          SELECT DISTINCT u.nombre_completo, u.email, 'Responsable de Actividad' as rol, 2 as jerarquia
           FROM actividad a
           JOIN usuario u ON a.id_responsable = u.id
           WHERE a.id_proyecto = $1
       )
-      SELECT nombre_completo, correo as email, rol 
+      SELECT nombre_completo, email as email, rol 
       FROM equipo_consolidado
       ORDER BY jerarquia, nombre_completo
     `, [proyectoId]);

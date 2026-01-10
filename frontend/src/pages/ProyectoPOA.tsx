@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { NavBar, Card, Divider, Grid, Section, Label, Button, ErrorMessage, SuccessMessage, Input, TextArea, Select, Table, Checkbox } from '../components/common';
+import { NavBar, Card, Divider, Grid, Section, Label, Button, ErrorMessage, SuccessMessage, Input, TextArea, Select, Table, Checkbox, UserSelectModal } from '../components/common';
 
 import apiClient from '../services/apiClient';
 
@@ -38,6 +38,10 @@ export const ProyectoPOA: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // User Selection Modal State
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [onUserSelect, setOnUserSelect] = useState<(u: any) => void>(() => { });
 
 
 
@@ -760,22 +764,23 @@ export const ProyectoPOA: React.FC = () => {
                 </div>
                 <div>
                   <Label>Responsable</Label>
-                  <Select
-                    value={projectData.id_responsable}
-                    onChange={(e) =>
-                      setProjectData({
-                        ...projectData,
-                        id_responsable: e.target.value,
-                      })
-                    }
-                  >
-                    <option value="">Seleccione responsable</option>
-                    {responsables.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.nombre_completo}
-                      </option>
-                    ))}
-                  </Select>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <Input
+                      readOnly
+                      type="text"
+                      value={responsables.find(r => String(r.id) === String(projectData.id_responsable))?.nombre_completo || ''}
+                      placeholder="Seleccione responsable"
+                      onClick={() => {
+                        setOnUserSelect(() => (u: any) => setProjectData(d => ({ ...d, id_responsable: String(u.id) })));
+                        setUserModalOpen(true);
+                      }}
+                      style={{ cursor: 'pointer', backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--texto-claro)' }}
+                    />
+                    <Button variant="alt" type="button" onClick={() => {
+                      setOnUserSelect(() => (u: any) => setProjectData(d => ({ ...d, id_responsable: String(u.id) })));
+                      setUserModalOpen(true);
+                    }}>🔍</Button>
+                  </div>
                 </div>
               </Grid>
 
@@ -848,25 +853,35 @@ export const ProyectoPOA: React.FC = () => {
                           <Grid columns={2} gap="1rem" style={{ marginBottom: '1rem' }}>
                             <div>
                               <Label>Responsable de la actividad</Label>
-                              <Select
-                                value={a.id_responsable}
-                                onChange={(e) => {
-                                  const idRes = e.target.value;
-                                  const seleccionado = responsables.find(r => String(r.id) === String(idRes));
-                                  setActivities(prev => prev.map(x => x.id === a.id ? {
-                                    ...x,
-                                    id_responsable: idRes,
-                                    cargo_responsable: seleccionado?.cargo || ''
-                                  } : x));
-                                }}
-                              >
-                                <option value="">Seleccione responsable...</option>
-                                {responsables.map((r) => (
-                                  <option key={r.id} value={r.id}>
-                                    {r.nombre_completo}
-                                  </option>
-                                ))}
-                              </Select>
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <Input
+                                  readOnly
+                                  type="text"
+                                  value={responsables.find(r => String(r.id) === String(a.id_responsable))?.nombre_completo || ''}
+                                  placeholder="Seleccione responsable..."
+                                  onClick={() => {
+                                    setOnUserSelect(() => (u: any) => {
+                                      setActivities(prev => prev.map(x => x.id === a.id ? {
+                                        ...x,
+                                        id_responsable: String(u.id),
+                                        cargo_responsable: u.cargo || ''
+                                      } : x));
+                                    });
+                                    setUserModalOpen(true);
+                                  }}
+                                  style={{ cursor: 'pointer', backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--texto-claro)' }}
+                                />
+                                <Button variant="alt" size="sm" type="button" onClick={() => {
+                                  setOnUserSelect(() => (u: any) => {
+                                    setActivities(prev => prev.map(x => x.id === a.id ? {
+                                      ...x,
+                                      id_responsable: String(u.id),
+                                      cargo_responsable: u.cargo || ''
+                                    } : x));
+                                  });
+                                  setUserModalOpen(true);
+                                }}>🔍</Button>
+                              </div>
                             </div>
                             <div>
                               <Label>Cargo del responsable</Label>
@@ -1084,6 +1099,13 @@ export const ProyectoPOA: React.FC = () => {
           </form>
         </Card>
       </main>
+
+      <UserSelectModal
+        isOpen={userModalOpen}
+        onClose={() => setUserModalOpen(false)}
+        users={responsables}
+        onSelect={onUserSelect}
+      />
     </div>
   );
 }

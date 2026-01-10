@@ -7,11 +7,19 @@ import { query } from '../config/db';
 
 const router = Router();
 
-router.get('/responsables', authMiddleware, async (req, res, next) => {
+router.get('/responsables', authMiddleware, async (req: AuthRequest, res, next) => {
   try {
-    const result = await query(
-      "SELECT id, nombre_completo, cargo FROM usuario WHERE activo = true ORDER BY nombre_completo"
-    );
+    let queryStr = "SELECT id, nombre_completo, cargo FROM usuario WHERE activo = true AND rol != 'ADMIN'";
+    const params: any[] = [];
+
+    if (req.user && req.user.rol !== 'ADMIN' && req.user.unidad) {
+      queryStr += " AND unidad = $1";
+      params.push(req.user.unidad);
+    }
+
+    queryStr += " ORDER BY nombre_completo";
+
+    const result = await query(queryStr, params);
     res.json(result.rows);
   } catch (error) {
     next(error);
@@ -19,11 +27,18 @@ router.get('/responsables', authMiddleware, async (req, res, next) => {
 });
 
 // Dashboard (Page0)
-router.get('/dashboard', authMiddleware, async (req, res, next) => {
+router.get('/dashboard', authMiddleware, async (req: AuthRequest, res, next) => {
   try {
     const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
     const mes = parseInt(req.query.mes as string) || (new Date().getMonth() + 1);
-    const unidad = req.query.unidad as string | undefined;
+
+    let unidad = req.query.unidad as string | undefined;
+
+    // Si usuario no es admin, forzar su unidad
+    if (req.user && req.user.rol !== 'ADMIN') {
+      unidad = req.user.unidad;
+    }
+
     const dashboard = await proyectosService.getDashboard(anio, mes, unidad);
     res.json(dashboard);
   } catch (error) {
@@ -40,10 +55,10 @@ router.get('/unidades', authMiddleware, async (req, res, next) => {
   }
 });
 
-router.get('/', authMiddleware, async (req, res, next) => {
+router.get('/', authMiddleware, async (req: AuthRequest, res, next) => {
   try {
     const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
-    const proyectos = await proyectosService.getProyectos(anio);
+    const proyectos = await proyectosService.getProyectos(anio, req.user);
     res.json(proyectos);
   } catch (error) {
     next(error);

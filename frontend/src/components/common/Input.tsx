@@ -1,18 +1,7 @@
 import React from 'react';
 
-type InputProps = {
-  type?: 'text' | 'email' | 'password' | 'number' | 'date' | 'file';
-  value?: string | number;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  required?: boolean;
-  disabled?: boolean;
-  readOnly?: boolean;
-  min?: number | string;
-  max?: number | string;
-  step?: number | string;
+type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   style?: React.CSSProperties;
-  list?: string;
 };
 
 export const Input: React.FC<InputProps> = ({
@@ -28,6 +17,7 @@ export const Input: React.FC<InputProps> = ({
   step,
   style,
   list,
+  ...rest
 }) => {
   const baseStyle: React.CSSProperties = {
     width: '100%',
@@ -56,6 +46,7 @@ export const Input: React.FC<InputProps> = ({
       step={step}
       style={baseStyle}
       list={list}
+      {...rest}
     />
   );
 };

@@ -6,7 +6,7 @@ import { config } from '../config';
 export const authService = {
   async login(email: string, password: string) {
     const result = await query(
-      'SELECT id, nombre_completo, email, rol, contrasena FROM usuario WHERE email = $1 AND activo = true',
+      'SELECT id, nombre_completo, email, rol, contrasena, unidad FROM usuario WHERE email = $1 AND activo = true',
       [email]
     );
 
@@ -26,7 +26,8 @@ export const authService = {
       {
         id: user.id,
         email: user.email,
-        rol: user.rol // Include role in token
+        rol: user.rol, // Include role in token
+        unidad: user.unidad
       },
       config.jwt.secret,
       { expiresIn: config.jwt.expiresIn as any }
@@ -39,6 +40,7 @@ export const authService = {
         nombre: user.nombre_completo,
         email: user.email,
         rol: user.rol, // Return role to frontend
+        unidad: user.unidad
       },
     };
   },

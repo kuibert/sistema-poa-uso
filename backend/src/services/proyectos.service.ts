@@ -53,8 +53,9 @@ export const proyectosService = {
     JOIN actividad_mes_plan amp ON amp.id_actividad = a.id AND amp.mes = $2 AND amp.planificado = true
     LEFT JOIN indicador_actividad ia ON ia.id_actividad = a.id
     WHERE p.anio = $1
+    ${unidad ? 'AND p.unidad_facultad = $3' : ''}
     `,
-      [anio, mes]
+      unidad ? [anio, mes, unidad] : [anio, mes]
     );
 
     // 3. Stats ANUALES por proyecto (Para la tabla de proyectos, independiente del mes)
@@ -123,11 +124,26 @@ export const proyectosService = {
   },
 
 
-  async getProyectos(anio: number) {
-    const result = await query(
-      'SELECT p.*, u.nombre_completo as responsable_nombre FROM proyecto p LEFT JOIN usuario u ON p.id_responsable = u.id WHERE p.anio = $1 ORDER BY p.created_at DESC',
-      [anio]
-    );
+  async getProyectos(anio: number, user?: any) {
+    let queryStr = 'SELECT p.*, u.nombre_completo as responsable_nombre FROM proyecto p LEFT JOIN usuario u ON p.id_responsable = u.id WHERE p.anio = $1';
+    const params: any[] = [anio];
+
+    if (user && user.rol !== 'ADMIN') {
+      // Si el usuario tiene unidad, filtramos. Si no tiene unidad (caso raro), no ve nada o ve todo? 
+      // Asumiremos que debe tener unidad. Si no, no ve proyectos.
+      if (user.unidad) {
+        queryStr += ` AND p.unidad_facultad = $${params.length + 1}`;
+        params.push(user.unidad);
+      } else {
+        // Usuario sin unidad (y no admin) -> return empty?
+        // Para seguridad, retornamos vacio si no tiene unidad asignada
+        return [];
+      }
+    }
+
+    queryStr += ' ORDER BY p.created_at DESC';
+
+    const result = await query(queryStr, params);
     return result.rows;
   },
 

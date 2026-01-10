@@ -2,10 +2,18 @@ admin@uso.edu.sv
 contraseña: password123
 rol: admin
 
+henry.perez@uso.edu.sv
+contraseña: password123
+Facultad o unidad:Facultad de Ingeniería
+rol: EDITOR
+
 gabriela.lopez@uso.edu.sv
 contraseña: password123
+Facultad o unidad:Facultad de Ingeniería
 rol: VIEWER
 
 ana.rodriguez@uso.edu.sv
+Facultad o unidad:Facultad de Ciencias Económicas
 contraseña: password123
 rol: EDITOR
+

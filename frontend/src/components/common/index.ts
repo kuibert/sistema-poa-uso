@@ -28,3 +28,4 @@ export { Pagination } from './Pagination';
 export { SearchBar } from './SearchBar';
 export { ReportHeader } from './ReportHeader';
 export { KPICard } from './KPICard';
+export { UserSelectModal } from './UserSelectModal';

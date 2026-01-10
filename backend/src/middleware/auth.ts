@@ -7,6 +7,7 @@ export interface AuthRequest extends Request {
     id: number;
     email: string;
     rol: string;
+    unidad?: string;
   };
 }
 
@@ -23,6 +24,7 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
       id: decoded.id,
       email: decoded.email,
       rol: decoded.rol,
+      unidad: decoded.unidad,
     };
     next();
   } catch (error) {

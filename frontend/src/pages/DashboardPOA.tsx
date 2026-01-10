@@ -57,6 +57,20 @@ export const DashboardPOA: React.FC = () => {
       }
     };
     loadUnidades();
+
+    // Pre-seleccionar unidad si no es ADMIN
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.rol && user.rol !== 'ADMIN' && user.unidad) {
+          setInputUnidad(user.unidad);
+          setAppliedUnidad(user.unidad);
+        }
+      } catch (e) {
+        console.error("Error parsing user from storage", e);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -355,6 +369,14 @@ export const DashboardPOA: React.FC = () => {
                     value={inputUnidad}
                     onChange={(e) => setInputUnidad(e.target.value)}
                     style={{ width: '200px', padding: '4px 8px', fontSize: '0.9rem' }}
+                    disabled={(() => {
+                      const userStr = localStorage.getItem('user');
+                      if (!userStr) return false;
+                      try {
+                        const user = JSON.parse(userStr);
+                        return user.rol !== 'ADMIN';
+                      } catch { return false; }
+                    })()}
                   >
                     <option value="">Todas las unidades</option>
                     {unidades.map((u, idx) => (

@@ -14,7 +14,11 @@ export const proyectosService = {
       u.nombre_completo AS responsable,
       COUNT(DISTINCT CASE WHEN amp.planificado = true THEN a.id END) AS "actividadesMes",
       COALESCE(SUM(g.monto), 0) AS "gastado",
-      COALESCE(p.presupuesto_total, 0) AS "presupuestoAprobado"
+      COALESCE((
+        SELECT SUM(c.costo_total) 
+        FROM costo_proyecto c 
+        WHERE c.id_proyecto = p.id AND c.incluir_en_avance = true
+      ), p.presupuesto_total, 0) AS "presupuestoAprobado"
     FROM proyecto p
     LEFT JOIN usuario u ON p.id_responsable = u.id
     LEFT JOIN actividad a ON a.id_proyecto = p.id
@@ -196,8 +200,18 @@ export const proyectosService = {
 
     const totalPresupuesto = Number(proyecto.presupuesto_total) || 0;
     const totalGastado = actividades.reduce((sum, act) => sum + act.gastado, 0);
-    const disponible = totalPresupuesto - totalGastado;
-    const porcentajeEjecucion = (totalGastado / totalPresupuesto) * 100;
+
+    // Calcular presupuesto para avance (solo costos con incluir_en_avance = true)
+    const presupuestoParaAvanceResult = await query(
+      `SELECT COALESCE(SUM(costo_total), 0) as total 
+       FROM costo_proyecto 
+       WHERE id_proyecto = $1 AND incluir_en_avance = true`,
+      [proyectoId]
+    );
+    const presupuestoParaAvance = Number(presupuestoParaAvanceResult.rows[0].total) || 0;
+
+    const disponible = presupuestoParaAvance - totalGastado;
+    const porcentajeEjecucion = presupuestoParaAvance > 0 ? (totalGastado / presupuestoParaAvance) * 100 : 0;
 
     return {
       proyecto: {
@@ -443,15 +457,16 @@ export const proyectosService = {
         c.unidad || '',
         Number(c.precio_unitario) || 0,
         Number(c.costo_total) || 0,
-        c.id_actividad || null
+        c.id_actividad || null,
+        c.incluir_en_avance !== undefined ? c.incluir_en_avance : true // DEFAULT true
       ];
 
       console.log('Inserting Costo Params:', params);
 
       await query(`
             INSERT INTO costo_proyecto (
-                id_proyecto, tipo, descripcion, cantidad, unidad, precio_unitario, costo_total, id_actividad
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                id_proyecto, tipo, descripcion, cantidad, unidad, precio_unitario, costo_total, id_actividad, incluir_en_avance
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          `, params);
     }
   },

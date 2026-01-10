@@ -28,6 +28,7 @@ type CostRow = {
   unidad: string;
   unit: string; // precio unitario, string para inputs
   actividadId?: number; // Vinculación opcional a actividad
+  incluirEnAvance?: boolean; // ← NUEVO: solo para costos fijos
 };
 
 export const ProyectoPOA: React.FC = () => {
@@ -177,7 +178,8 @@ export const ProyectoPOA: React.FC = () => {
                 qty: String(c.cantidad),
                 unidad: c.unidad,
                 unit: String(c.precio_unitario),
-                actividadId: c.id_actividad ? Number(c.id_actividad) : undefined
+                actividadId: c.id_actividad ? Number(c.id_actividad) : undefined,
+                incluirEnAvance: c.incluir_en_avance !== undefined ? c.incluir_en_avance : true // ← NUEVO
               };
               if (c.tipo === 'variable') {
                 vars.push(row);
@@ -333,7 +335,7 @@ export const ProyectoPOA: React.FC = () => {
     table: 'variables' | 'fijos',
     index: number,
     field: keyof CostRow,
-    value: string | number
+    value: string | number | boolean
   ) => {
     const updater = (rows: CostRow[]) => rows.map((r, i) => i === index ? { ...r, [field]: value } : r);
     if (table === 'variables') setVariablesRows(prev => updater(prev));
@@ -387,7 +389,8 @@ export const ProyectoPOA: React.FC = () => {
           unidad: r.unidad,
           precio_unitario: r.unit,
           costo_total: rowTotal(r),
-          id_actividad: null
+          id_actividad: null,
+          incluir_en_avance: r.incluirEnAvance !== undefined ? r.incluirEnAvance : true
         }))
       ];
 
@@ -500,7 +503,8 @@ export const ProyectoPOA: React.FC = () => {
           unidad: r.unidad,
           precio_unitario: r.unit,
           costo_total: rowTotal(r),
-          id_actividad: null
+          id_actividad: null,
+          incluir_en_avance: r.incluirEnAvance !== undefined ? r.incluirEnAvance : true
         }))
       ];
 
@@ -1049,11 +1053,12 @@ export const ProyectoPOA: React.FC = () => {
               <Table variant="compact">
                 <Table.Header>
                   <Table.Row>
-                    <Table.Cell header style={{ width: '36%' }}>Descripción</Table.Cell>
+                    <Table.Cell header style={{ width: '32%' }}>Descripción</Table.Cell>
                     <Table.Cell header>Cantidad</Table.Cell>
                     <Table.Cell header>Unidad</Table.Cell>
                     <Table.Cell header>Precio unitario ($)</Table.Cell>
                     <Table.Cell header>Costo total ($)</Table.Cell>
+                    <Table.Cell header center style={{ width: '8%' }}>Incluir en avance</Table.Cell>
                     <Table.Cell header style={{ width: '3%' }}>{null}</Table.Cell>
                   </Table.Row>
                 </Table.Header>
@@ -1066,6 +1071,12 @@ export const ProyectoPOA: React.FC = () => {
                       <Table.Cell><Input type="number" min={0} step={0.01} value={r.unit} onChange={(e) => updateCostRow('fijos', idx, 'unit', e.target.value)} /></Table.Cell>
                       <Table.Cell><Input type="number" readOnly value={rowTotal(r) ? rowTotal(r).toFixed(2) : ''} /></Table.Cell>
                       <Table.Cell center>
+                        <Checkbox
+                          checked={r.incluirEnAvance !== undefined ? r.incluirEnAvance : true}
+                          onChange={(e) => updateCostRow('fijos', idx, 'incluirEnAvance', e.target.checked)}
+                        />
+                      </Table.Cell>
+                      <Table.Cell center>
                         <Button variant="alt" size="sm" type="button" onClick={() => removeCostRow('fijos', idx)}>✖</Button>
                       </Table.Cell>
                     </Table.Row>
@@ -1073,7 +1084,7 @@ export const ProyectoPOA: React.FC = () => {
                   <Table.Row>
                     <Table.Cell colSpan={4} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total costos fijos ($):</Table.Cell>
                     <Table.Cell><Input type="number" readOnly value={totalFijos ? totalFijos.toFixed(2) : ''} style={{ fontWeight: 'bold' }} /></Table.Cell>
-                    <Table.Cell>{null}</Table.Cell>
+                    <Table.Cell colSpan={2}>{null}</Table.Cell>
                   </Table.Row>
                 </Table.Body>
               </Table>

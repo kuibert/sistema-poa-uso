@@ -213,6 +213,12 @@ export const proyectosService = {
     const disponible = presupuestoParaAvance - totalGastado;
     const porcentajeEjecucion = presupuestoParaAvance > 0 ? (totalGastado / presupuestoParaAvance) * 100 : 0;
 
+    // Get all costs for the report
+    const costosResult = await query(
+      `SELECT * FROM costo_proyecto WHERE id_proyecto = $1 ORDER BY id`,
+      [proyectoId]
+    );
+
     return {
       proyecto: {
         ...proyecto,
@@ -224,7 +230,8 @@ export const proyectosService = {
         disponible,
         porcentajeEjecucion: Math.round(porcentajeEjecucion * 100) / 100
       },
-      actividades
+      actividades,
+      costos: costosResult.rows
     };
   },
 

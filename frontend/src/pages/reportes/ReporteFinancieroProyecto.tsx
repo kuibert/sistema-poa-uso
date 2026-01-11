@@ -127,6 +127,80 @@ export const ReporteFinancieroProyecto: React.FC<ReporteFinancieroProyectoProps>
                 </Table>
             </Section>
 
+            {/* 3. COSTOS VARIABLES DEL PROYECTO */}
+            <Divider variant="solid" color="#eee" />
+            <Section title="3. Costos Variables del Proyecto">
+                <div style={{ marginBottom: '1rem', color: '#444', fontSize: '0.95rem' }}>
+                    Detalle de los costos variables del proyecto.
+                </div>
+                <Table variant="compact">
+                    <Table.Header>
+                        <Table.Row>
+                            <Table.Cell header>Descripción</Table.Cell>
+                            <Table.Cell header>Cantidad</Table.Cell>
+                            <Table.Cell header>Unidad</Table.Cell>
+                            <Table.Cell header>Precio Unitario</Table.Cell>
+                            <Table.Cell header>Costo Total</Table.Cell>
+                        </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                        {reporteProyecto.costos?.filter((c: any) => c.tipo === 'variable').map((costo: any, i: number) => (
+                            <Table.Row key={i}>
+                                <Table.Cell>{costo.descripcion}</Table.Cell>
+                                <Table.Cell>{costo.cantidad}</Table.Cell>
+                                <Table.Cell>{costo.unidad}</Table.Cell>
+                                <Table.Cell>{formatoDinero(costo.precio_unitario)}</Table.Cell>
+                                <Table.Cell>{formatoDinero(costo.costo_total)}</Table.Cell>
+                            </Table.Row>
+                        ))}
+                        {(!reporteProyecto.costos || reporteProyecto.costos.filter((c: any) => c.tipo === 'variable').length === 0) && (
+                            <Table.Row>
+                                <Table.Cell colSpan={5} style={{ textAlign: 'center', fontStyle: 'italic' }}>
+                                    No hay costos variables registrados
+                                </Table.Cell>
+                            </Table.Row>
+                        )}
+                    </Table.Body>
+                </Table>
+            </Section>
+
+            {/* 4. COSTOS FIJOS DEL PROYECTO */}
+            <Divider variant="solid" color="#eee" />
+            <Section title="4. Costos Fijos del Proyecto">
+                <div style={{ marginBottom: '1rem', color: '#444', fontSize: '0.95rem' }}>
+                    Detalle de los costos fijos del proyecto.
+                </div>
+                <Table variant="compact">
+                    <Table.Header>
+                        <Table.Row>
+                            <Table.Cell header>Descripción</Table.Cell>
+                            <Table.Cell header>Cantidad</Table.Cell>
+                            <Table.Cell header>Unidad</Table.Cell>
+                            <Table.Cell header>Precio Unitario</Table.Cell>
+                            <Table.Cell header>Costo Total</Table.Cell>
+                        </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                        {reporteProyecto.costos?.filter((c: any) => c.tipo !== 'variable').map((costo: any, i: number) => (
+                            <Table.Row key={i}>
+                                <Table.Cell>{costo.descripcion}</Table.Cell>
+                                <Table.Cell>{costo.cantidad}</Table.Cell>
+                                <Table.Cell>{costo.unidad}</Table.Cell>
+                                <Table.Cell>{formatoDinero(costo.precio_unitario)}</Table.Cell>
+                                <Table.Cell>{formatoDinero(costo.costo_total)}</Table.Cell>
+                            </Table.Row>
+                        ))}
+                        {(!reporteProyecto.costos || reporteProyecto.costos.filter((c: any) => c.tipo !== 'variable').length === 0) && (
+                            <Table.Row>
+                                <Table.Cell colSpan={5} style={{ textAlign: 'center', fontStyle: 'italic' }}>
+                                    No hay costos fijos registrados
+                                </Table.Cell>
+                            </Table.Row>
+                        )}
+                    </Table.Body>
+                </Table>
+            </Section>
+
         </div>
     );
 };

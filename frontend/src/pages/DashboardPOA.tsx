@@ -14,12 +14,12 @@ export const DashboardPOA: React.FC = () => {
 
   // Estados de los Inputs (Interfaz de usuario)
   const [inputMonth, setInputMonth] = useState<number>(12);
-  const [inputYear, setInputYear] = useState<string>("2025");
+  const [inputYear, setInputYear] = useState<string>(new Date().getFullYear().toString());
   const [inputUnidad, setInputUnidad] = useState<string>("");
 
   // Estados de los Filtros Aplicados (Para la query)
   const [appliedMonth, setAppliedMonth] = useState<number>(12);
-  const [appliedYear, setAppliedYear] = useState<number>(2025);
+  const [appliedYear, setAppliedYear] = useState<number>(new Date().getFullYear());
   const [appliedUnidad, setAppliedUnidad] = useState<string>("");
 
   // Estados para Duplicación
@@ -353,13 +353,11 @@ export const DashboardPOA: React.FC = () => {
                   </Select>
 
                   <Input
+                    type="number"
                     value={inputYear}
                     onChange={(e) => {
                       const val = e.target.value;
-                      // Solo permite dígitos
-                      if (/^\d*$/.test(val)) {
-                        setInputYear(val);
-                      }
+                      setInputYear(val);
                     }}
                     style={{ width: '70px', padding: '4px 8px', fontSize: '0.9rem' }}
                     placeholder="Año"

@@ -48,9 +48,9 @@ export const ProyectoPOA: React.FC = () => {
 
   // Información del proyecto (valores por defecto)
   const [projectData, setProjectData] = useState({
-    nombre: 'Gestión de acreditación de la Carrera de Ingeniería Industrial',
-    objetivo: 'Lograr la acreditación de la carrera ante ACAAI',
-    unidad_responsable: 'Facultad de Ingeniería',
+    nombre: '',
+    objetivo: '',
+    unidad_responsable: '',
     linea_estrategica: '',
     objetivo_estrategico: '',
     accion_estrategica: '',
@@ -208,64 +208,15 @@ export const ProyectoPOA: React.FC = () => {
   }, [id]);
 
 
-  // Actividades iniciales (3) como en el HTML
+  // Actividades iniciales
   const initialActivities: Activity[] = useMemo(
-    () => [
-      {
-        id: 1,
-        header: 'Actividad 1',
-        name: 'Acercamiento y entendimiento con ACAAI',
-        months: new Array(12).fill(false),
-        id_responsable: '',
-        cargo_responsable: '',
-        kpi: {
-          categoria: '',
-          descripcion: 'Reuniones realizadas con la entidad acreditadora',
-          meta: '',
-          unidad: 'Reuniones',
-          beneficiarios: 'Equipo de acreditación',
-        },
-        evidencias: 'Actas, minutas, correos, acuerdos...'
-      },
-      {
-        id: 2,
-        header: 'Actividad 2',
-        name: 'Capacitación de actores de la USO',
-        months: new Array(12).fill(false),
-        id_responsable: '',
-        cargo_responsable: '',
-        kpi: {
-          categoria: 'Nº de personas beneficiadas directamente',
-          descripcion: 'Docentes capacitados en el modelo de acreditación',
-          meta: '12',
-          unidad: 'Personas',
-          beneficiarios: 'Docentes',
-        },
-        evidencias: 'Listas de asistencia, constancias de participación...'
-      },
-      {
-        id: 3,
-        header: 'Actividad 3',
-        name: 'Recopilación de documentación y autoevaluación',
-        months: new Array(12).fill(false),
-        id_responsable: '',
-        cargo_responsable: '',
-        kpi: {
-          categoria: 'Nº de productos / documentos generados',
-          descripcion: 'Expediente completo de autoevaluación elaborado',
-          meta: '1',
-          unidad: 'Documento',
-          beneficiarios: 'Carrera / Facultad',
-        },
-        evidencias: 'Expediente de autoevaluación, informe final, anexos...'
-      }
-    ],
+    () => [],
     []
   );
 
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
-  const [groupCounter, setGroupCounter] = useState(4); // ya existen grupos 1..3
-  const [actividadCounter, setActividadCounter] = useState(3); // Actividad 1..3
+  const [groupCounter, setGroupCounter] = useState(1);
+  const [actividadCounter, setActividadCounter] = useState(0);
 
   const addActivity = () => {
     const nextId = groupCounter;
@@ -306,19 +257,11 @@ export const ProyectoPOA: React.FC = () => {
     setActivities(prev => prev.filter(a => a.id !== id));
   };
 
-  // Costos variables (3 filas iniciales)
-  const [variablesRows, setVariablesRows] = useState<CostRow[]>([
-    { descripcion: 'Costo de inscripción', qty: '', unidad: 'Evento', unit: '', actividadId: 1 },
-    { descripcion: 'Capacitación a personal de la USO', qty: '', unidad: 'Sesión', unit: '', actividadId: 2 },
-    { descripcion: 'Viáticos y alimentación', qty: '', unidad: 'Paquete', unit: '', actividadId: 3 },
-  ]);
+  // Costos variables
+  const [variablesRows, setVariablesRows] = useState<CostRow[]>([]);
 
-  // Costos fijos (3 filas iniciales)
-  const [fijosRows, setFijosRows] = useState<CostRow[]>([
-    { descripcion: 'Salario: Carlos Roberto Martínez Martínez', qty: '', unidad: 'Meses', unit: '' },
-    { descripcion: 'Salario: Marvin Adonay Alarcón', qty: '', unidad: 'Meses', unit: '' },
-    { descripcion: 'Salario: Henry Manuel Pérez', qty: '', unidad: 'Meses', unit: '' },
-  ]);
+  // Costos fijos
+  const [fijosRows, setFijosRows] = useState<CostRow[]>([]);
 
   const addCostRow = (table: 'variables' | 'fijos') => {
     const nuevo: CostRow = { descripcion: '', qty: '', unidad: '', unit: '' };

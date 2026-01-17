@@ -440,14 +440,6 @@ export const SeguimientoPage: React.FC = () => {
         {/* Header */}
         <Flex justify="space-between" align="center" gap="0.8rem" style={{ marginBottom: '0.5rem' }}>
           <Typography variant="h1">Avance por actividad</Typography>
-          <Button
-            variant="alt"
-            size="sm"
-            onClick={() => window.print()}
-            title="Imprimir tablero"
-          >
-            🖨 Imprimir tablero
-          </Button>
         </Flex>
         <Typography variant="body" style={{ marginTop: '0.2rem', marginBottom: '1.5rem' }}>
           Gantt mensual, responsable y cumplimiento de indicadores de logro.

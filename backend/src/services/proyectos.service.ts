@@ -876,7 +876,7 @@ export const proyectosService = {
   async getReporteProyecto(proyectoId: number) {
     // 1. Info Proyecto + Responsable
     const proyectoRes = await query(`
-      SELECT p.*, u.nombre_completo as responsable_nombre, u.cargo as responsable_cargo
+      SELECT p.*, u.nombre_completo as responsable, u.cargo as responsable_cargo
       FROM proyecto p 
       LEFT JOIN usuario u ON p.id_responsable = u.id 
       WHERE p.id = $1

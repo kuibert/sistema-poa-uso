@@ -11,7 +11,15 @@ export const ReporteDetallado: React.FC<ReporteDetalladoProps> = ({ reporte, for
     if (!reporte) return null;
 
     return (
-        <div id="reporte-content" style={{ marginTop: '2rem', background: 'white', color: 'black', padding: '2rem', borderRadius: '8px' }}>
+        <div id="reporte-content" style={{
+            marginTop: '2rem',
+            background: 'white',
+            color: 'black',
+            padding: '2rem',
+            borderRadius: '8px',
+            '--typo-color-h': '#1a3a5c',
+            '--typo-color-body': '#334155'
+        } as React.CSSProperties}>
             <ReportHeader
                 title="PLAN OPERATIVO ANUAL (POA)"
                 subtitle={reporte.proyecto.nombre}
@@ -26,19 +34,19 @@ export const ReporteDetallado: React.FC<ReporteDetalladoProps> = ({ reporte, for
             <Section title="1. Información General del Proyecto" description="">
                 <Grid columns={2}>
                     <div>
-                        <Typography variant="caption" style={{ color: '#666' }}>Nombre del Proyecto</Typography>
+                        <Typography variant="caption">Nombre del Proyecto</Typography>
                         <Typography variant="body" style={{ fontWeight: 600 }}>{reporte.proyecto.nombre}</Typography>
                     </div>
                     <div>
-                        <Typography variant="caption" style={{ color: '#666' }}>Año</Typography>
+                        <Typography variant="caption">Año</Typography>
                         <Typography variant="body" style={{ fontWeight: 600 }}>{reporte.proyecto.anio}</Typography>
                     </div>
                     <div>
-                        <Typography variant="caption" style={{ color: '#666' }}>Responsable</Typography>
+                        <Typography variant="caption">Responsable</Typography>
                         <Typography variant="body" style={{ fontWeight: 600 }}>{reporte.proyecto.responsable}</Typography>
                     </div>
                     <div>
-                        <Typography variant="caption" style={{ color: '#666' }}>Unidad/Facultad</Typography>
+                        <Typography variant="caption">Unidad/Facultad</Typography>
                         <Typography variant="body" style={{ fontWeight: 600 }}>{reporte.proyecto.unidad_facultad || 'No especificada'}</Typography>
                     </div>
                 </Grid>
@@ -49,19 +57,19 @@ export const ReporteDetallado: React.FC<ReporteDetalladoProps> = ({ reporte, for
             <Section title="2. Resumen Financiero" description="">
                 <Grid columns={3}>
                     <Card padding="1rem" style={{ background: '#f0f7ff', border: '1px solid #d4e6ff' }}>
-                        <Typography variant="caption" style={{ color: '#666' }}>Presupuesto Aprobado</Typography>
+                        <Typography variant="caption">Presupuesto Aprobado</Typography>
                         <Typography variant="h3" style={{ color: '#1a3a5c', margin: '0.5rem 0 0' }}>
                             {formatoDinero(reporte.proyecto.presupuesto_total)}
                         </Typography>
                     </Card>
                     <Card padding="1rem" style={{ background: '#fff4e6', border: '1px solid #ffd699' }}>
-                        <Typography variant="caption" style={{ color: '#666' }}>Costos Asociados</Typography>
+                        <Typography variant="caption">Costos Asociados</Typography>
                         <Typography variant="h3" style={{ color: '#d97706', margin: '0.5rem 0 0' }}>
                             {formatoDinero(reporte.costos.reduce((sum: number, c: any) => sum + Number(c.monto || 0), 0))}
                         </Typography>
                     </Card>
                     <Card padding="1rem" style={{ background: '#f0fdf4', border: '1px solid #86efac' }}>
-                        <Typography variant="caption" style={{ color: '#666' }}>Balance</Typography>
+                        <Typography variant="caption">Balance</Typography>
                         <Typography variant="h3" style={{ color: '#16a34a', margin: '0.5rem 0 0' }}>
                             {formatoDinero(
                                 Number(reporte.proyecto.presupuesto_total || 0) -
@@ -88,7 +96,7 @@ export const ReporteDetallado: React.FC<ReporteDetalladoProps> = ({ reporte, for
                         {reporte.actividades.map((act: any, i: number) => (
                             <Table.Row key={i}>
                                 <Table.Cell>{act.nombre}</Table.Cell>
-                                <Table.Cell style={{ fontSize: '0.85rem', color: '#666' }}>{act.descripcion || '-'}</Table.Cell>
+                                <Table.Cell style={{ fontSize: '0.85rem' }}>{act.descripcion || '-'}</Table.Cell>
                                 <Table.Cell>{formatoDinero(act.presupuesto_asignado)}</Table.Cell>
                                 <Table.Cell>
                                     <Badge variant="pill" style={{ background: act.completado ? '#27ae60' : '#f39c12', color: 'white' }}>

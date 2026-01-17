@@ -34,12 +34,12 @@ export const Typography: React.FC<TypographyProps> = ({
 
     // Default styles mapping
     const variantStyles: Record<string, React.CSSProperties> = {
-        h1: { fontSize: '1.2rem', margin: 0, fontWeight: 700, color: 'var(--texto-claro)' },
-        h2: { fontSize: '1rem', margin: 0, fontWeight: 600, color: 'var(--texto-claro)' },
-        h3: { fontSize: '0.9rem', margin: 0, fontWeight: 600, color: 'var(--texto-claro)' },
-        body: { fontSize: '0.9rem', color: 'var(--texto-sec)' },
-        caption: { fontSize: '0.78rem', color: 'var(--texto-sec)' },
-        label: { fontSize: '0.85rem', fontWeight: 500, color: 'var(--texto-sec)' }
+        h1: { fontSize: '1.2rem', margin: 0, fontWeight: 700, color: 'var(--typo-color-h, var(--texto-claro))' },
+        h2: { fontSize: '1rem', margin: 0, fontWeight: 600, color: 'var(--typo-color-h, var(--texto-claro))' },
+        h3: { fontSize: '0.9rem', margin: 0, fontWeight: 600, color: 'var(--typo-color-h, var(--texto-claro))' },
+        body: { fontSize: '0.9rem', color: 'var(--typo-color-body, var(--texto-sec))' },
+        caption: { fontSize: '0.78rem', color: 'var(--typo-color-body, var(--texto-sec))' },
+        label: { fontSize: '0.85rem', fontWeight: 500, color: 'var(--typo-color-body, var(--texto-sec))' }
     };
 
     const Tag = component || tagMap[variant] || 'div';

@@ -55,7 +55,15 @@ export const ReporteFinancieroUnidad: React.FC<ReporteFinancieroUnidadProps> = (
     );
 
     return (
-        <div id="reporte-content" style={{ marginTop: '2rem', background: 'white', color: 'black', padding: '2rem', borderRadius: '8px' }}>
+        <div id="reporte-content" style={{
+            marginTop: '2rem',
+            background: 'white',
+            color: 'black',
+            padding: '2rem',
+            borderRadius: '8px',
+            '--typo-color-h': '#1a3a5c',
+            '--typo-color-body': '#334155'
+        } as React.CSSProperties}>
 
             <ReportHeader
                 title="INFORME FINANCIERO CONSOLIDADO POR UNIDAD"

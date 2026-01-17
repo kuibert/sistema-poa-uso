@@ -49,7 +49,15 @@ export const ReporteFinancieroProyecto: React.FC<ReporteFinancieroProyectoProps>
     if (!reporteProyecto) return null;
 
     return (
-        <div id="reporte-content" style={{ marginTop: '2rem', background: 'white', color: 'black', padding: '2rem', borderRadius: '8px' }}>
+        <div id="reporte-content" style={{
+            marginTop: '2rem',
+            background: 'white',
+            color: 'black',
+            padding: '2rem',
+            borderRadius: '8px',
+            '--typo-color-h': '#1a3a5c',
+            '--typo-color-body': '#334155'
+        } as React.CSSProperties}>
 
             <ReportHeader
                 title="INFORME FINANCIERO DEL PROYECTO"
@@ -136,7 +144,7 @@ export const ReporteFinancieroProyecto: React.FC<ReporteFinancieroProyectoProps>
             {/* 3. COSTOS VARIABLES DEL PROYECTO */}
             <Divider variant="solid" color="#eee" />
             <Section title="3. Costos Variables del Proyecto">
-                <Typography variant="body" color="#444" style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
+                <Typography variant="body" style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
                     Detalle de los costos variables del proyecto.
                 </Typography>
                 <Table variant="compact">
@@ -173,7 +181,7 @@ export const ReporteFinancieroProyecto: React.FC<ReporteFinancieroProyectoProps>
             {/* 4. COSTOS FIJOS DEL PROYECTO */}
             <Divider variant="solid" color="#eee" />
             <Section title="4. Costos Fijos del Proyecto">
-                <Typography variant="body" color="#444" style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
+                <Typography variant="body" style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
                     Detalle de los costos fijos del proyecto.
                 </Typography>
                 <Table variant="compact">

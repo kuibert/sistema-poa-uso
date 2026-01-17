@@ -36,7 +36,15 @@ export const ReporteMetricasAnual: React.FC<ReporteMetricasAnualProps> = ({ repo
     };
 
     return (
-        <div id="reporte-content" style={{ marginTop: '2rem', background: 'white', color: 'black', padding: '2rem', borderRadius: '8px' }}>
+        <div id="reporte-content" style={{
+            marginTop: '2rem',
+            background: 'white',
+            color: 'black',
+            padding: '2rem',
+            borderRadius: '8px',
+            '--typo-color-h': '#1a3a5c',
+            '--typo-color-body': '#334155'
+        } as React.CSSProperties}>
 
             <ReportHeader
                 title="INFORME ANUAL DE MÉTRICAS DE AVANCE"
@@ -118,7 +126,7 @@ export const ReporteMetricasAnual: React.FC<ReporteMetricasAnualProps> = ({ repo
                                     <Typography variant="body" color="inherit">
                                         {p.avanceFinanciero}%
                                     </Typography>
-                                    <Typography variant="caption" color="#666">
+                                    <Typography variant="caption">
                                         ({formatoDinero(p.gastado)})
                                     </Typography>
                                 </Table.Cell>

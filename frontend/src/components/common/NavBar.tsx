@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authApi } from '../../services/authApi';
-import { Flex, Typography, Button } from './index';
+import { Flex, Typography } from './index';
 
 interface NavBarProps {
     userName?: string;
@@ -47,7 +47,7 @@ export const NavBar: React.FC<NavBarProps> = ({ userName }) => {
 
     const navItemStyle = (active: boolean): React.CSSProperties => ({
         padding: '0.5rem 1.2rem',
-        background: active ? 'var(--acento-verde)' : 'transparent',
+        background: active ? 'var(--verde-hoja)' : 'transparent',
         color: 'white',
         border: 'none',
         borderRadius: '4px',
@@ -61,81 +61,77 @@ export const NavBar: React.FC<NavBarProps> = ({ userName }) => {
     return (
         <Flex
             as="nav"
-            justify="center"
+            justify="space-between"
+            align="center"
+            padding="0.9rem 10rem"
             style={{
                 background: 'linear-gradient(135deg, #1a3a5c 0%, #0d1f35 100%)',
                 borderBottom: '1px solid rgba(255,255,255,0.1)',
                 width: '100%',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                minHeight: '70px'
             }}
         >
-            <Flex
-                justify="space-between"
-                align="center"
-                padding="0.6rem 2rem"
-                style={{
-                    width: '100%',
-                    maxWidth: '1200px',
-                }}
-            >
-                <Flex align="center" gap="3rem">
-                    <Flex direction="column">
-                        <Typography variant="body" weight={600} style={{ color: 'white', fontSize: '1rem', margin: 0, letterSpacing: '0.5px' }}>
-                            UNIVERSIDAD DE SONSONATE
-                        </Typography>
-                        <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '0.75rem' }}>
-                            Sistema de Gestión POA
-                        </Typography>
-                    </Flex>
-
-                    <Flex as="ul" gap="0.3rem" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                        {navItems.map((item) => (
-                            <li key={item.path}>
-                                <button
-                                    onClick={() => navigate(item.path)}
-                                    style={navItemStyle(isActive(item.path))}
-                                    onMouseEnter={(e) => {
-                                        if (!isActive(item.path)) {
-                                            e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                                        }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        if (!isActive(item.path)) {
-                                            e.currentTarget.style.background = 'transparent';
-                                        }
-                                    }}
-                                >
-                                    {item.label}
-                                </button>
-                            </li>
-                        ))}
-                    </Flex>
+            {/* Lado izquierdo: Logo + Enlaces */}
+            <Flex align="center" gap="3.5rem">
+                <Flex direction="column">
+                    <Typography variant="body" weight={700} style={{ color: 'white', fontSize: '1.1rem', margin: 0, letterSpacing: '0.4px' }}>
+                        UNIVERSIDAD DE SONSONATE
+                    </Typography>
+                    <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '0.8rem' }}>
+                        Sistema de Gestión POA
+                    </Typography>
                 </Flex>
 
-                <Flex align="center" gap="1.5rem">
-                    <Flex direction="column" align="flex-end">
-                        <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.6)', margin: 0, fontSize: '0.7rem' }}>
-                            Usuario:
-                        </Typography>
-                        <Typography variant="body" weight={500} style={{ color: 'white', fontSize: '0.85rem', margin: 0 }}>
-                            {displayName}
-                        </Typography>
-                    </Flex>
+                <Flex as="ul" gap="0.3rem" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                    {navItems.map((item) => (
+                        <li key={item.path}>
+                            <button
+                                onClick={() => navigate(item.path)}
+                                style={navItemStyle(isActive(item.path))}
+                                onMouseEnter={(e) => {
+                                    if (!isActive(item.path)) {
+                                        e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (!isActive(item.path)) {
+                                        e.currentTarget.style.background = 'transparent';
+                                    }
+                                }}
+                            >
+                                {item.label}
+                            </button>
+                        </li>
+                    ))}
+                </Flex>
+            </Flex>
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
+            {/* Lado derecho: Info de Usuario */}
+            <Flex align="center" gap="1.5rem">
+                <Flex direction="column" align="flex-end" style={{ marginRight: '0.2rem' }}>
+                    <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.6)', margin: 0, fontSize: '0.75rem' }}>
+                        Usuario:
+                    </Typography>
+                    <Typography variant="body" weight={600} style={{ color: 'white', fontSize: '0.9rem', margin: 0 }}>
+                        {displayName}
+                    </Typography>
+                    <button
                         onClick={handleLogout}
                         style={{
+                            background: 'none',
+                            border: 'none',
                             color: '#ff8a8a',
-                            background: 'rgba(255,255,255,0.08)',
-                            padding: '0.4rem 0.8rem',
                             fontSize: '0.75rem',
-                            border: '1px solid rgba(255, 138, 138, 0.2)'
+                            cursor: 'pointer',
+                            textDecoration: 'underline',
+                            padding: 0,
+                            marginTop: '2px',
+                            fontWeight: 500
                         }}
                     >
                         Cerrar sesión
-                    </Button>
+                    </button>
                 </Flex>
             </Flex>
         </Flex>

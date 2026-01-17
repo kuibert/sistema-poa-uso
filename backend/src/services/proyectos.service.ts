@@ -839,6 +839,20 @@ export const proyectosService = {
       }
     }
 
+    // Sincronización de Costo (Solo si existe UNO único asociado)
+    const costosCheck = await query('SELECT id, cantidad FROM costo_proyecto WHERE id_actividad = $1', [id]);
+    if (costosCheck.rows.length === 1) {
+      const costoRow = costosCheck.rows[0];
+      const nuevoTotal = Number(data.presupuesto_asignado) || 0;
+      const cantidad = Number(costoRow.cantidad) || 1; // Avoid division by zero
+      const nuevoUnitario = cantidad !== 0 ? nuevoTotal / cantidad : nuevoTotal;
+
+      await query(
+        'UPDATE costo_proyecto SET costo_total = $1, precio_unitario = $2 WHERE id = $3',
+        [nuevoTotal, nuevoUnitario, costoRow.id]
+      );
+    }
+
     return actividad;
   },
 

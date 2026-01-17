@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Section, Table, Divider, Grid, Flex, ReportHeader, KPICard, ProgressBar } from '../../components/common';
+import { Section, Table, Divider, Grid, Flex, ReportHeader, KPICard, ProgressBar, LoadingSpinner, Typography } from '../../components/common';
 import apiClient from '../../services/apiClient';
 import logoUso from '../../assets/images/logo_uso.png';
 
@@ -39,7 +39,13 @@ export const ReporteFinancieroProyecto: React.FC<ReporteFinancieroProyectoProps>
         return `${Math.round(porcentaje || 0)}%`;
     };
 
-    if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando reporte...</div>;
+    if (loading) return (
+        <Flex justify="center" direction="column" align="center" padding="4rem" gap="1rem">
+            <LoadingSpinner />
+            <Typography variant="body">Cargando reporte...</Typography>
+        </Flex>
+    );
+
     if (!reporteProyecto) return null;
 
     return (
@@ -109,9 +115,9 @@ export const ReporteFinancieroProyecto: React.FC<ReporteFinancieroProyectoProps>
                                             color={act.porcentaje_ejecucion >= 100 ? '#27ae60' : '#3498db'}
                                             trackColor="#eee"
                                         />
-                                        <span style={{ fontSize: '0.85rem', minWidth: '45px', textAlign: 'right' }}>
+                                        <Typography variant="caption" style={{ minWidth: '45px', textAlign: 'right' }}>
                                             {formatoPorcentaje(act.porcentaje_ejecucion)}
-                                        </span>
+                                        </Typography>
                                     </Flex>
                                 </Table.Cell>
                             </Table.Row>
@@ -130,9 +136,9 @@ export const ReporteFinancieroProyecto: React.FC<ReporteFinancieroProyectoProps>
             {/* 3. COSTOS VARIABLES DEL PROYECTO */}
             <Divider variant="solid" color="#eee" />
             <Section title="3. Costos Variables del Proyecto">
-                <div style={{ marginBottom: '1rem', color: '#444', fontSize: '0.95rem' }}>
+                <Typography variant="body" color="#444" style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
                     Detalle de los costos variables del proyecto.
-                </div>
+                </Typography>
                 <Table variant="compact">
                     <Table.Header>
                         <Table.Row>
@@ -167,9 +173,9 @@ export const ReporteFinancieroProyecto: React.FC<ReporteFinancieroProyectoProps>
             {/* 4. COSTOS FIJOS DEL PROYECTO */}
             <Divider variant="solid" color="#eee" />
             <Section title="4. Costos Fijos del Proyecto">
-                <div style={{ marginBottom: '1rem', color: '#444', fontSize: '0.95rem' }}>
+                <Typography variant="body" color="#444" style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
                     Detalle de los costos fijos del proyecto.
-                </div>
+                </Typography>
                 <Table variant="compact">
                     <Table.Header>
                         <Table.Row>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavBar, Card, Divider, Grid, Table, Badge, Select, Input, Modal, FormGroup, Label, SuccessMessage } from '../components/common';
+import { Card, Divider, Grid, Table, Badge, Select, Input, Modal, FormGroup, Label, SuccessMessage, PageLayout, Flex, Typography } from '../components/common';
 import { KPICard, StatusPill, Status } from '../components/poa';
 import { Button } from '../components/common/Button';
 import apiClient from '../services/apiClient';
@@ -105,8 +105,6 @@ export const DashboardPOA: React.FC = () => {
   const handleDuplicatePOA = async () => {
     if (!duplicateTargetYear) return;
 
-    if (!duplicateTargetYear) return;
-
     try {
       setDuplicating(true);
 
@@ -139,7 +137,7 @@ export const DashboardPOA: React.FC = () => {
   };
 
   if (loading) {
-    return <p style={{ color: "white", padding: "2rem" }}>Cargando datos del dashboard...</p>;
+    return <PageLayout><Typography color="white" style={{ padding: "2rem" }}>Cargando datos del dashboard...</Typography></PageLayout>;
   }
 
 
@@ -212,331 +210,233 @@ export const DashboardPOA: React.FC = () => {
 
   const urlSeguimiento = 'seguimiento';
 
-  // =============================
-  //  ESTILOS (NO CAMBIADOS)
-  // =============================
-  const containerStyle: React.CSSProperties = {
-    background: 'var(--fondo-azul)',
-    color: 'var(--texto-claro)',
-    minHeight: '100vh',
-  };
-
-  const mainStyle: React.CSSProperties = {
-    maxWidth: '1150px',
-    margin: '1.5rem auto 0',
-    padding: '0 1rem 1rem',
-  };
-
-  const cardHeaderStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '0.8rem',
-  };
-
-  const cardTitleStyle: React.CSSProperties = {
-    fontSize: '1.2rem',
-  };
-
-  const cardSubStyle: React.CSSProperties = {
-    fontSize: '0.85rem',
-    color: 'var(--texto-sec)',
-    marginTop: '0.2rem',
-  };
-
-  const portafolioResumenStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '1rem',
-    marginBottom: '1rem',
-    flexWrap: 'wrap',
-  };
-
-  const portafolioTextoStyle: React.CSSProperties = {
-    fontSize: '0.85rem',
-    color: 'var(--texto-sec)',
-  };
-
-  const sectionTitleStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.4rem',
-    fontSize: '0.95rem',
-    fontWeight: 600,
-  };
-
-  const sectionTitleBeforeStyle: React.CSSProperties = {
-    width: '4px',
-    height: '18px',
-    background: 'var(--verde-hoja)',
-    borderRadius: '10px',
-  };
-
-  const sectionDividerStyle: React.CSSProperties = {
-    height: '1px',
-    background: 'var(--verde-hoja)',
-    opacity: 0.4,
-    margin: '0.4rem 0 0.7rem',
-  };
-
-  const sectionDescStyle: React.CSSProperties = {
-    fontSize: '0.8rem',
-    color: 'var(--texto-sec)',
-  };
-
-  const proyectoLinkStyle: React.CSSProperties = {
-    color: '#9ad7ff',
-    textDecoration: 'none',
-  };
-
-  const actividadLinkStyle: React.CSSProperties = {
-    color: '#72e1ff',
-    textDecoration: 'none',
-  };
-
-  const filterContainerStyle: React.CSSProperties = {
-    display: 'flex',
-    gap: '0.5rem',
-    marginTop: '0.4rem',
-    alignItems: 'center'
-  };
-
   return (
-    <div style={containerStyle}>
-      <NavBar />
+    <PageLayout maxWidth="1150px">
+      <Card>
+        {successMsg && <SuccessMessage message={successMsg} onDismiss={() => setSuccessMsg(null)} />}
 
-
-      <main style={mainStyle}>
-        <Card>
-          {successMsg && <SuccessMessage message={successMsg} onDismiss={() => setSuccessMsg(null)} />}
-
-          {/* PANEL SUPERIOR */}
-          <div style={cardHeaderStyle}>
-            <div>
-              <h1 style={cardTitleStyle}>Resumen del portafolio de proyectos POA</h1>
-              <p style={cardSubStyle}>
-                Visión global del presupuesto, avance y resultados de todos los proyectos activos.
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <Button onClick={() => setShowDuplicateModal(true)}>
-                📋 Duplicar POA
-              </Button>
-
-            </div>
+        {/* PANEL SUPERIOR */}
+        <Flex justify="space-between" align="center" gap="0.8rem" wrap="wrap">
+          <div>
+            <Typography variant="h1">Resumen del portafolio de proyectos POA</Typography>
+            <Typography variant="body" style={{ marginTop: '0.2rem' }}>
+              Visión global del presupuesto, avance y resultados de todos los proyectos activos.
+            </Typography>
           </div>
+
+          <Flex gap="0.5rem">
+            <Button onClick={() => setShowDuplicateModal(true)}>
+              📋 Duplicar POA
+            </Button>
+          </Flex>
+        </Flex>
+
+        <Divider variant="gradient" />
+
+        {/* ========= KPI ========= */}
+        <div style={{ marginBottom: '1.5rem' }}>
+          <Flex justify="space-between" align="flex-start" gap="1rem" wrap="wrap" style={{ marginBottom: '1rem' }}>
+            <Typography variant="body">
+              Proyectos activos: <strong style={{ color: 'var(--texto-claro)' }}>{totalProyectos}</strong><br />
+              Seguimiento por ejecución del plan, logro de indicadores y uso de presupuesto.
+            </Typography>
+
+            <Flex direction="column" gap="0.4rem" style={{ fontSize: '0.85rem' }}>
+              <Typography variant="body" color="var(--texto-sec)">Mes de referencia:</Typography>
+              <Flex gap="0.5rem" align="center" wrap="wrap">
+                <Select
+                  value={inputMonth}
+                  onChange={(e) => setInputMonth(Number(e.target.value))}
+                  style={{ width: '130px', padding: '4px 8px', fontSize: '0.9rem' }}
+                >
+                  {months.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </Select>
+
+                <Input
+                  type="number"
+                  value={inputYear}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setInputYear(val);
+                  }}
+                  style={{ width: '70px', padding: '4px 8px', fontSize: '0.9rem' }}
+                  placeholder="Año"
+                />
+
+                <Select
+                  value={inputUnidad}
+                  onChange={(e) => setInputUnidad(e.target.value)}
+                  style={{ width: '200px', padding: '4px 8px', fontSize: '0.9rem' }}
+                  disabled={(() => {
+                    const userStr = localStorage.getItem('user');
+                    if (!userStr) return false;
+                    try {
+                      const user = JSON.parse(userStr);
+                      return user.rol !== 'ADMIN';
+                    } catch { return false; }
+                  })()}
+                >
+                  <option value="">Todas las unidades</option>
+                  {unidades.map((u, idx) => (
+                    <option key={idx} value={u}>{u}</option>
+                  ))}
+                </Select>
+
+                <Button
+                  onClick={handleApplyFilters}
+                  style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                >
+                  Aplicar
+                </Button>
+              </Flex>
+              <Typography variant="caption" style={{ marginTop: '0.4rem' }}>
+                Este resumen consolida los datos de todos los proyectos aprobados en el POA.
+              </Typography>
+            </Flex>
+          </Flex>
+
+          <Grid columns={4}>
+            <KPICard
+              label="Presupuesto del portafolio"
+              value={formatoDinero(dispPortafolio)}
+              subtitle={`Aprobado: ${formatoDinero(totalAprobado)} · Gastado: ${formatoDinero(totalGastado)}`}
+              progress={pctGastadoPortafolio}
+              showBar={true}
+            />
+
+            <KPICard
+              label="Avance operativo promedio"
+              value={`${promAvance}%`}
+              subtitle="Calculado a partir de los meses P/I/F de todas las actividades."
+              progress={promAvance}
+              showBar={true}
+            />
+
+            <KPICard
+              label="Logro promedio de indicadores (KPI)"
+              value={`${promLogro}%`}
+              subtitle="Promedio de cumplimiento de metas de los proyectos."
+              progress={promLogro}
+              showBar={true}
+            />
+
+            <KPICard
+              label="Actividades del mes en todo el portafolio"
+              value={totalActivMes}
+              subtitle={`Pendientes: ${cP} · En proceso: ${cI} · Finalizadas: ${cF}`}
+              showBar={false}
+            />
+          </Grid>
+        </div>
+
+        {/* ========= TABLA DE PROYECTOS ========= */}
+        <Card variant="dark" padding="1rem" style={{ marginBottom: '1.3rem' }}>
+          <Typography variant="h3" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ width: '4px', height: '18px', background: 'var(--verde-hoja)', borderRadius: '10px' }}></span>
+            Listado de proyectos activos
+          </Typography>
 
           <Divider variant="gradient" />
 
-          {/* ========= KPI ========= */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <div style={portafolioResumenStyle}>
-              <div style={portafolioTextoStyle}>
-                Proyectos activos: <strong>{totalProyectos}</strong><br />
-                Seguimiento por ejecución del plan, logro de indicadores y uso de presupuesto.
-              </div>
+          <Typography variant="caption">
+            Visión compacta para más de 20 proyectos.
+          </Typography>
 
-              <div style={portafolioTextoStyle}>
-                Mes de referencia:
-                <div style={filterContainerStyle}>
-                  <Select
-                    value={inputMonth}
-                    onChange={(e) => setInputMonth(Number(e.target.value))}
-                    style={{ width: '130px', padding: '4px 8px', fontSize: '0.9rem' }}
-                  >
-                    {months.map(m => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
-                  </Select>
+          <Table>
+            <Table.Header>
+              <Table.Row hover={false}>
+                <Table.Cell header>Proyecto</Table.Cell>
+                <Table.Cell header center>Año</Table.Cell>
+                <Table.Cell header>Responsable</Table.Cell>
+                <Table.Cell header>Aprobado</Table.Cell>
+                <Table.Cell header>Gastado</Table.Cell>
+                <Table.Cell header>Disponible</Table.Cell>
+                <Table.Cell header center>Avance %</Table.Cell>
+                <Table.Cell header center>Logro %</Table.Cell>
+                <Table.Cell header center>Act. Mes</Table.Cell>
+              </Table.Row>
+            </Table.Header>
 
-                  <Input
-                    type="number"
-                    value={inputYear}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setInputYear(val);
-                    }}
-                    style={{ width: '70px', padding: '4px 8px', fontSize: '0.9rem' }}
-                    placeholder="Año"
-                  />
-
-                  <Select
-                    value={inputUnidad}
-                    onChange={(e) => setInputUnidad(e.target.value)}
-                    style={{ width: '200px', padding: '4px 8px', fontSize: '0.9rem' }}
-                    disabled={(() => {
-                      const userStr = localStorage.getItem('user');
-                      if (!userStr) return false;
-                      try {
-                        const user = JSON.parse(userStr);
-                        return user.rol !== 'ADMIN';
-                      } catch { return false; }
-                    })()}
-                  >
-                    <option value="">Todas las unidades</option>
-                    {unidades.map((u, idx) => (
-                      <option key={idx} value={u}>{u}</option>
-                    ))}
-                  </Select>
-
-                  <Button
-                    onClick={handleApplyFilters}
-                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                  >
-                    Aplicar
-                  </Button>
-                </div>
-                <div style={{ marginTop: '0.4rem' }}>
-                  Este resumen consolida los datos de todos los proyectos aprobados en el POA.
-                </div>
-              </div>
-            </div>
-
-            <Grid columns={4}>
-              <KPICard
-                label="Presupuesto del portafolio"
-                value={formatoDinero(dispPortafolio)}
-                subtitle={`Aprobado: ${formatoDinero(totalAprobado)} · Gastado: ${formatoDinero(totalGastado)}`}
-                progress={pctGastadoPortafolio}
-                showBar={true}
-              />
-
-              <KPICard
-                label="Avance operativo promedio"
-                value={`${promAvance}%`}
-                subtitle="Calculado a partir de los meses P/I/F de todas las actividades."
-                progress={promAvance}
-                showBar={true}
-              />
-
-              <KPICard
-                label="Logro promedio de indicadores (KPI)"
-                value={`${promLogro}%`}
-                subtitle="Promedio de cumplimiento de metas de los proyectos."
-                progress={promLogro}
-                showBar={true}
-              />
-
-              <KPICard
-                label="Actividades del mes en todo el portafolio"
-                value={totalActivMes}
-                subtitle={`Pendientes: ${cP} · En proceso: ${cI} · Finalizadas: ${cF}`}
-                showBar={false}
-              />
-            </Grid>
-          </div>
-
-          {/* ========= TABLA DE PROYECTOS ========= */}
-          <Card variant="dark" padding="1rem" style={{ marginBottom: '1.3rem' }}>
-            <div style={sectionTitleStyle}>
-              <span style={sectionTitleBeforeStyle}></span>
-              Listado de proyectos activos
-            </div>
-
-            <div style={sectionDividerStyle}></div>
-
-            <p style={sectionDescStyle}>
-              Visión compacta para más de 20 proyectos.
-            </p>
-
-            <Table>
-              <Table.Header>
-                <Table.Row hover={false}>
-                  <Table.Cell header>Proyecto</Table.Cell>
-                  <Table.Cell header center>Año</Table.Cell>
-                  <Table.Cell header>Responsable</Table.Cell>
-                  <Table.Cell header>Aprobado</Table.Cell>
-                  <Table.Cell header>Gastado</Table.Cell>
-                  <Table.Cell header>Disponible</Table.Cell>
-                  <Table.Cell header center>Avance %</Table.Cell>
-                  <Table.Cell header center>Logro %</Table.Cell>
-                  <Table.Cell header center>Act. Mes</Table.Cell>
-                </Table.Row>
-              </Table.Header>
-
-              <Table.Body>
-                {proyectos.map(p => {
-                  const disp = p.presupuestoAprobado - p.gastado;
-                  return (
-                    <Table.Row key={p.id}>
-                      <Table.Cell>
-                        <a href={`${urlSeguimiento}?proyectoId=${p.id}`} style={proyectoLinkStyle}>
-                          {p.nombre}
-                        </a>
-                      </Table.Cell>
-
-                      <Table.Cell center>{p.anio}</Table.Cell>
-                      <Table.Cell>{p.responsable}</Table.Cell>
-                      <Table.Cell>{formatoDinero(p.presupuestoAprobado)}</Table.Cell>
-                      <Table.Cell>{formatoDinero(p.gastado)}</Table.Cell>
-                      <Table.Cell>{formatoDinero(disp)}</Table.Cell>
-                      <Table.Cell center>{p.avanceOperativo}%</Table.Cell>
-                      <Table.Cell center>{p.logroKpi}%</Table.Cell>
-                      <Table.Cell center><Badge variant="circle">{p.actividadesMes}</Badge></Table.Cell>
-                    </Table.Row>
-                  );
-                })}
-              </Table.Body>
-            </Table>
-          </Card>
-
-          {/* ========= TABLA ACTIVIDADES ========= */}
-          <Card variant="accent" padding="1rem 1rem 1.1rem">
-            <div style={sectionTitleStyle}>
-              <span style={sectionTitleBeforeStyle}></span>
-              Actividades del mes (todos los proyectos)
-            </div>
-
-            <div style={sectionDividerStyle}></div>
-
-            <p style={sectionDescStyle}>
-              Vista consolidada de todas las actividades del mes.
-            </p>
-
-            <Table variant="activities">
-              <Table.Header>
-                <Table.Row hover={false}>
-                  <Table.Cell header>Actividad</Table.Cell>
-                  <Table.Cell header>Proyecto</Table.Cell>
-                  <Table.Cell header>Responsable</Table.Cell>
-                  <Table.Cell header>Estado</Table.Cell>
-                  <Table.Cell header center>Avance %</Table.Cell>
-                  <Table.Cell header center>Logro KPI %</Table.Cell>
-                </Table.Row>
-              </Table.Header>
-
-              <Table.Body>
-                {actividadesMes.map((a, idx) => (
-                  <Table.Row key={idx}>
+            <Table.Body>
+              {proyectos.map(p => {
+                const disp = p.presupuestoAprobado - p.gastado;
+                return (
+                  <Table.Row key={p.id}>
                     <Table.Cell>
-                      <a
-                        href={`${urlSeguimiento}?proyectoId=${a.proyectoId}&actividad=${encodeURIComponent(a.nombre)}`}
-                        style={actividadLinkStyle}
-                      >
-                        {a.nombre}
+                      <a href={`${urlSeguimiento}?proyectoId=${p.id}`} style={{ color: '#9ad7ff', textDecoration: 'none' }}>
+                        {p.nombre}
                       </a>
                     </Table.Cell>
 
-                    <Table.Cell>{a.proyectoNombre}</Table.Cell>
-                    <Table.Cell>{a.responsable}</Table.Cell>
-
-                    <Table.Cell>
-                      <StatusPill status={a.estado as Status} />
-                    </Table.Cell>
-
-                    <Table.Cell center>{a.avanceActividad}%</Table.Cell>
-                    <Table.Cell center>{a.logroKpiActividad}%</Table.Cell>
+                    <Table.Cell center>{p.anio}</Table.Cell>
+                    <Table.Cell>{p.responsable}</Table.Cell>
+                    <Table.Cell>{formatoDinero(p.presupuestoAprobado)}</Table.Cell>
+                    <Table.Cell>{formatoDinero(p.gastado)}</Table.Cell>
+                    <Table.Cell>{formatoDinero(disp)}</Table.Cell>
+                    <Table.Cell center>{p.avanceOperativo}%</Table.Cell>
+                    <Table.Cell center>{p.logroKpi}%</Table.Cell>
+                    <Table.Cell center><Badge variant="circle">{p.actividadesMes}</Badge></Table.Cell>
                   </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
-
-          </Card>
+                );
+              })}
+            </Table.Body>
+          </Table>
         </Card>
-      </main>
+
+        {/* ========= TABLA ACTIVIDADES ========= */}
+        <Card variant="accent" padding="1rem 1rem 1.1rem">
+          <Typography variant="h3" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ width: '4px', height: '18px', background: 'var(--verde-hoja)', borderRadius: '10px' }}></span>
+            Actividades del mes (todos los proyectos)
+          </Typography>
+
+          <Divider variant="gradient" />
+
+          <Typography variant="caption">
+            Vista consolidada de todas las actividades del mes.
+          </Typography>
+
+          <Table variant="activities">
+            <Table.Header>
+              <Table.Row hover={false}>
+                <Table.Cell header>Actividad</Table.Cell>
+                <Table.Cell header>Proyecto</Table.Cell>
+                <Table.Cell header>Responsable</Table.Cell>
+                <Table.Cell header>Estado</Table.Cell>
+                <Table.Cell header center>Avance %</Table.Cell>
+                <Table.Cell header center>Logro KPI %</Table.Cell>
+              </Table.Row>
+            </Table.Header>
+
+            <Table.Body>
+              {actividadesMes.map((a, idx) => (
+                <Table.Row key={idx}>
+                  <Table.Cell>
+                    <a
+                      href={`${urlSeguimiento}?proyectoId=${a.proyectoId}&actividad=${encodeURIComponent(a.nombre)}`}
+                      style={{ color: '#72e1ff', textDecoration: 'none' }}
+                    >
+                      {a.nombre}
+                    </a>
+                  </Table.Cell>
+
+                  <Table.Cell>{a.proyectoNombre}</Table.Cell>
+                  <Table.Cell>{a.responsable}</Table.Cell>
+
+                  <Table.Cell>
+                    <StatusPill status={a.estado as Status} />
+                  </Table.Cell>
+
+                  <Table.Cell center>{a.avanceActividad}%</Table.Cell>
+                  <Table.Cell center>{a.logroKpiActividad}%</Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table>
+        </Card>
+      </Card>
 
       {/* MODAL DUPLICAR POA */}
       <Modal
@@ -546,7 +446,7 @@ export const DashboardPOA: React.FC = () => {
       >
         {!confirmStep ? (
           <>
-            <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
+            <Typography variant="body" style={{ marginBottom: '1rem' }}>
               Está a punto de copiar <strong>todos los proyectos</strong> del año <strong>{appliedYear}</strong> al año destino seleccionado.
               <br /><br />
               <strong>¿Qué se copia?</strong> <br />
@@ -554,7 +454,7 @@ export const DashboardPOA: React.FC = () => {
               <br /><br />
               <strong>¿Qué NO se copia?</strong> <br />
               Ejecución (Gastos, Evidencias, Avance Real).
-            </p>
+            </Typography>
 
             <FormGroup>
               <Label>Año Origen (Base para la copia)</Label>
@@ -577,27 +477,26 @@ export const DashboardPOA: React.FC = () => {
           </>
         ) : (
           <>
-            <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-              <p style={{ fontSize: '1rem', color: '#e74c3c', fontWeight: 'bold', marginBottom: '1rem' }}>
+            <Flex direction="column" align="center" style={{ padding: '1rem 0' }}>
+              <Typography variant="h3" color="#e74c3c" weight={700} style={{ marginBottom: '1rem' }}>
                 ⚠️ ¿Está seguro de realizar esta acción?
-              </p>
-              <p style={{ fontSize: '0.9rem', color: '#555' }}>
+              </Typography>
+              <Typography variant="body" align="center">
                 Se crearán copias de todos los proyectos del año {appliedYear} para el año {duplicateTargetYear}.
                 <br />
                 Verifique que el año destino sea el correcto.
-              </p>
-            </div>
+              </Typography>
+            </Flex>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1.5rem' }}>
+            <Flex justify="center" gap="1rem" style={{ marginTop: '1.5rem' }}>
               <Button variant="alt" onClick={() => setConfirmStep(false)}>Atrás</Button>
               <Button onClick={handleDuplicatePOA} loading={duplicating} variant="main">
                 Sí, Confirmar Duplicación
               </Button>
-            </div>
+            </Flex>
           </>
         )}
       </Modal>
-
-    </div>
+    </PageLayout>
   );
 };

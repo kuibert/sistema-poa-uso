@@ -112,6 +112,7 @@ CREATE TABLE costo_proyecto (
     precio_unitario NUMERIC(14,2) NOT NULL DEFAULT 0,
     costo_total     NUMERIC(14,2) NOT NULL DEFAULT 0,
     id_actividad    BIGINT,
+    incluir_en_avance BOOLEAN NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

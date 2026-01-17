@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Card, LoadingSpinner, ErrorMessage, Select, Input, Label, Button, Modal, FormGroup, ConfirmDialog, PageLayout, Section, Divider, ProgressBar, Grid, Flex, Typography } from '../components/common';
+import { Card, LoadingSpinner, ErrorMessage, Select, Input, Button, Modal, FormGroup, ConfirmDialog, PageLayout, Section, Divider, ProgressBar, Grid, Flex, Typography, UserSelectModal } from '../components/common';
 import { Status } from '../components/poa';
 import { MonthlyGanttView } from '../components/Seguimiento';
 import apiClient from '../services/apiClient';
@@ -60,6 +60,7 @@ export const SeguimientoPage: React.FC = () => {
 
   // Edit State
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [userModalOpen, setUserModalOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Actividad | null>(null);
   const [editForm, setEditForm] = useState<{
     nombre: string;
@@ -460,52 +461,50 @@ export const SeguimientoPage: React.FC = () => {
         <Section title="Proyecto seleccionado">
           {!seguimiento && !loading ? (
             /* Selector Mode if no project loaded */
-            <Flex direction="column" style={{ marginBottom: '1rem' }}>
-              <Grid columns={2} gap="1rem">
-                <div>
-                  <Label>Año:</Label>
-                  <Input
-                    type="number"
-                    value={anio}
-                    onChange={e => setAnio(Number(e.target.value))}
-                    placeholder="Ej. 2025"
-                  />
-                </div>
-                <div>
-                  <Label>Seleccione un proyecto para ver su seguimiento:</Label>
-                  <Select
-                    value={proyectoSel}
-                    onChange={(e) => setProyectoSel(parseInt(e.target.value))}
-                    disabled={loading}
-                  >
-                    <option value={0}>Seleccione...</option>
-                    {proyectos.map(p => (
-                      <option key={p.id} value={p.id}>{p.nombre}</option>
-                    ))}
-                  </Select>
-                </div>
-              </Grid>
-            </Flex>
-          ) : (
-            /* ReadOnly Mode (HTML Design) */
-            /* ReadOnly Mode (HTML Design) */
             <Grid columns={2} gap="1rem">
-              <Flex direction="column">
-                <Label>Proyecto</Label>
-                <Input type="text" value={seguimiento?.nombre || ''} readOnly style={{ background: '#081529' }} />
-              </Flex>
-              <Flex direction="column">
-                <Label>Año</Label>
+              <FormGroup label="Año:">
                 <Input
                   type="number"
-                  value={seguimiento?.anio || 2025}
-                  onChange={(e) => seguimiento && setSeguimiento({ ...seguimiento, anio: parseInt(e.target.value) })}
-                  style={{
-                    background: '#081529',
-                    border: '1px solid var(--verde-hoja)',
-                    color: 'var(--texto-claro)'
-                  }}
+                  value={anio}
+                  onChange={e => setAnio(Number(e.target.value))}
+                  placeholder="Ej. 2025"
                 />
+              </FormGroup>
+              <FormGroup label="Seleccione un proyecto para ver su seguimiento:">
+                <Select
+                  value={proyectoSel}
+                  onChange={(e) => setProyectoSel(parseInt(e.target.value))}
+                  disabled={loading}
+                >
+                  <option value={0}>Seleccione...</option>
+                  {proyectos.map(p => (
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
+                  ))}
+                </Select>
+              </FormGroup>
+            </Grid>
+          ) : (
+            /* ReadOnly Mode */
+            <Grid columns={2} gap="1rem">
+              <FormGroup label="Proyecto">
+                <Input type="text" value={seguimiento?.nombre || ''} readOnly style={{ background: 'rgba(0,0,0,0.1)' }} />
+              </FormGroup>
+              <Flex direction="column">
+                <FormGroup label="Año">
+                  <Input
+                    type="number"
+                    value={seguimiento?.anio || 2025}
+                    onChange={(e) => {
+                      if (!seguimiento) return;
+                      setSeguimiento({ ...seguimiento, anio: parseInt(e.target.value) });
+                    }}
+                    style={{
+                      background: 'rgba(0,0,0,0.1)',
+                      border: '1px solid var(--verde-hoja)',
+                      color: 'var(--texto-claro)'
+                    }}
+                  />
+                </FormGroup>
                 {!id && (
                   <Flex justify="flex-end" gap="0.5rem" wrap="wrap" style={{ marginTop: '0.5rem' }}>
                     {canEdit && (
@@ -550,197 +549,185 @@ export const SeguimientoPage: React.FC = () => {
         {loading ? (
           <LoadingSpinner size="lg" fullScreen={false} />
         ) : seguimiento ? (
-          <>
-            {/* Description Text */}
-            {/* Description Text */}
-            <Section
-              title="Actividades, indicadores y avance"
-              description="Estados mensuales: - (no aplica), P (pendiente), I (iniciado), F (finalizado). El progreso de la actividad se calcula con los meses P/I/F. El cumplimiento del indicador se calcula a partir del valor alcanzado y la meta definida en la página 1."
-            >
+          <Section
+            title="Actividades, indicadores y avance"
+            description="Estados mensuales: - (no aplica), P (pendiente), I (iniciado), F (finalizado). El progreso de la actividad se calcula con los meses P/I/F. El cumplimiento del indicador se calcula a partir del valor alcanzado y la meta definida."
+          >
+            {/* Lista de Actividades */}
+            <Flex direction="column" gap="1.5rem">
+              {seguimiento.actividades.map((act, idx) => {
+                const progreso = calcularProgreso(act.seguimiento_mensual, act.plan_mensual);
+                const disponible = act.presupuesto_asignado - act.total_gastado;
+                const indicador = act.indicadores && act.indicadores.length > 0 ? act.indicadores[0] : null;
 
-              {/* Lista de Actividades */}
-              <Flex direction="column" gap="1rem" id="lista-actividades">
-                {seguimiento.actividades.map((act, idx) => {
-                  const progreso = calcularProgreso(act.seguimiento_mensual, act.plan_mensual);
+                // Merge Plan + Execution
+                const mergedSeguimiento: { mes: number; estado: Status }[] = [];
+                for (let m = 1; m <= 12; m++) {
+                  const seg = act.seguimiento_mensual?.find(s => s.mes === m);
+                  const plan = act.plan_mensual?.find(p => p.mes === m && p.planificado);
 
-                  const disponible = act.presupuesto_asignado - act.total_gastado;
-                  const indicador = act.indicadores && act.indicadores.length > 0 ? act.indicadores[0] : null;
-
-                  // Merge Plan + Execution
-                  const mergedSeguimiento = [];
-                  for (let m = 1; m <= 12; m++) {
-                    const seg = act.seguimiento_mensual?.find(s => s.mes === m);
-                    const plan = act.plan_mensual?.find(p => p.mes === m && p.planificado);
-
-                    if (seg) {
-                      mergedSeguimiento.push({ mes: m, estado: seg.estado });
-                    } else if (plan) {
-                      mergedSeguimiento.push({ mes: m, estado: 'P' as Status });
-                    }
+                  if (seg) {
+                    mergedSeguimiento.push({ mes: m, estado: seg.estado });
+                  } else if (plan) {
+                    mergedSeguimiento.push({ mes: m, estado: 'P' as Status });
                   }
+                }
 
-                  return (
-                    <Flex
-                      direction="column"
-                      key={act.id_actividad}
-                      ref={(el) => { activityRefs.current[act.id_actividad] = el }}
-                      style={{
-                        marginBottom: '1.6rem',
-                        transition: 'background 0.5s',
-                        background: targetActivityId === act.id_actividad ? 'rgba(46, 204, 113, 0.3)' : 'transparent', // Highlight effect
-                        padding: targetActivityId === act.id_actividad ? '0.5rem' : '0',
-                        borderRadius: '8px'
-                      }}
-                    >
-                      <Typography variant="h3" color="var(--verde-hoja)" style={{ marginLeft: '0.2rem', marginBottom: '0.35rem' }}>
-                        Actividad {idx + 1}
-                      </Typography>
-                      <Flex direction="column" gap="0.6rem" style={{ marginLeft: '1.2rem' }}>
-                        {/* Nombre y Responsable */}
-                        <Input type="text" value={act.nombre || ''} readOnly style={{ background: '#081529', fontWeight: 600 }} />
+                return (
+                  <Flex
+                    direction="column"
+                    key={act.id_actividad}
+                    ref={(el) => { activityRefs.current[act.id_actividad] = el }}
+                    style={{
+                      transition: 'all 0.3s ease',
+                      background: targetActivityId === act.id_actividad ? 'rgba(46, 204, 113, 0.15)' : 'transparent',
+                      padding: '1rem',
+                      borderRadius: '12px',
+                      border: targetActivityId === act.id_actividad ? '1px solid var(--verde-hoja)' : '1px solid rgba(255,255,255,0.05)'
+                    }}
+                  >
+                    <Typography variant="h3" color="var(--verde-hoja)" style={{ marginBottom: '0.8rem' }}>
+                      Actividad {idx + 1}
+                    </Typography>
 
-                        <Flex direction="column">
-                          <Label>Responsable de la actividad</Label>
-                          <Input type="text" value={act.responsable_nombre || ''} readOnly placeholder="Nombre del responsable" />
+                    <Flex direction="column" gap="1rem">
+                      <Input type="text" value={act.nombre || ''} readOnly style={{ background: 'rgba(0,0,0,0.15)', fontWeight: 600 }} />
+
+                      <FormGroup label="Responsable de la actividad">
+                        <Input type="text" value={act.responsable_nombre || ''} readOnly placeholder="Nombre del responsable" />
+                      </FormGroup>
+
+                      {/* Meses */}
+                      <MonthlyGanttView
+                        seguimientoMensual={mergedSeguimiento}
+                        onStatusChange={(mes, status) => actualizarEstadoMes(act.id_actividad, mes + 1, status)}
+                        onStatusClick={() => { }}
+                        disabled={saving || !canEdit}
+                      />
+
+                      {/* Progreso + Presupuesto */}
+                      <Flex align="center" wrap="wrap" gap="1rem">
+                        <Flex align="center" gap="0.8rem" style={{ flex: 1, minWidth: '250px' }}>
+                          <Typography variant="label" color="var(--texto-claro)">Progreso:</Typography>
+                          <ProgressBar progress={progreso} showLabel />
                         </Flex>
 
-                        {/* Meses */}
-                        <MonthlyGanttView
-                          seguimientoMensual={mergedSeguimiento}
-                          onStatusChange={(mes, status) => actualizarEstadoMes(act.id_actividad, mes + 1, status)}
-                          onStatusClick={() => { }} // Legacy
-                          disabled={saving || !canEdit}
-                        />
-
-                        {/* Progreso + Presupuesto */}
-                        <Flex align="center" wrap="wrap" gap="0.4rem" style={{ fontSize: '0.78rem', color: 'var(--texto-sec)' }}>
-                          <Flex align="center" gap="0.5rem" style={{ flex: 1, minWidth: '200px' }}>
-                            <Typography variant="label" color="var(--texto-claro)">Progreso:</Typography>
-                            <ProgressBar progress={progreso} showLabel />
-                          </Flex>
-                          <Typography variant="caption">| Presupuestado: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(act.presupuesto_asignado)}</strong></Typography>
-                          <Typography variant="caption">| Gastado: <strong style={{ color: '#e74c3c' }}>{formatoDinero(act.total_gastado)}</strong></Typography>
-                          <Typography variant="caption">| Disponible: <strong style={{ color: 'var(--texto-claro)' }}>{formatoDinero(disponible)}</strong></Typography>
-                        </Flex>
-
-                        {/* Indicador de logro */}
-                        {indicador && (
-                          <Flex direction="column" style={{ marginBottom: '0.6rem' }}>
-                            <Flex direction="column" style={{
-                              borderRadius: '10px',
-                              border: '1px solid rgba(255,255,255,.06)',
-                              background: 'rgba(0,0,0,.14)',
-                              padding: '0.7rem 0.75rem',
-                              marginTop: '0.3rem'
-                            }}>
-                              <Typography variant="label" weight={600} color="var(--verde-hoja)" style={{ marginBottom: '0.4rem' }}>
-                                Indicador de logro de la actividad
-                              </Typography>
-
-                              <Grid columns={3} gap="0.5rem" style={{ marginBottom: '0.5rem' }}>
-                                <Flex direction="column">
-                                  <Label>Categoría</Label>
-                                  <Input type="text" value={indicador.categoria || ''} readOnly />
-                                </Flex>
-                                <Flex direction="column">
-                                  <Label>Beneficiarios</Label>
-                                  <Input type="text" value={indicador.beneficiarios || '-'} readOnly />
-                                </Flex>
-                                <Flex direction="column">
-                                  <Label>Meta</Label>
-                                  <Input type="text" value={indicador.meta || ''} readOnly />
-                                </Flex>
-                                <Flex direction="column">
-                                  <Label>Unidad</Label>
-                                  <Input type="text" value={indicador.unidad_medida || ''} readOnly />
-                                </Flex>
-                                <Flex direction="column" style={{ gridColumn: '1/-1' }}>
-                                  <Label>Descripción específica del indicador</Label>
-                                  <Input type="text" value={indicador.nombre || ''} readOnly />
-                                </Flex>
-                              </Grid>
-
-                              <Flex wrap="wrap" align="flex-end" gap="0.7rem" style={{ fontSize: '0.78rem' }}>
-                                <div style={{ minWidth: '150px' }}>
-                                  <Label>Valor alcanzado a la fecha</Label>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="0"
-                                    value={indicador.valor_logrado || 0}
-                                    readOnly={!canEdit}
-                                    onChange={(e) => actualizarIndicador(act.id_actividad, indicador.id_indicador, Number(e.target.value))}
-                                  />
-                                </div>
-                                <Typography variant="caption" style={{ paddingBottom: '0.4rem' }}>
-                                  Cumplimiento del indicador: <strong style={{ color: 'var(--texto-claro)' }}>{indicador.porcentaje_cumplimiento}%</strong>
-                                </Typography>
-                              </Flex>
-                            </Flex>
-                          </Flex>
-                        )}
-
-                        {/* Action Buttons */}
-                        <Flex direction="column" style={{ marginBottom: '0.6rem' }}>
-                          <Flex wrap="wrap" gap="0.5rem" style={{ marginTop: '0.6rem' }}>
-                            <Button
-                              variant="alt"
-                              size="sm"
-                              onClick={() => navigate(`/actividades/${act.id_actividad}/evidencias`)}
-                            >
-                              📎 Evidencias
-                            </Button>
-                            <Button
-                              variant="alt"
-                              size="sm"
-                              onClick={() => navigate(`/actividades/${act.id_actividad}/gastos`)}
-                            >
-                              💰 Gastos
-                            </Button>
-                            <Flex style={{ flex: 1 }} />
-                            {canEdit && (
-                              <Button
-                                variant="alt"
-                                size="sm"
-                                onClick={() => handleEditClick(act)}
-                                title="Editar detalles de la actividad"
-                              >
-                                ✏️ Editar
-                              </Button>
-                            )}
-                            {isAdmin && (
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleDeleteActivityClick(act)}
-                                title="Eliminar actividad permanentemente"
-                              >
-                                🗑️ Eliminar
-                              </Button>
-                            )}
-                          </Flex>
+                        <Flex gap="1.5rem" wrap="wrap">
+                          <Typography variant="caption">
+                            Presupuestado: <Typography component="span" weight={600} color="var(--texto-claro)">{formatoDinero(act.presupuesto_asignado)}</Typography>
+                          </Typography>
+                          <Typography variant="caption">
+                            Gastado: <Typography component="span" weight={600} color="#e74c3c">{formatoDinero(act.total_gastado)}</Typography>
+                          </Typography>
+                          <Typography variant="caption">
+                            Disponible: <Typography component="span" weight={600} color="var(--texto-claro)">{formatoDinero(disponible)}</Typography>
+                          </Typography>
                         </Flex>
                       </Flex>
-                      <Divider variant="thick" />
+
+                      {/* Indicador de logro */}
+                      {indicador && (
+                        <Card variant="dark" padding="1rem" style={{ marginTop: '0.5rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          <Typography variant="label" weight={600} color="var(--verde-hoja)" style={{ display: 'block', marginBottom: '1rem' }}>
+                            Indicador de logro de la actividad
+                          </Typography>
+
+                          <Grid columns={3} gap="1rem">
+                            <FormGroup label="Categoría">
+                              <Input type="text" value={indicador.categoria || ''} readOnly />
+                            </FormGroup>
+                            <FormGroup label="Beneficiarios">
+                              <Input type="text" value={indicador.beneficiarios || '-'} readOnly />
+                            </FormGroup>
+                            <FormGroup label="Meta">
+                              <Input type="text" value={indicador.meta || ''} readOnly />
+                            </FormGroup>
+                            <FormGroup label="Unidad">
+                              <Input type="text" value={indicador.unidad_medida || ''} readOnly />
+                            </FormGroup>
+                            <div style={{ gridColumn: 'span 2' }}>
+                              <FormGroup label="Descripción específica del indicador">
+                                <Input type="text" value={indicador.nombre || ''} readOnly />
+                              </FormGroup>
+                            </div>
+                          </Grid>
+
+                          <Flex wrap="wrap" align="center" gap="1.5rem" style={{ marginTop: '1rem' }}>
+                            <div style={{ width: '200px' }}>
+                              <FormGroup label="Valor alcanzado a la fecha">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  placeholder="0"
+                                  value={indicador.valor_logrado || 0}
+                                  readOnly={!canEdit}
+                                  onChange={(e) => actualizarIndicador(act.id_actividad, indicador.id_indicador, Number(e.target.value))}
+                                />
+                              </FormGroup>
+                            </div>
+                            <Typography variant="caption" style={{ marginTop: '1.2rem' }}>
+                              Cumplimiento del indicador: <Typography component="span" weight={700} color="var(--texto-claro)">{indicador.porcentaje_cumplimiento}%</Typography>
+                            </Typography>
+                          </Flex>
+                        </Card>
+                      )}
+
+                      {/* Action Buttons */}
+                      <Flex wrap="wrap" gap="0.8rem" style={{ marginTop: '0.5rem' }}>
+                        <Button
+                          variant="alt"
+                          size="sm"
+                          onClick={() => navigate(`/actividades/${act.id_actividad}/evidencias`)}
+                        >
+                          📎 Evidencias
+                        </Button>
+                        <Button
+                          variant="alt"
+                          size="sm"
+                          onClick={() => navigate(`/actividades/${act.id_actividad}/gastos`)}
+                        >
+                          💰 Gastos
+                        </Button>
+                        <Flex style={{ flex: 1 }} />
+                        {canEdit && (
+                          <Button
+                            variant="alt"
+                            size="sm"
+                            onClick={() => handleEditClick(act)}
+                            title="Editar detalles de la actividad"
+                          >
+                            ✏️ Editar
+                          </Button>
+                        )}
+                        {isAdmin && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDeleteActivityClick(act)}
+                            title="Eliminar actividad permanentemente"
+                          >
+                            🗑️ Eliminar
+                          </Button>
+                        )}
+                      </Flex>
                     </Flex>
-                  );
-                })}
-              </Flex>
-            </Section>
-          </>
+                  </Flex>
+                );
+              })}
+            </Flex>
+          </Section>
         ) : null}
       </Card>
 
-
+      {/* MODAL DE EDICIÓN */}
       <Modal
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         title="Editar Actividad"
       >
-        <Flex direction="column" gap="1rem" style={{ minWidth: '300px' }}>
-          <FormGroup>
-            <Label>Nombre de la actividad</Label>
+        <Flex direction="column" gap="1rem" style={{ minWidth: '350px' }}>
+          <FormGroup label="Nombre de la actividad">
             <Input
               type="text"
               value={editForm.nombre}
@@ -748,8 +735,7 @@ export const SeguimientoPage: React.FC = () => {
             />
           </FormGroup>
 
-          <FormGroup>
-            <Label>Presupuesto Asignado ($)</Label>
+          <FormGroup label="Presupuesto Asignado ($)">
             <Input
               type="number"
               step="0.01"
@@ -758,41 +744,26 @@ export const SeguimientoPage: React.FC = () => {
             />
           </FormGroup>
 
-          <FormGroup>
-            <Label>Nombre del Responsable</Label>
-            <Input
-              type="text"
-              list="responsables-list"
-              value={editForm.responsable_nombre}
-              onChange={(e) => {
-                const val = e.target.value;
-                const found = responsables.find(u => u.nombre_completo === val);
-                setEditForm({
-                  ...editForm,
-                  responsable_nombre: val,
-                  id_responsable: found ? found.id : undefined,
-                  cargo_responsable: found ? found.cargo : editForm.cargo_responsable // Auto-fill cargo if found
-                });
-              }}
-              placeholder="Escriba para buscar..."
-              style={{
-                borderColor: (editForm.responsable_nombre && !editForm.id_responsable) ? '#e74c3c' : undefined
-              }}
-            />
-            <datalist id="responsables-list">
-              {responsables.map(u => (
-                <option key={u.id} value={u.nombre_completo} />
-              ))}
-            </datalist>
+          <FormGroup label="Responsable">
+            <Flex gap="0.5rem">
+              <Input
+                type="text"
+                readOnly
+                value={editForm.responsable_nombre}
+                placeholder="Seleccione responsable..."
+                onClick={() => setUserModalOpen(true)}
+                style={{ cursor: 'pointer', background: 'rgba(0,0,0,0.1)' }}
+              />
+              <Button variant="alt" size="sm" onClick={() => setUserModalOpen(true)}>🔍</Button>
+            </Flex>
             {(editForm.responsable_nombre && !editForm.id_responsable) && (
-              <Typography variant="caption" style={{ color: '#e74c3c', marginTop: '0.2rem' }}>
+              <Typography variant="caption" color="#e74c3c" style={{ marginTop: '0.2rem' }}>
                 ⚠️ Usuario no registrado
               </Typography>
             )}
           </FormGroup>
 
-          <FormGroup>
-            <Label>Cargo del responsable</Label>
+          <FormGroup label="Cargo del responsable">
             <Input
               type="text"
               value={editForm.cargo_responsable}
@@ -801,16 +772,30 @@ export const SeguimientoPage: React.FC = () => {
             />
           </FormGroup>
 
-          {/* Unidad Responsable removed as per requirement */}
-
-          <Flex justify="flex-end" gap="0.5rem" style={{ marginTop: '1rem' }}>
+          <Flex justify="flex-end" gap="0.8rem" style={{ marginTop: '1rem' }}>
             <Button variant="ghost" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
             <Button variant="main" onClick={handleSaveActivity} disabled={saving}>
               {saving ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
           </Flex>
         </Flex>
-      </Modal >
+      </Modal>
+
+      {/* MODAL DE SELECCIÓN DE USUARIO */}
+      <UserSelectModal
+        isOpen={userModalOpen}
+        onClose={() => setUserModalOpen(false)}
+        users={responsables}
+        onSelect={(u) => {
+          setEditForm(prev => ({
+            ...prev,
+            responsable_nombre: u.nombre_completo,
+            id_responsable: typeof u.id === 'string' ? parseInt(u.id) : u.id,
+            cargo_responsable: u.cargo || prev.cargo_responsable
+          }));
+          setUserModalOpen(false);
+        }}
+      />
 
       <ConfirmDialog
         isOpen={confirmOpen}
@@ -822,6 +807,6 @@ export const SeguimientoPage: React.FC = () => {
         confirmText="Sí, eliminar"
         cancelText="Cancelar"
       />
-    </PageLayout >
+    </PageLayout>
   );
 };

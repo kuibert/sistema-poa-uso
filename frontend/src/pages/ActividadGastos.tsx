@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
-import { NavBar, Card, Divider, Section, Label, Button, LoadingSpinner, ErrorMessage, Input, ConfirmDialog } from '../components/common';
-import { Table } from '../components/common/Table';
+import { Card, Divider, Section, Label, Button, LoadingSpinner, ErrorMessage, Input, ConfirmDialog, PageLayout, Flex, Typography, SuccessMessage, Grid, Table } from '../components/common';
 import apiClient from '../services/apiClient';
 
 type Gasto = {
@@ -23,7 +22,7 @@ export default function ActividadGastos() {
       const userStr = localStorage.getItem('user');
       if (userStr) {
         const user = JSON.parse(userStr);
-        // Permitir solo a ADMIN y EDITOR (ajustar según mayúsculas/minúsculas de tu DB)
+        // Permitir solo a ADMIN y EDITOR
         const role = user.rol?.toUpperCase();
         setCanEdit(role === 'ADMIN' || role === 'EDITOR');
       }
@@ -115,25 +114,22 @@ export default function ActividadGastos() {
       return;
     }
     setGastos([...gastos, { fecha: "", descripcion: "", monto: 0 }]);
-    setSuccess(null); // Limpiar mensajes previos
+    setSuccess(null);
   };
 
-  // Eliminar gasto (Prepara la eliminación)
+  // Eliminar gasto
   const eliminarGasto = (index: number) => {
     if (!canEdit) return;
     const gasto = gastos[index];
-
-    // Si tiene ID, pedir confirmación
     if (gasto.id_gasto) {
       setDeleteTargetIndex(index);
       setShowDeleteDialog(true);
     } else {
-      // Si no tiene ID, borrar directo del estado local
       setGastos(gastos.filter((_, i) => i !== index));
     }
   };
 
-  // Confirmar eliminación (Ejecuta la acción real)
+  // Confirmar eliminación
   const confirmarEliminacion = async () => {
     if (deleteTargetIndex === null) return;
     if (!canEdit) return;
@@ -165,35 +161,22 @@ export default function ActividadGastos() {
     setGastos(copia);
   };
 
-  // Guardar nuevo gasto en el backend
+  // Guardar nuevo gasto
   const guardarGasto = async (index: number) => {
     if (!canEdit) return;
     const gasto = gastos[index];
 
-    // Validar que tenga datos
     if (!gasto.fecha || !gasto.descripcion || !gasto.monto) {
       setError('Por favor completa todos los campos del gasto');
       return;
     }
 
-    // Validar presupuesto (solo si es nuevo gasto o se edita monto - aqui asumimos nuevo porque button save es solo para nuevos)
-    // El montoDisponible ya resta los gastos actuales.
-    // Al ser un gasto nuevo en el array (pero no en BD), su monto YA ESTÁ restado en montoDisponible (por el useEffect linea 50).
-    // Espera... el useEffect recalcula 'montoGastado' sumando TODO el array 'gastos'.
-    // Si yo pongo 100 en el input, 'gastos' se actualiza, el useEffect corre, y 'montoDisponible' baja.
-    // Si 'montoDisponible' se vuelve negativo, significa que me pasé.
-
-    // Verificación:
-    // Si montoDisponible < 0, significa que con este gasto nos estamos pasando.
     if (montoDisponible < 0) {
       setError(`El gasto excede el presupuesto disponible. Exceso: $${Math.abs(montoDisponible).toFixed(2)}`);
       return;
     }
 
-    // Si ya tiene ID, no hacer nada (ya está guardado)
-    if (gasto.id_gasto) {
-      return;
-    }
+    if (gasto.id_gasto) return;
 
     try {
       setSaving(true);
@@ -206,7 +189,6 @@ export default function ActividadGastos() {
         monto: Number(gasto.monto)
       });
 
-      // Actualizar el gasto con el ID del backend
       const copia = [...gastos];
       copia[index] = {
         ...gasto,
@@ -214,8 +196,6 @@ export default function ActividadGastos() {
       };
       setGastos(copia);
       setSuccess('Gasto guardado correctamente');
-
-      // Auto-ocultar mensaje éxito
       setTimeout(() => setSuccess(null), 3000);
 
     } catch (err: any) {
@@ -226,259 +206,202 @@ export default function ActividadGastos() {
     }
   };
 
-  // Estilos inline
-  const containerStyle: React.CSSProperties = {
-    background: 'var(--fondo-azul)',
-    color: 'var(--texto-claro)',
-    minHeight: '100vh',
-  };
-
-  const mainStyle: React.CSSProperties = {
-    maxWidth: '1150px',
-    margin: '1.5rem auto 0',
-    padding: '0 1rem 1rem',
-  };
-
-
-
   if (!id) {
     return (
-      <div style={containerStyle}>
-        <NavBar />
-        <main style={mainStyle}>
-          <Card padding="1.8rem">
-            <h1 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Gestión de Gastos</h1>
-            <p style={{ color: 'var(--texto-sec)', marginBottom: '1.5rem' }}>
-              Para gestionar los gastos de una actividad, necesitas acceder desde el seguimiento del proyecto.
-            </p>
-            <p style={{ color: 'var(--texto-sec)', marginBottom: '1.5rem' }}>
-              💡 <strong>Tip:</strong> Navega a Seguimiento → Selecciona un proyecto → Haz clic en "Gastos" de una actividad
-            </p>
-            <Button variant="main" onClick={() => navigate('/seguimiento')}>
-              Ir a Seguimiento
-            </Button>
-          </Card>
-        </main>
-      </div>
+      <PageLayout>
+        <Card padding="1.8rem">
+          <Typography variant="h1">Gestión de Gastos</Typography>
+          <Typography variant="body" style={{ color: 'var(--texto-sec)', marginBottom: '1.5rem' }}>
+            Para gestionar los gastos de una actividad, necesitas acceder desde el seguimiento del proyecto.
+          </Typography>
+          <Typography variant="body" style={{ color: 'var(--texto-sec)', marginBottom: '1.5rem' }}>
+            💡 <strong>Tip:</strong> Navega a Seguimiento → Selecciona un proyecto → Haz clic en "Gastos" de una actividad
+          </Typography>
+          <Button variant="main" onClick={() => navigate('/seguimiento')}>
+            Ir a Seguimiento
+          </Button>
+        </Card>
+      </PageLayout>
     );
   }
 
   return (
-    <div style={containerStyle}>
-      <NavBar />
-
-      <main style={mainStyle}>
-        <Card padding="1.8rem">
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <div>
-              <h1 style={{ fontSize: '1.2rem', margin: 0 }}>
-                Gastos de la actividad: {headerInfo.actividad}
-              </h1>
-              <p style={{ color: 'var(--texto-sec)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
-                Fecha, descripción y monto, actualizando el disponible de la actividad.
-              </p>
-            </div>
-
+    <PageLayout maxWidth="1150px">
+      <Card padding="1.8rem">
+        {/* Header */}
+        <Flex justify="space-between" align="center" style={{ marginBottom: '1rem' }}>
+          <div>
+            <Typography variant="h1">
+              Gastos de la actividad: {headerInfo.actividad}
+            </Typography>
+            <Typography variant="body" color="var(--texto-sec)" style={{ marginTop: '0.2rem' }}>
+              Fecha, descripción y monto, actualizando el disponible de la actividad.
+            </Typography>
           </div>
+        </Flex>
 
-          <Divider variant="gradient" />
+        <Divider variant="gradient" />
 
-          {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
+        {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
-          {success && (
-            <div style={{
-              background: 'rgba(39, 174, 96, 0.15)',
-              border: '1px solid #27ae60',
-              color: '#27ae60',
-              padding: '1rem',
-              borderRadius: '8px',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
-              <span>✅</span> {success}
-            </div>
-          )}
+        {success && <SuccessMessage message={success} onDismiss={() => setSuccess(null)} />}
 
-          {loading ? (
-            <LoadingSpinner size="lg" fullScreen={false} />
-          ) : (
-            <>
-              {/* Grid Principal: Proyecto/Actividad + Resumen es un solo bloque visual en HTML */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                {/* Columna Izquierda: Información */}
-                <div>
-                  <Label>Proyecto</Label>
-                  <Input type="text" value={headerInfo.proyecto} readOnly style={{ marginBottom: '0.6rem' }} />
-                  <Label>Nombre de la actividad</Label>
-                  <Input type="text" value={headerInfo.actividad} readOnly />
-                </div>
+        {loading ? (
+          <LoadingSpinner size="lg" fullScreen={false} />
+        ) : (
+          <>
+            {/* Grid Principal */}
+            <Grid columns="1.5fr 1fr" gap="1rem" style={{ marginBottom: '1.5rem' }}>
+              <div>
+                <Label>Proyecto</Label>
+                <Input type="text" value={headerInfo.proyecto} readOnly style={{ marginBottom: '0.6rem' }} />
+                <Label>Nombre de la actividad</Label>
+                <Input type="text" value={headerInfo.actividad} readOnly />
+              </div>
 
-                {/* Columna Derecha: Resumen Panel */}
-                <div style={{
-                  background: 'var(--panel-contenido)',
-                  borderRadius: '10px',
-                  border: '1px solid var(--borde)',
-                  padding: '1rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center'
-                }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.7rem' }}>
-                    <div>
-                      <Label>Monto asignado ($)</Label>
-                      <Input
-                        type="number"
-                        value={montoAsignado}
-                        onChange={(e) => setMontoAsignado(Number(e.target.value))}
-                        step="0.01"
-                        min="0"
-                        style={{ textAlign: 'right' }}
-                        // También restringir editar el monto asignado si es necesario
-                        readOnly={!canEdit}
-                      />
-                    </div>
-                    <div>
-                      <Label>Total gastado ($)</Label>
-                      <Input type="number" value={montoGastado.toFixed(2)} readOnly style={{ textAlign: 'right' }} />
-                    </div>
-                    <div>
-                      <Label>Disponible ($)</Label>
-                      <Input type="number" value={montoDisponible.toFixed(2)} readOnly style={{ textAlign: 'right', fontWeight: 'bold' }} />
-                    </div>
+              <Card variant="dark" padding="1rem" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Grid columns={1} gap="0.7rem">
+                  <div>
+                    <Label>Monto asignado ($)</Label>
+                    <Input
+                      type="number"
+                      value={montoAsignado}
+                      onChange={(e) => setMontoAsignado(Number(e.target.value))}
+                      step="0.01"
+                      min="0"
+                      style={{ textAlign: 'right' }}
+                      readOnly={!canEdit}
+                    />
                   </div>
-                </div>
-              </div>
+                  <div>
+                    <Label>Total gastado ($)</Label>
+                    <Input type="number" value={montoGastado.toFixed(2)} readOnly style={{ textAlign: 'right' }} />
+                  </div>
+                  <div>
+                    <Label>Disponible ($)</Label>
+                    <Input type="number" value={montoDisponible.toFixed(2)} readOnly style={{ textAlign: 'right', fontWeight: 'bold' }} />
+                  </div>
+                </Grid>
+              </Card>
+            </Grid>
 
-              {/* Tabla de Gastos */}
-              <div style={{
-                background: 'var(--panel-contenido)',
-                borderRadius: '10px',
-                border: '1px solid var(--borde)',
-                padding: '1.2rem',
-                marginTop: '1.5rem'
-              }}>
-                <Section
-                  title="Lista simple de gastos"
-                  description="Fecha, descripción y monto."
-                  headerAction={
-                    canEdit ? (
-                      <Button variant="main" size="sm" type="button" onClick={agregarFila} disabled={saving}>
-                        ➕ Agregar gasto
-                      </Button>
-                    ) : null
-                  }
-                >
-                  <Table variant="compact">
-                    <Table.Header>
-                      <Table.Row hover={false}>
-                        <Table.Cell header style={{ width: '18%' }}>Fecha</Table.Cell>
-                        <Table.Cell header style={{ width: '57%' }}>Descripción del gasto</Table.Cell>
-                        <Table.Cell header style={{ width: '15%' }}>Monto ($)</Table.Cell>
-                        <Table.Cell header center style={{ width: '10%' }}>Acc.</Table.Cell>
+            {/* Tabla de Gastos */}
+            <Card variant="dark" padding="1.2rem" style={{ marginTop: '1.5rem' }}>
+              <Section
+                title="Lista simple de gastos"
+                description="Fecha, descripción y monto."
+                headerAction={
+                  canEdit ? (
+                    <Button variant="main" size="sm" type="button" onClick={agregarFila} disabled={saving}>
+                      ➕ Agregar gasto
+                    </Button>
+                  ) : null
+                }
+              >
+                <Table variant="compact">
+                  <Table.Header>
+                    <Table.Row hover={false}>
+                      <Table.Cell header style={{ width: '18%' }}>Fecha</Table.Cell>
+                      <Table.Cell header style={{ width: '57%' }}>Descripción del gasto</Table.Cell>
+                      <Table.Cell header style={{ width: '15%' }}>Monto ($)</Table.Cell>
+                      <Table.Cell header center style={{ width: '10%' }}>Acc.</Table.Cell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {gastos.map((g, i) => (
+                      <Table.Row key={i}>
+                        <Table.Cell>
+                          <Input
+                            type="date"
+                            value={g.fecha}
+                            onChange={(e) => actualizarFila(i, "fecha", e.target.value)}
+                            disabled={saving || !canEdit}
+                            style={{ padding: '0.3rem', fontSize: '0.85rem' }}
+                          />
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Input
+                            type="text"
+                            placeholder="Detalle del gasto"
+                            value={g.descripcion}
+                            onChange={(e) => actualizarFila(i, "descripcion", e.target.value)}
+                            disabled={saving || !canEdit}
+                            style={{ padding: '0.3rem', fontSize: '0.85rem' }}
+                          />
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={g.monto}
+                            onChange={(e) => actualizarFila(i, "monto", Number(e.target.value))}
+                            disabled={saving || !canEdit}
+                            style={{ padding: '0.3rem', fontSize: '0.85rem', textAlign: 'right' }}
+                          />
+                        </Table.Cell>
+                        <Table.Cell center>
+                          <Flex gap="0.3rem" justify="center">
+                            {!g.id_gasto && canEdit && (
+                              <Button
+                                variant="main"
+                                size="sm"
+                                type="button"
+                                onClick={() => guardarGasto(i)}
+                                disabled={saving}
+                                title="Guardar fila individualmente"
+                              >
+                                💾
+                              </Button>
+                            )}
+                            {canEdit && (
+                              <Button
+                                variant="alt"
+                                size="sm"
+                                type="button"
+                                onClick={() => eliminarGasto(i)}
+                                disabled={saving}
+                                style={{ borderRadius: '50%', width: '32px', height: '32px', padding: 0 }}
+                              >
+                                ✖
+                              </Button>
+                            )}
+                          </Flex>
+                        </Table.Cell>
                       </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                      {gastos.map((g, i) => (
-                        <Table.Row key={i}>
-                          <Table.Cell>
-                            <Input
-                              type="date"
-                              value={g.fecha}
-                              onChange={(e) => actualizarFila(i, "fecha", e.target.value)}
-                              disabled={saving || !canEdit}
-                              style={{ padding: '0.3rem', fontSize: '0.85rem' }}
-                            />
-                          </Table.Cell>
-                          <Table.Cell>
-                            <Input
-                              type="text"
-                              placeholder="Detalle del gasto"
-                              value={g.descripcion}
-                              onChange={(e) => actualizarFila(i, "descripcion", e.target.value)}
-                              disabled={saving || !canEdit}
-                              style={{ padding: '0.3rem', fontSize: '0.85rem' }}
-                            />
-                          </Table.Cell>
-                          <Table.Cell>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={g.monto}
-                              onChange={(e) => actualizarFila(i, "monto", Number(e.target.value))}
-                              disabled={saving || !canEdit}
-                              style={{ padding: '0.3rem', fontSize: '0.85rem', textAlign: 'right' }}
-                            />
-                          </Table.Cell>
-                          <Table.Cell center>
-                            <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center' }}>
-                              {!g.id_gasto && canEdit && (
-                                <Button
-                                  variant="main"
-                                  size="sm"
-                                  type="button"
-                                  onClick={() => guardarGasto(i)}
-                                  disabled={saving}
-                                  title="Guardar fila individualmente (opcional)"
-                                >
-                                  💾
-                                </Button>
-                              )}
-                              {canEdit && (
-                                <Button
-                                  variant="alt"
-                                  size="sm"
-                                  type="button"
-                                  onClick={() => eliminarGasto(i)}
-                                  disabled={saving}
-                                  style={{ borderRadius: '50%', width: '32px', height: '32px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                >
-                                  ✖
-                                </Button>
-                              )}
-                            </div>
-                          </Table.Cell>
-                        </Table.Row>
-                      ))}
-                    </Table.Body>
-                  </Table>
+                    ))}
+                  </Table.Body>
+                </Table>
 
-                  {gastos.length === 0 && (
-                    <p style={{ textAlign: 'center', color: 'var(--texto-sec)', padding: '2rem' }}>
-                      {canEdit ? 'No hay gastos registrados. Haz clic en el botón superior para agregar.' : 'No hay gastos registrados.'}
-                    </p>
-                  )}
-                </Section>
-              </div>
+                {gastos.length === 0 && (
+                  <Typography variant="body" align="center" color="var(--texto-sec)" style={{ padding: '2rem' }}>
+                    {canEdit ? 'No hay gastos registrados. Haz clic en el botón superior para agregar.' : 'No hay gastos registrados.'}
+                  </Typography>
+                )}
+              </Section>
+            </Card>
 
-              <Divider variant="gradient" />
+            <Divider variant="gradient" />
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ fontSize: '0.78rem', color: 'var(--texto-sec)', flex: 1 }}>
-                  Los montos se reflejan en el disponible de la actividad y en el tablero general de proyectos (en el sistema final).
-                </div>
-                <div>
-                  {/* Botón eliminado a petición del usuario */}
-                </div>
-              </div>
-            </>
-          )}
+            <Flex justify="space-between" align="center" style={{ marginTop: '1rem' }} wrap="wrap" gap="1rem">
+              <Typography variant="caption" color="var(--texto-sec)" style={{ flex: 1 }}>
+                Los montos se reflejan en el disponible de la actividad y en el tablero general de proyectos (en el sistema final).
+              </Typography>
+            </Flex>
+          </>
+        )}
 
-          <ConfirmDialog
-            isOpen={showDeleteDialog}
-            title="Eliminar Gasto"
-            message="¿Está seguro de que desea eliminar este gasto? Esta acción liberará el presupuesto asignado pero no se puede deshacer."
-            confirmText="Sí, eliminar"
-            cancelText="Cancelar"
-            confirmVariant="danger"
-            onConfirm={confirmarEliminacion}
-            onCancel={() => setShowDeleteDialog(false)}
-          />
-        </Card>
-      </main>
-    </div >
+        <ConfirmDialog
+          isOpen={showDeleteDialog}
+          title="Eliminar Gasto"
+          message="¿Está seguro de que desea eliminar este gasto? Esta acción liberará el presupuesto asignado pero no se puede deshacer."
+          confirmText="Sí, eliminar"
+          cancelText="Cancelar"
+          confirmVariant="danger"
+          onConfirm={confirmarEliminacion}
+          onCancel={() => setShowDeleteDialog(false)}
+        />
+      </Card>
+    </PageLayout>
   );
 }

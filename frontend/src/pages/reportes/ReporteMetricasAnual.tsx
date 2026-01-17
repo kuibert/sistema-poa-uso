@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Badge, Grid, ReportHeader, Section, Divider, KPICard } from '../../components/common';
+import { Table, Badge, Grid, ReportHeader, Section, Divider, KPICard, Typography } from '../../components/common';
 
 import logoUso from '../../assets/images/logo_uso.png';
 
@@ -106,7 +106,7 @@ export const ReporteMetricasAnual: React.FC<ReporteMetricasAnualProps> = ({ repo
                     <Table.Body>
                         {reporte.map((p) => (
                             <Table.Row key={p.id}>
-                                <Table.Cell><strong>{p.proyecto}</strong></Table.Cell>
+                                <Table.Cell><Typography component="span" weight={600}>{p.proyecto}</Typography></Table.Cell>
                                 <Table.Cell>{p.unidad}</Table.Cell>
                                 <Table.Cell>{p.responsable || 'Sin asignar'}</Table.Cell>
                                 <Table.Cell center>
@@ -115,8 +115,12 @@ export const ReporteMetricasAnual: React.FC<ReporteMetricasAnualProps> = ({ repo
                                     </Badge>
                                 </Table.Cell>
                                 <Table.Cell center>
-                                    {p.avanceFinanciero}% <br />
-                                    <small style={{ color: '#666' }}>({formatoDinero(p.gastado)})</small>
+                                    <Typography variant="body" color="inherit">
+                                        {p.avanceFinanciero}%
+                                    </Typography>
+                                    <Typography variant="caption" color="#666">
+                                        ({formatoDinero(p.gastado)})
+                                    </Typography>
                                 </Table.Cell>
                                 <Table.Cell center>
                                     <Badge variant="pill" style={{ backgroundColor: getSemaforoColor(p.logroKpi), color: 'white' }}>

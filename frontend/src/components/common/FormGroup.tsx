@@ -24,7 +24,7 @@ export const FormGroup: React.FC<FormGroupProps> = ({
         marginBottom: '8px',
         fontSize: '0.875rem',
         fontWeight: 500,
-        color: '#374151',
+        color: 'var(--texto-sec)',
     };
 
     const errorStyle: React.CSSProperties = {

@@ -3,27 +3,27 @@ import React from 'react';
 export type TableVariant = 'default' | 'compact' | 'activities';
 
 interface TableProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
     variant?: TableVariant;
     className?: string;
 }
 
 interface TableHeaderProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
 }
 
 interface TableBodyProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
 }
 
 interface TableFooterProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
 }
 
 
 
 interface TableCellProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
     header?: boolean;
     center?: boolean;
     colSpan?: number;

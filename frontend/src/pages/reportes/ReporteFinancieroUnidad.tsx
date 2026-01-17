@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Section, Table, Flex, ReportHeader, ProgressBar } from '../../components/common';
+import { Section, Table, Flex, ReportHeader, ProgressBar, LoadingSpinner, Typography } from '../../components/common';
 import apiClient from '../../services/apiClient';
 import logoUso from '../../assets/images/logo_uso.png';
 
@@ -39,8 +39,20 @@ export const ReporteFinancieroUnidad: React.FC<ReporteFinancieroUnidadProps> = (
         return `${Math.round(porcentaje || 0)}%`;
     };
 
-    if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando reporte...</div>;
-    if (reporteUnidades.length === 0) return <div style={{ textAlign: 'center', padding: '2rem', fontStyle: 'italic' }}>No hay datos para el año {anio}</div>;
+    if (loading) return (
+        <Flex justify="center" direction="column" align="center" padding="4rem" gap="1rem">
+            <LoadingSpinner />
+            <Typography variant="body">Cargando reporte...</Typography>
+        </Flex>
+    );
+
+    if (reporteUnidades.length === 0) return (
+        <Flex justify="center" direction="column" align="center" padding="4rem" gap="1rem">
+            <Typography variant="body" color="var(--texto-sec)" style={{ fontStyle: 'italic' }}>
+                No hay datos para el año {anio}
+            </Typography>
+        </Flex>
+    );
 
     return (
         <div id="reporte-content" style={{ marginTop: '2rem', background: 'white', color: 'black', padding: '2rem', borderRadius: '8px' }}>
@@ -68,12 +80,12 @@ export const ReporteFinancieroUnidad: React.FC<ReporteFinancieroUnidadProps> = (
                     <Table.Body>
                         {reporteUnidades.map((unidad: any, i: number) => (
                             <React.Fragment key={i}>
-                                <Table.Row style={{ background: '#f8f9fa', fontWeight: 600 }}>
-                                    <Table.Cell>{unidad.unidad_facultad}</Table.Cell>
-                                    <Table.Cell>{unidad.num_proyectos}</Table.Cell>
-                                    <Table.Cell>{formatoDinero(unidad.presupuesto_total)}</Table.Cell>
-                                    <Table.Cell>{formatoDinero(unidad.total_gastado)}</Table.Cell>
-                                    <Table.Cell>{formatoDinero(unidad.disponible)}</Table.Cell>
+                                <Table.Row style={{ background: '#f8f9fa' }}>
+                                    <Table.Cell><Typography component="span" weight={600}>{unidad.unidad_facultad}</Typography></Table.Cell>
+                                    <Table.Cell><Typography component="span" weight={600}>{unidad.num_proyectos}</Typography></Table.Cell>
+                                    <Table.Cell><Typography component="span" weight={600}>{formatoDinero(unidad.presupuesto_total)}</Typography></Table.Cell>
+                                    <Table.Cell><Typography component="span" weight={600}>{formatoDinero(unidad.total_gastado)}</Typography></Table.Cell>
+                                    <Table.Cell><Typography component="span" weight={600}>{formatoDinero(unidad.disponible)}</Typography></Table.Cell>
                                     <Table.Cell>
                                         <Flex align="center" gap="8px">
                                             <ProgressBar
@@ -82,20 +94,22 @@ export const ReporteFinancieroUnidad: React.FC<ReporteFinancieroUnidadProps> = (
                                                 color={unidad.porcentaje_ejecucion >= 75 ? '#27ae60' : '#3498db'}
                                                 trackColor="#eee"
                                             />
-                                            <span style={{ fontSize: '0.85rem', minWidth: '45px', textAlign: 'right' }}>
+                                            <Typography variant="caption" style={{ minWidth: '45px', textAlign: 'right' }}>
                                                 {formatoPorcentaje(unidad.porcentaje_ejecucion)}
-                                            </span>
+                                            </Typography>
                                         </Flex>
                                     </Table.Cell>
                                 </Table.Row>
                                 {unidad.proyectos.map((proyecto: any, j: number) => (
-                                    <Table.Row key={`${i}-${j}`} style={{ background: 'white', fontSize: '0.9rem' }}>
-                                        <Table.Cell style={{ paddingLeft: '2rem' }}>↳ {proyecto.nombre}</Table.Cell>
-                                        <Table.Cell>-</Table.Cell>
-                                        <Table.Cell>{formatoDinero(proyecto.presupuesto)}</Table.Cell>
-                                        <Table.Cell>{formatoDinero(proyecto.gastado)}</Table.Cell>
-                                        <Table.Cell>{formatoDinero(proyecto.disponible)}</Table.Cell>
-                                        <Table.Cell>{formatoPorcentaje(proyecto.porcentaje_ejecucion)}</Table.Cell>
+                                    <Table.Row key={`${i}-${j}`} style={{ background: 'white' }}>
+                                        <Table.Cell style={{ paddingLeft: '2rem' }}>
+                                            <Typography variant="body" style={{ fontSize: '0.9rem' }}>↳ {proyecto.nombre}</Typography>
+                                        </Table.Cell>
+                                        <Table.Cell><Typography variant="body" style={{ fontSize: '0.9rem' }}>-</Typography></Table.Cell>
+                                        <Table.Cell><Typography variant="body" style={{ fontSize: '0.9rem' }}>{formatoDinero(proyecto.presupuesto)}</Typography></Table.Cell>
+                                        <Table.Cell><Typography variant="body" style={{ fontSize: '0.9rem' }}>{formatoDinero(proyecto.gastado)}</Typography></Table.Cell>
+                                        <Table.Cell><Typography variant="body" style={{ fontSize: '0.9rem' }}>{formatoDinero(proyecto.disponible)}</Typography></Table.Cell>
+                                        <Table.Cell><Typography variant="body" style={{ fontSize: '0.9rem' }}>{formatoPorcentaje(proyecto.porcentaje_ejecucion)}</Typography></Table.Cell>
                                     </Table.Row>
                                 ))}
                             </React.Fragment>

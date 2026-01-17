@@ -37,7 +37,7 @@ export const MonthlyGanttView: React.FC<MonthlyGanttViewProps> = ({
     };
 
     const mesLabelStyle: React.CSSProperties = {
-        fontSize: '0.65rem',
+        fontSize: '0.75rem',
         color: 'var(--texto-sec)',
         marginBottom: '0.1rem',
         display: 'block'

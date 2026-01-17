@@ -1,5 +1,5 @@
 import React from 'react';
-import { Section, Table, Divider, Grid, Card, Typography, Badge, GanttChart, ReportHeader } from '../../components/common';
+import { Section, Table, Divider, Grid, Card, Typography, Badge, GanttChart, ReportHeader, Flex } from '../../components/common';
 import logoUso from '../../assets/images/logo_uso.png';
 
 interface ReporteDetalladoProps {
@@ -12,7 +12,6 @@ export const ReporteDetallado: React.FC<ReporteDetalladoProps> = ({ reporte, for
 
     return (
         <div id="reporte-content" style={{ marginTop: '2rem', background: 'white', color: 'black', padding: '2rem', borderRadius: '8px' }}>
-
             <ReportHeader
                 title="PLAN OPERATIVO ANUAL (POA)"
                 subtitle={reporte.proyecto.nombre}
@@ -211,16 +210,16 @@ export const ReporteDetallado: React.FC<ReporteDetalladoProps> = ({ reporte, for
                 <Grid columns={3}>
                     {reporte.equipo.map((u: any, i: number) => (
                         <Card key={i} padding="0.8rem" style={{ border: '1px solid #eee', background: 'white' }}>
-                            <Typography variant="body" color="#000000" style={{ fontWeight: 600 }}>{u.nombre_completo}</Typography>
+                            <Typography variant="body" color="#000000" weight={600}>{u.nombre_completo}</Typography>
                             <Typography variant="caption" style={{ color: '#444444' }}>{u.email}</Typography>
-                            <div style={{ marginTop: '0.4rem' }}>
+                            <Flex style={{ marginTop: '0.4rem' }}>
                                 <Badge variant="pill" style={{ background: '#3498db', color: 'white' }}>{u.rol}</Badge>
-                            </div>
+                            </Flex>
                         </Card>
                     ))}
                 </Grid>
             </Section>
 
-        </div>
+        </div >
     );
 };

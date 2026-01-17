@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
-import { NavBar, Card, Divider, Grid, Section, Label, Button, LoadingSpinner, ErrorMessage, Input, Select, Table, ConfirmDialog } from '../components/common';
+import { Card, Divider, Grid, Section, Label, Button, LoadingSpinner, ErrorMessage, Input, Select, Table, ConfirmDialog, PageLayout, Flex, Typography, SuccessMessage } from '../components/common';
 import apiClient from '../services/apiClient';
 
 type Evidencia = {
@@ -74,7 +74,6 @@ export default function ActividadEvidencias() {
       setError(null);
 
       // 1. Cargar datos de la actividad (header)
-      // Endpoint: GET /api/proyectos/actividades/:id
       const actResponse = await apiClient.get(`/proyectos/actividades/${id}`);
       const actData = actResponse.data;
 
@@ -83,7 +82,7 @@ export default function ActividadEvidencias() {
         actividad: actData.nombre,
         anio: actData.anio,
         responsable: actData.responsable_nombre || 'No asignado',
-        cargo: 'Responsable de Actividad' // Dato no disponible en backend aun, placeholder
+        cargo: 'Responsable de Actividad'
       });
 
       // 2. Cargar evidencias
@@ -204,30 +203,26 @@ export default function ActividadEvidencias() {
 
   const handleDownload = async (archivo: string | File) => {
     if (archivo instanceof File) {
-      // If it's a File object (not yet uploaded), can't download
       setError('El archivo aún no ha sido subido');
       return;
     }
 
     try {
-      // Clean filename: remove /uploads/ prefix if present
       const filename = archivo.startsWith('/uploads/')
         ? archivo.substring(9)
         : archivo.startsWith('uploads/')
           ? archivo.substring(8)
           : archivo;
 
-      // Fetch file with credentials
       const response = await apiClient.get(`/uploads/${filename}`, {
         responseType: 'blob'
       });
 
-      // Create blob URL and trigger download
       const blob = new Blob([response.data]);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = filename; // Use cleaned filename
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -238,266 +233,229 @@ export default function ActividadEvidencias() {
     }
   };
 
-  // Estilos inline
-  const containerStyle: React.CSSProperties = {
-    background: 'var(--fondo-azul)',
-    color: 'var(--texto-claro)',
-    minHeight: '100vh',
-  };
-
-  const mainStyle: React.CSSProperties = {
-    maxWidth: '1150px',
-    margin: '1.5rem auto 0',
-    padding: '0 1rem 1rem',
-  };
-
-
-
-
-
   if (!id) {
     return (
-      <div style={containerStyle}>
-        <NavBar />
-        <main style={mainStyle}>
-          <Card padding="1.8rem">
-            <h1 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Gestión de Evidencias</h1>
-            <p style={{ color: 'var(--texto-sec)', marginBottom: '1.5rem' }}>
-              Para gestionar las evidencias de una actividad, necesitas acceder desde el seguimiento del proyecto.
-            </p>
-            <p style={{ color: 'var(--texto-sec)', marginBottom: '1.5rem' }}>
-              💡 <strong>Tip:</strong> Navega a Seguimiento → Selecciona un proyecto → Haz clic en "Evidencias" de una actividad
-            </p>
-            <Button variant="main" onClick={() => navigate('/seguimiento')}>
-              Ir a Seguimiento
-            </Button>
-          </Card>
-        </main>
-      </div>
+      <PageLayout>
+        <Card padding="1.8rem">
+          <Typography variant="h1">Gestión de Evidencias</Typography>
+          <Typography variant="body" style={{ color: 'var(--texto-sec)', marginBottom: '1.5rem' }}>
+            Para gestionar las evidencias de una actividad, necesitas acceder desde el seguimiento del proyecto.
+          </Typography>
+          <Typography variant="body" style={{ color: 'var(--texto-sec)', marginBottom: '1.5rem' }}>
+            💡 <strong>Tip:</strong> Navega a Seguimiento → Selecciona un proyecto → Haz clic en "Evidencias" de una actividad
+          </Typography>
+          <Button variant="main" onClick={() => navigate('/seguimiento')}>
+            Ir a Seguimiento
+          </Button>
+        </Card>
+      </PageLayout>
     );
   }
 
   return (
-    <div style={containerStyle}>
-      <NavBar />
-
-      <main style={mainStyle}>
-        <Card padding="1.8rem">
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <div>
-              <h1 style={{ fontSize: '1.2rem', margin: 0 }}>
-                Evidencias de la actividad: {headerInfo.actividad}
-              </h1>
-              <p style={{ color: 'var(--texto-sec)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
-                Tipo, descripción y archivo adjunto de cada evidencia.
-              </p>
-            </div>
-
+    <PageLayout maxWidth="1150px">
+      <Card padding="1.8rem">
+        {/* Header */}
+        <Flex justify="space-between" align="center" style={{ marginBottom: '1rem' }}>
+          <div>
+            <Typography variant="h1">
+              Evidencias de la actividad: {headerInfo.actividad}
+            </Typography>
+            <Typography variant="body" color="var(--texto-sec)" style={{ marginTop: '0.2rem' }}>
+              Tipo, descripción y archivo adjunto de cada evidencia.
+            </Typography>
           </div>
+        </Flex>
 
-          <Divider variant="gradient" />
+        <Divider variant="gradient" />
 
-          {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
+        {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
-          {success && (
-            <div style={{
-              background: 'rgba(39, 174, 96, 0.15)',
-              border: '1px solid #27ae60',
-              color: '#27ae60',
-              padding: '1rem',
-              borderRadius: '8px',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
-              <span>✅</span> {success}
-            </div>
-          )}
+        {success && (
+          <SuccessMessage message={success} onDismiss={() => setSuccess(null)} />
+        )}
 
-          {loading ? (
-            <LoadingSpinner size="lg" fullScreen={false} />
-          ) : (
-            <>
-              {/* Información del proyecto y actividad */}
-              <Section title="Proyecto y actividad" description="">
-                <Grid columns={2} style={{ marginBottom: '1rem' }}>
-                  <div>
-                    <Label>Proyecto</Label>
-                    <Input type="text" value={headerInfo.proyecto} readOnly />
-                  </div>
-                  <div>
-                    <Label>Actividad</Label>
-                    <Input type="text" value={headerInfo.actividad} readOnly />
-                  </div>
-                </Grid>
+        {loading ? (
+          <LoadingSpinner size="lg" fullScreen={false} />
+        ) : (
+          <>
+            {/* Información del proyecto y actividad */}
+            <Section title="Proyecto y actividad" description="">
+              <Grid columns={2} style={{ marginBottom: '1rem' }}>
+                <div>
+                  <Label>Proyecto</Label>
+                  <Input type="text" value={headerInfo.proyecto} readOnly />
+                </div>
+                <div>
+                  <Label>Actividad</Label>
+                  <Input type="text" value={headerInfo.actividad} readOnly />
+                </div>
+              </Grid>
 
-                <Grid columns={3}>
-                  <div>
-                    <Label>Año</Label>
-                    <Input type="number" value={headerInfo.anio} readOnly style={{ textAlign: 'center' }} />
-                  </div>
-                  <div>
-                    <Label>Responsable de la actividad</Label>
-                    <Input type="text" value={headerInfo.responsable} readOnly />
-                  </div>
-                  <div>
-                    <Label>Cargo / Unidad</Label>
-                    <Input type="text" value={headerInfo.cargo} readOnly />
-                  </div>
-                </Grid>
-              </Section>
+              <Grid columns={3}>
+                <div>
+                  <Label>Año</Label>
+                  <Input type="number" value={headerInfo.anio} readOnly style={{ textAlign: 'center' }} />
+                </div>
+                <div>
+                  <Label>Responsable de la actividad</Label>
+                  <Input type="text" value={headerInfo.responsable} readOnly />
+                </div>
+                <div>
+                  <Label>Cargo / Unidad</Label>
+                  <Input type="text" value={headerInfo.cargo} readOnly />
+                </div>
+              </Grid>
+            </Section>
 
-              {/* Formulario para agregar evidencia */}
-              {canEdit ? (
-                <Section
-                  title="Registro de nueva evidencia"
-                  description="Cada evidencia puede ser un archivo (acta, lista, informe, fotografía, etc.) con su descripción y fecha."
-                >
-                  <div style={{ background: 'var(--panel-contenido)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--borde)' }}>
-                    <Grid columns={3} style={{ marginBottom: '1rem' }}>
-                      <div>
-                        <Label>Fecha de la evidencia</Label>
-                        <Input
-                          type="date"
-                          value={nuevaEvidencia.fecha ? new Date(nuevaEvidencia.fecha).toISOString().split('T')[0] : ''}
-                          onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, fecha: e.target.value })}
-                          disabled={saving}
-                        />
-                      </div>
-                      <div>
-                        <Label>Tipo de evidencia</Label>
-                        <Select
-                          value={nuevaEvidencia.tipo}
-                          onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, tipo: e.target.value })}
-                          disabled={saving}
-                        >
-                          <option value="">Seleccione...</option>
-                          <option value="Acta / minuta">Acta / minuta</option>
-                          <option value="Informe">Informe</option>
-                          <option value="Lista de asistencia">Lista de asistencia</option>
-                          <option value="Constancia / certificado">Constancia / certificado</option>
-                          <option value="Registro fotográfico">Registro fotográfico</option>
-                          <option value="Otro">Otro</option>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Archivo</Label>
-                        <Input
-                          type="file"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              setNuevaEvidencia({ ...nuevaEvidencia, archivo: file });
-                            }
-                          }}
-                          disabled={saving}
-                        />
-                      </div>
-                    </Grid>
-
-                    <div style={{ marginBottom: '1rem' }}>
-                      <Label>Descripción de la evidencia</Label>
+            {/* Formulario para agregar evidencia */}
+            {canEdit ? (
+              <Section
+                title="Registro de nueva evidencia"
+                description="Cada evidencia puede ser un archivo (acta, lista, informe, fotografía, etc.) con su descripción y fecha."
+              >
+                <Card variant="dark" padding="1rem" style={{ border: '1px solid var(--borde)' }}>
+                  <Grid columns={3} style={{ marginBottom: '1rem' }}>
+                    <div>
+                      <Label>Fecha de la evidencia</Label>
                       <Input
-                        type="text"
-                        placeholder="Describe brevemente qué evidencia es, qué actividad documenta y en qué contexto."
-                        value={nuevaEvidencia.descripcion}
-                        onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, descripcion: e.target.value })}
+                        type="date"
+                        value={nuevaEvidencia.fecha ? new Date(nuevaEvidencia.fecha).toISOString().split('T')[0] : ''}
+                        onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, fecha: e.target.value })}
                         disabled={saving}
                       />
                     </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                      <Button variant="alt" type="button" onClick={limpiarCampos} disabled={saving}>
-                        ↺ Limpiar campos
-                      </Button>
-                      <Button variant="main" type="button" onClick={agregarEvidencia} disabled={saving}>
-                        ➕ Agregar evidencia
-                      </Button>
+                    <div>
+                      <Label>Tipo de evidencia</Label>
+                      <Select
+                        value={nuevaEvidencia.tipo}
+                        onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, tipo: e.target.value })}
+                        disabled={saving}
+                      >
+                        <option value="">Seleccione...</option>
+                        <option value="Acta / minuta">Acta / minuta</option>
+                        <option value="Informe">Informe</option>
+                        <option value="Lista de asistencia">Lista de asistencia</option>
+                        <option value="Constancia / certificado">Constancia / certificado</option>
+                        <option value="Registro fotográfico">Registro fotográfico</option>
+                        <option value="Otro">Otro</option>
+                      </Select>
                     </div>
+                    <div>
+                      <Label>Archivo</Label>
+                      <Input
+                        type="file"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setNuevaEvidencia({ ...nuevaEvidencia, archivo: file });
+                          }
+                        }}
+                        disabled={saving}
+                      />
+                    </div>
+                  </Grid>
+
+                  <div style={{ marginBottom: '1rem' }}>
+                    <Label>Descripción de la evidencia</Label>
+                    <Input
+                      type="text"
+                      placeholder="Describe brevemente qué evidencia es, qué actividad documenta y en qué contexto."
+                      value={nuevaEvidencia.descripcion}
+                      onChange={(e) => setNuevaEvidencia({ ...nuevaEvidencia, descripcion: e.target.value })}
+                      disabled={saving}
+                    />
                   </div>
-                </Section>
-              ) : (
-                <p style={{ textAlign: 'center', color: 'var(--texto-sec)', padding: '1rem', background: 'var(--panel-contenido)', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid var(--borde)' }}>
-                  🔒 Solo los administradores o editores pueden agregar nuevas evidencias.
-                </p>
-              )}
 
-              {/* Lista de evidencias */}
-              <Section
-                title="Evidencias registradas"
-                description="En el sistema real, desde aquí se podría descargar cada evidencia y usarla para auditorías o procesos de acreditación."
-              >
-                {evidencias.length === 0 ? (
-                  <p style={{ textAlign: 'center', color: 'var(--texto-sec)', padding: '2rem' }}>
-                    {canEdit ? 'No hay evidencias registradas. Agrega la primera evidencia arriba.' : 'No hay evidencias registradas.'}
-                  </p>
-                ) : (
-                  <Table variant="compact">
-                    <Table.Header>
-                      <Table.Row>
-                        <Table.Cell header style={{ width: '10%' }}>Fecha</Table.Cell>
-                        <Table.Cell header style={{ width: '20%' }}>Tipo</Table.Cell>
-                        <Table.Cell header style={{ width: '23%' }}>Archivo</Table.Cell>
-                        <Table.Cell header style={{ width: '35%' }}>Descripción</Table.Cell>
-                        <Table.Cell header center style={{ width: '12%' }}>Acciones</Table.Cell>
-                      </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                      {evidencias.map((ev, i) => (
-                        <Table.Row key={i}>
-                          <Table.Cell>{ev.fecha ? new Date(ev.fecha).toLocaleDateString() : '-'}</Table.Cell>
-                          <Table.Cell>{ev.tipo}</Table.Cell>
-                          <Table.Cell>{ev.archivo instanceof File ? ev.archivo.name : ev.archivo}</Table.Cell>
-                          <Table.Cell>{ev.descripcion}</Table.Cell>
-                          <Table.Cell center>
-                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                              <Button
-                                variant="main"
-                                size="sm"
-                                type="button"
-                                onClick={() => handleDownload(ev.archivo)}
-                                title="Descargar/Ver archivo"
-                              >
-                                ⬇
-                              </Button>
-                              {canEdit && (
-                                <Button variant="alt" size="sm" type="button" onClick={() => eliminarEvidencia(i)}>✖</Button>
-                              )}
-                            </div>
-                          </Table.Cell>
-                        </Table.Row>
-                      ))}
-                    </Table.Body>
-                  </Table>
-                )}
+                  <Flex justify="flex-end" gap="0.5rem">
+                    <Button variant="alt" type="button" onClick={limpiarCampos} disabled={saving}>
+                      ↺ Limpiar campos
+                    </Button>
+                    <Button variant="main" type="button" onClick={agregarEvidencia} disabled={saving}>
+                      ➕ Agregar evidencia
+                    </Button>
+                  </Flex>
+                </Card>
               </Section>
+            ) : (
+              <Typography variant="body" align="center" style={{ padding: '1rem', background: 'var(--panel-contenido)', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid var(--borde)', color: 'var(--texto-sec)' }}>
+                🔒 Solo los administradores o editores pueden agregar nuevas evidencias.
+              </Typography>
+            )}
 
-              <Divider variant="gradient" />
+            {/* Lista de evidencias */}
+            <Section
+              title="Evidencias registradas"
+              description="En el sistema real, desde aquí se podría descargar cada evidencia y usarla para auditorías o procesos de acreditación."
+            >
+              {evidencias.length === 0 ? (
+                <Typography variant="body" align="center" color="var(--texto-sec)" style={{ padding: '2rem' }}>
+                  {canEdit ? 'No hay evidencias registradas. Agrega la primera evidencia arriba.' : 'No hay evidencias registradas.'}
+                </Typography>
+              ) : (
+                <Table variant="compact">
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.Cell header style={{ width: '10%' }}>Fecha</Table.Cell>
+                      <Table.Cell header style={{ width: '20%' }}>Tipo</Table.Cell>
+                      <Table.Cell header style={{ width: '23%' }}>Archivo</Table.Cell>
+                      <Table.Cell header style={{ width: '35%' }}>Descripción</Table.Cell>
+                      <Table.Cell header center style={{ width: '12%' }}>Acciones</Table.Cell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {evidencias.map((ev, i) => (
+                      <Table.Row key={i}>
+                        <Table.Cell>{ev.fecha ? new Date(ev.fecha).toLocaleDateString() : '-'}</Table.Cell>
+                        <Table.Cell>{ev.tipo}</Table.Cell>
+                        <Table.Cell>{ev.archivo instanceof File ? ev.archivo.name : ev.archivo}</Table.Cell>
+                        <Table.Cell>{ev.descripcion}</Table.Cell>
+                        <Table.Cell center>
+                          <Flex gap="0.5rem" justify="center">
+                            <Button
+                              variant="main"
+                              size="sm"
+                              type="button"
+                              onClick={() => handleDownload(ev.archivo)}
+                              title="Descargar/Ver archivo"
+                            >
+                              ⬇
+                            </Button>
+                            {canEdit && (
+                              <Button variant="alt" size="sm" type="button" onClick={() => eliminarEvidencia(i)}>✖</Button>
+                            )}
+                          </Flex>
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table>
+              )}
+            </Section>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.2rem', gap: '0.7rem', flexWrap: 'wrap' }}>
-                <div style={{ fontSize: '0.78rem', color: 'var(--texto-sec)' }}>
-                  Esta pantalla sirve como memoria de respaldo documental del proyecto en procesos de evaluación y acreditación.
-                </div>
-                <Button variant="alt" type="button" onClick={() => alert("Función de exportar no implementada aún")}>
-                  ⬇ Exportar listado
-                </Button>
-              </div>
-            </>
-          )}
-          <ConfirmDialog
-            isOpen={showDeleteDialog}
-            title="Eliminar Evidencia"
-            message="¿Está seguro de que desea eliminar esta evidencia? Esta acción no se puede deshacer."
-            confirmText="Sí, eliminar"
-            cancelText="Cancelar"
-            confirmVariant="danger"
-            onConfirm={confirmarEliminacion}
-            onCancel={() => setShowDeleteDialog(false)}
-          />
-        </Card>
-      </main>
-    </div >
+            <Divider variant="gradient" />
+
+            <Flex justify="space-between" align="center" style={{ marginTop: '1.2rem' }} wrap="wrap" gap="0.7rem">
+              <Typography variant="caption" color="var(--texto-sec)">
+                Esta pantalla sirve como memoria de respaldo documental del proyecto en procesos de evaluación y acreditación.
+              </Typography>
+              <Button variant="alt" type="button" onClick={() => alert("Función de exportar no implementada aún")}>
+                ⬇ Exportar listado
+              </Button>
+            </Flex>
+          </>
+        )}
+        <ConfirmDialog
+          isOpen={showDeleteDialog}
+          title="Eliminar Evidencia"
+          message="¿Está seguro de que desea eliminar esta evidencia? Esta acción no se puede deshacer."
+          confirmText="Sí, eliminar"
+          cancelText="Cancelar"
+          confirmVariant="danger"
+          onConfirm={confirmarEliminacion}
+          onCancel={() => setShowDeleteDialog(false)}
+        />
+      </Card>
+    </PageLayout>
   );
 }

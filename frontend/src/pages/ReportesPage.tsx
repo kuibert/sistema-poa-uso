@@ -72,8 +72,6 @@ export const ReportesPage: React.FC = () => {
         }
     };
 
-
-
     const handlePrint = () => {
         window.print();
     };
@@ -85,8 +83,6 @@ export const ReportesPage: React.FC = () => {
     // Determine if we have data to show print button
     const hasReportData = reporte || (tipoReporte === 'financiero' && selectedProyectoId) || (tipoReporte === 'financiero' && vistaFinanciera === 'unidad');
 
-
-
     return (
         <PageLayout>
             <div className="no-print">
@@ -97,7 +93,7 @@ export const ReportesPage: React.FC = () => {
                         {/* Toggle para tipo de reporte */}
                         <div style={{ marginBottom: '1.5rem' }}>
                             <Label>Tipo de Reporte</Label>
-                            <Flex gap="0.5rem" style={{ marginTop: '0.5rem' }}>
+                            <Flex gap="0.5rem" style={{ marginTop: '0.5rem' }} wrap="wrap">
                                 <Button
                                     variant={tipoReporte === 'detallado' ? 'main' : 'alt'}
                                     onClick={() => {
@@ -129,7 +125,7 @@ export const ReportesPage: React.FC = () => {
                         </div>
 
                         {/* Configuración común */}
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        <Flex gap="1rem" align="flex-end" wrap="wrap">
                             <div style={{ flex: '0 0 120px' }}>
                                 <Label>Año</Label>
                                 <Input
@@ -140,7 +136,7 @@ export const ReportesPage: React.FC = () => {
                                 />
                             </div>
 
-                            {/* Toggle vista financiera (solo visible en modo financiero) */}
+                            {/* Toggle vista financiera */}
                             {tipoReporte === 'financiero' && (
                                 <div style={{ flex: '0 0 200px' }}>
                                     <Label>Vista</Label>
@@ -154,7 +150,7 @@ export const ReportesPage: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Selector de proyecto (para reporte detallado o financiero por proyecto) */}
+                            {/* Selector de proyecto */}
                             {(tipoReporte === 'detallado' || vistaFinanciera === 'proyecto') && (
                                 <>
                                     <div style={{ flex: '1', minWidth: '300px', position: 'relative' }}>
@@ -169,10 +165,10 @@ export const ReportesPage: React.FC = () => {
                                                 <option key={p.id} value={p.id}>{p.nombre}</option>
                                             ))}
                                         </Select>
-                                        <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', color: '#666', position: 'absolute', top: '100%', left: 0, width: '100%' }}>
+                                        <Typography variant="caption" style={{ position: 'absolute', top: '100%', left: 0, width: '100%', marginTop: '0.2rem' }}>
                                             {loadingProyectos ? 'Cargando...' : `${proyectos.length} proyectos encontrados`}
                                             {errorMsg && <span style={{ color: 'red', marginLeft: '0.5rem' }}>{errorMsg}</span>}
-                                        </div>
+                                        </Typography>
                                     </div>
                                     {tipoReporte === 'detallado' && (
                                         <Button
@@ -186,14 +182,12 @@ export const ReportesPage: React.FC = () => {
                                 </>
                             )}
 
-
-
                             {hasReportData && (
                                 <Button variant="alt" onClick={handlePrint}>
                                     🖨 Imprimir / Guardar PDF
                                 </Button>
                             )}
-                        </div>
+                        </Flex>
                     </Section>
                 </Card>
                 <Divider variant="solid" />
@@ -220,66 +214,53 @@ export const ReportesPage: React.FC = () => {
 
             {/* Estilos para impresión */}
             <style>{`
-                @media print {
-                    /* Ocultar todo por defecto */
-                    body * {
-                        visibility: hidden;
-                    }
-                    
-                    /* Mostrar solo el contenido del reporte */
-                    #reporte-content, #reporte-content * {
-                        visibility: visible;
-                    }
-
-                    /* Posicionar el reporte en la hoja */
-                    #reporte-content {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                        margin: 0;
-                        padding: 20px !important;
-                        background: white !important;
-                        box-shadow: none !important;
-                        border: none !important;
-                        color: black !important;
-                    }
-
-                    /* Forzar estilos simples para impresión */
-                    body { 
-                        background: white !important; 
-                        margin: 0; 
-                        padding: 0; 
-                        overflow: visible !important;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
-                    
-                    /* Evitar cortes indeseados */
-                    .page-break { page-break-after: always; }
-                    tr, div { page-break-inside: avoid; }
-                    
-                    /* Ocultar elementos específicos de la web */
-                    .no-print, nav, header, footer, .main-layout { 
-                        display: none !important; 
-                    }
-                }
-
-                /* Estilos específicos para tablas del reporte */
-                #reporte-content table thead {
-                    background: transparent !important;
-                    border-bottom: 2px solid #1a3a5c;
-                }
-                #reporte-content table th {
-                    color: #1a3a5c !important;
-                    font-weight: 700 !important;
-                    background: transparent !important;
-                    border: none !important;
-                }
-                #reporte-content table td {
-                    border-bottom: 1px solid #eee;
-                }
-            `}</style>
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #reporte-content, #reporte-content * {
+            visibility: visible;
+          }
+          #reporte-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 20px !important;
+            background: white !important;
+            box-shadow: none !important;
+            border: none !important;
+            color: black !important;
+          }
+          body { 
+            background: white !important; 
+            margin: 0; 
+            padding: 0; 
+            overflow: visible !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .page-break { page-break-after: always; }
+          tr, div { page-break-inside: avoid; }
+          .no-print, nav, header, footer, .main-layout { 
+            display: none !important; 
+          }
+        }
+        #reporte-content table thead {
+          background: transparent !important;
+          border-bottom: 2px solid #1a3a5c;
+        }
+        #reporte-content table th {
+          color: #1a3a5c !important;
+          font-weight: 700 !important;
+          background: transparent !important;
+          border: none !important;
+        }
+        #reporte-content table td {
+          border-bottom: 1px solid #eee;
+        }
+      `}</style>
         </PageLayout>
     );
 };

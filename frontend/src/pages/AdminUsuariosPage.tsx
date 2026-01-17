@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PageLayout, Card, LoadingSpinner, ErrorMessage, SuccessMessage, Button, Input, Label, Select, Modal, FormGroup, Table, Flex, Typography, Badge, ConfirmDialog, Pagination, SearchBar } from '../components/common';
+import { PageLayout, Card, LoadingSpinner, ErrorMessage, SuccessMessage, Button, Input, Select, Modal, FormGroup, Table, Flex, Typography, Badge, ConfirmDialog, Pagination, SearchBar } from '../components/common';
 import apiClient from '../services/apiClient';
 import { Usuario } from '../types';
 
@@ -133,7 +133,7 @@ export const AdminUsuariosPage: React.FC = () => {
             <Flex justify="space-between" align="center" style={{ marginBottom: '1.5rem', marginTop: '1rem' }}>
                 <Flex direction="column">
                     <Typography variant="h1">Administración de Usuarios</Typography>
-                    <Typography variant="body" style={{ color: 'var(--texto-sec)' }}>Gestión de accesos y roles del sistema.</Typography>
+                    <Typography variant="body" color="var(--texto-sec)">Gestión de accesos y roles del sistema.</Typography>
                 </Flex>
                 <Button variant="main" onClick={() => setModalOpen(true)}>
                     + Nuevo Usuario
@@ -147,9 +147,9 @@ export const AdminUsuariosPage: React.FC = () => {
                 {loading ? (
                     <LoadingSpinner />
                 ) : (
-                    <Flex style={{ overflowX: 'auto', flexDirection: 'column' }}>
-                        <Flex justify="flex-end" gap="1rem" style={{ marginBottom: '1rem', flexWrap: 'wrap' }}>
-                            <div style={{ width: '200px' }}>
+                    <Flex direction="column" gap="1rem">
+                        <Flex justify="flex-end" gap="1rem" wrap="wrap">
+                            <Flex style={{ width: '200px' }}>
                                 <Select
                                     value={roleFilter}
                                     onChange={(e) => setRoleFilter(e.target.value)}
@@ -159,7 +159,7 @@ export const AdminUsuariosPage: React.FC = () => {
                                     <option value="EDITOR">Editor</option>
                                     <option value="VIEWER">Visualizador</option>
                                 </Select>
-                            </div>
+                            </Flex>
                             <SearchBar
                                 value={searchTerm}
                                 onChange={setSearchTerm}
@@ -168,59 +168,61 @@ export const AdminUsuariosPage: React.FC = () => {
                             />
                         </Flex>
 
-                        <Table variant="default">
-                            <Table.Header>
-                                <Table.Row>
-                                    <Table.Cell header>Nombre</Table.Cell>
-                                    <Table.Cell header>Correo</Table.Cell>
-                                    <Table.Cell header>Rol Actual</Table.Cell>
-                                    <Table.Cell header>Acciones</Table.Cell>
-                                </Table.Row>
-                            </Table.Header>
-                            <Table.Body>
-                                {paginatedUsuarios.map(u => (
-                                    <Table.Row key={u.id_usuario || (u as any).id}>
-                                        <Table.Cell>{u.nombre || (u as any).nombre_completo}</Table.Cell>
-                                        <Table.Cell>{u.email || (u as any).correo}</Table.Cell>
-                                        <Table.Cell>
-                                            <Badge variant="pill" style={getRoleBadgeStyle(u.rol)}>
-                                                {u.rol}
-                                            </Badge>
-                                        </Table.Cell>
-                                        <Table.Cell>
-                                            <Flex gap="0.5rem" align="center">
-                                                <Flex style={{ width: '120px' }}>
-                                                    <Select
-                                                        value={u.rol}
-                                                        onChange={(e) => handleUpdateRole(u.id_usuario || (u as any).id, e.target.value)}
-                                                        style={{
-                                                            padding: '0.3rem',
-                                                            fontSize: '0.85rem',
-                                                        }}
-                                                    >
-                                                        <option value="ADMIN">ADMIN</option>
-                                                        <option value="EDITOR">EDITOR</option>
-                                                        <option value="VIEWER">VIEWER</option>
-                                                    </Select>
-                                                </Flex>
-                                                <Button
-                                                    variant="danger"
-                                                    onClick={() => handleDeleteUser(u.id_usuario || (u as any).id)}
-                                                    style={{
-                                                        padding: '0.3rem 0.5rem',
-                                                        fontSize: '0.8rem',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                    }}
-                                                    title="Eliminar usuario"
-                                                >
-                                                    🗑️
-                                                </Button>
-                                            </Flex>
-                                        </Table.Cell>
+                        <Flex style={{ overflowX: 'auto' }}>
+                            <Table variant="default">
+                                <Table.Header>
+                                    <Table.Row>
+                                        <Table.Cell header>Nombre</Table.Cell>
+                                        <Table.Cell header>Correo</Table.Cell>
+                                        <Table.Cell header>Rol Actual</Table.Cell>
+                                        <Table.Cell header>Acciones</Table.Cell>
                                     </Table.Row>
-                                ))}
-                            </Table.Body>
-                        </Table>
+                                </Table.Header>
+                                <Table.Body>
+                                    {paginatedUsuarios.map(u => (
+                                        <Table.Row key={u.id_usuario || (u as any).id}>
+                                            <Table.Cell>{u.nombre || (u as any).nombre_completo}</Table.Cell>
+                                            <Table.Cell>{u.email || (u as any).correo}</Table.Cell>
+                                            <Table.Cell>
+                                                <Badge variant="pill" style={getRoleBadgeStyle(u.rol)}>
+                                                    {u.rol}
+                                                </Badge>
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                <Flex gap="0.5rem" align="center">
+                                                    <Flex style={{ width: '120px' }}>
+                                                        <Select
+                                                            value={u.rol}
+                                                            onChange={(e) => handleUpdateRole(u.id_usuario || (u as any).id, e.target.value)}
+                                                            style={{
+                                                                padding: '0.3rem',
+                                                                fontSize: '0.85rem',
+                                                            }}
+                                                        >
+                                                            <option value="ADMIN">ADMIN</option>
+                                                            <option value="EDITOR">EDITOR</option>
+                                                            <option value="VIEWER">VIEWER</option>
+                                                        </Select>
+                                                    </Flex>
+                                                    <Button
+                                                        variant="danger"
+                                                        onClick={() => handleDeleteUser(u.id_usuario || (u as any).id)}
+                                                        style={{
+                                                            padding: '0.3rem 0.5rem',
+                                                            fontSize: '0.8rem',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                        }}
+                                                        title="Eliminar usuario"
+                                                    >
+                                                        🗑️
+                                                    </Button>
+                                                </Flex>
+                                            </Table.Cell>
+                                        </Table.Row>
+                                    ))}
+                                </Table.Body>
+                            </Table>
+                        </Flex>
 
                         <Pagination
                             currentPage={currentPage}
@@ -233,24 +235,21 @@ export const AdminUsuariosPage: React.FC = () => {
 
             <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Registrar Nuevo Usuario">
                 <Flex direction="column" gap="1rem" style={{ minWidth: '350px' }}>
-                    <FormGroup>
-                        <Label>Nombre Completo</Label>
+                    <FormGroup label="Nombre Completo">
                         <Input
                             type="text"
                             value={newUserA.nombre}
                             onChange={e => setNewUserA({ ...newUserA, nombre: e.target.value })}
                         />
                     </FormGroup>
-                    <FormGroup>
-                        <Label>Correo Electrónico</Label>
+                    <FormGroup label="Correo Electrónico">
                         <Input
                             type="email"
                             value={newUserA.email}
                             onChange={e => setNewUserA({ ...newUserA, email: e.target.value })}
                         />
                     </FormGroup>
-                    <FormGroup>
-                        <Label>Contraseña</Label>
+                    <FormGroup label="Contraseña">
                         <Input
                             type="password"
                             value={newUserA.password}
@@ -258,8 +257,7 @@ export const AdminUsuariosPage: React.FC = () => {
                             placeholder="Mínimo 6 caracteres"
                         />
                     </FormGroup>
-                    <FormGroup>
-                        <Label>Rol Asignado</Label>
+                    <FormGroup label="Rol Asignado">
                         <Select
                             value={newUserA.rol}
                             onChange={e => setNewUserA({ ...newUserA, rol: e.target.value as any })}
@@ -269,8 +267,7 @@ export const AdminUsuariosPage: React.FC = () => {
                             <option value="ADMIN">ADMIN (Control Total)</option>
                         </Select>
                     </FormGroup>
-                    <FormGroup>
-                        <Label>Cargo</Label>
+                    <FormGroup label="Cargo">
                         <Input
                             type="text"
                             value={newUserA.cargo}
@@ -278,8 +275,7 @@ export const AdminUsuariosPage: React.FC = () => {
                             placeholder="Ej. Docente, Decana"
                         />
                     </FormGroup>
-                    <FormGroup>
-                        <Label>Unidad / Facultad</Label>
+                    <FormGroup label="Unidad / Facultad">
                         <Input
                             type="text"
                             value={newUserA.unidad}
@@ -288,7 +284,7 @@ export const AdminUsuariosPage: React.FC = () => {
                         />
                     </FormGroup>
 
-                    <Flex justify="flex-end" gap="0.5rem" style={{ marginTop: '1rem' }}>
+                    <Flex justify="flex-end" gap="0.8rem" style={{ marginTop: '1rem' }}>
                         <Button variant="ghost" onClick={() => setModalOpen(false)}>Cancelar</Button>
                         <Button variant="main" onClick={handleCreateUser} disabled={creating}>
                             {creating ? 'Creando...' : 'Crear Usuario'}
@@ -296,7 +292,6 @@ export const AdminUsuariosPage: React.FC = () => {
                     </Flex>
                 </Flex>
             </Modal>
-
 
             <ConfirmDialog
                 isOpen={showDeleteDialog}
@@ -308,6 +303,6 @@ export const AdminUsuariosPage: React.FC = () => {
                 onConfirm={confirmDeleteUser}
                 onCancel={() => setShowDeleteDialog(false)}
             />
-        </PageLayout >
+        </PageLayout>
     );
 };

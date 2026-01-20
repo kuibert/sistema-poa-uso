@@ -51,9 +51,21 @@ app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`📊 API disponible en http://localhost:${PORT}/api`);
 
-  // Verificar conexión a Base de Datos
+
+  // Verificar conexión a Base de Datos y ejecutar migraciones
   query('SELECT NOW()')
-    .then(() => console.log('🔌 Base de datos conectada correctamente'))
+    .then(async () => {
+      console.log('🔌 Base de datos conectada correctamente');
+
+      // Ejecutar migraciones
+      try {
+        const { runMigrations } = require('./migrations/migrationRunner');
+        await runMigrations();
+      } catch (error) {
+        console.error('❌ Error ejecutando migraciones:', error);
+      }
+
+    })
     .catch((err: any) => console.error('❌ Error fatal al conectar a la BD:', err));
 });
 

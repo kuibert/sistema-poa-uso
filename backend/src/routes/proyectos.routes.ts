@@ -75,10 +75,16 @@ router.get('/reporte-financiero/:id', authMiddleware, async (req, res, next) => 
   }
 });
 
-router.get('/reporte-financiero-unidades', authMiddleware, async (req, res, next) => {
+router.get('/reporte-financiero-unidades', authMiddleware, async (req: AuthRequest, res, next) => {
   try {
     const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
-    const reporte = await proyectosService.getReporteFinancieroUnidades(anio);
+    let unidad: string | undefined = undefined;
+
+    if (req.user && req.user.rol !== 'ADMIN') {
+      unidad = req.user.unidad;
+    }
+
+    const reporte = await proyectosService.getReporteFinancieroUnidades(anio, unidad);
     res.json(reporte);
   } catch (error) {
     next(error);
@@ -86,10 +92,16 @@ router.get('/reporte-financiero-unidades', authMiddleware, async (req, res, next
 });
 
 
-router.get('/reporte-metricas-anual', authMiddleware, async (req, res, next) => {
+router.get('/reporte-metricas-anual', authMiddleware, async (req: AuthRequest, res, next) => {
   try {
     const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
-    const reporte = await proyectosService.getReporteMetricasAnual(anio);
+    let unidad: string | undefined = undefined;
+
+    if (req.user && req.user.rol !== 'ADMIN') {
+      unidad = req.user.unidad;
+    }
+
+    const reporte = await proyectosService.getReporteMetricasAnual(anio, unidad);
     res.json(reporte);
   } catch (error) {
     next(error);
@@ -106,9 +118,32 @@ router.post('/', authMiddleware, requireRole(['ADMIN', 'EDITOR']), async (req: A
   }
 });
 
+router.post('/duplicar', authMiddleware, requireRole(['ADMIN']), async (req: AuthRequest, res, next) => {
+  try {
+    const { anioOrigen, anioDestino } = req.body;
+
+    if (!anioOrigen || !anioDestino) {
+      return res.status(400).json({ message: 'Se requieren año origen y año destino.' });
+    }
+
+    const result = await proyectosService.duplicarPOA(
+      parseInt(anioOrigen),
+      parseInt(anioDestino),
+      req.user!.id
+    );
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/:id', authMiddleware, async (req, res, next) => {
   try {
-    const proyecto = await proyectosService.getProyecto(parseInt(req.params.id));
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'ID de proyecto inválido' });
+    }
+    const proyecto = await proyectosService.getProyecto(id);
     res.json(proyecto);
   } catch (error) {
     next(error);
@@ -225,24 +260,6 @@ router.delete('/actividades/:id', authMiddleware, requireRole(['ADMIN']), async 
   }
 });
 
-/* Duplicar POA */
-router.post('/duplicar', authMiddleware, requireRole(['ADMIN']), async (req: AuthRequest, res, next) => {
-  try {
-    const { anioOrigen, anioDestino } = req.body;
 
-    if (!anioOrigen || !anioDestino) {
-      return res.status(400).json({ message: 'Se requieren año origen y año destino.' });
-    }
-
-    const result = await proyectosService.duplicarPOA(
-      parseInt(anioOrigen),
-      parseInt(anioDestino),
-      req.user!.id
-    );
-    res.json(result);
-  } catch (error) {
-    next(error);
-  }
-});
 
 export default router;

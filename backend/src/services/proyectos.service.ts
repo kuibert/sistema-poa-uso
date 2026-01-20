@@ -235,35 +235,53 @@ export const proyectosService = {
     };
   },
 
-  async getReporteFinancieroUnidades(anio: number) {
+  async getReporteFinancieroUnidades(anio: number, unidad?: string) {
     // Get all projects grouped by unit with financial data
-    const result = await query(
-      `SELECT 
+    const params: any[] = [anio];
+    let queryStr = `
+        SELECT 
         p.unidad_facultad,
         COUNT(p.id) as num_proyectos,
         COALESCE(SUM(p.presupuesto_total), 0) as presupuesto_total,
         p.id as proyecto_id,
         p.nombre as proyecto_nombre,
         p.presupuesto_total as proyecto_presupuesto
-       FROM proyecto p
-       WHERE p.anio = $1 AND p.unidad_facultad IS NOT NULL
-       GROUP BY p.unidad_facultad, p.id, p.nombre, p.presupuesto_total
-       ORDER BY p.unidad_facultad, p.nombre`,
-      [anio]
-    );
+        FROM proyecto p
+        WHERE p.anio = $1 AND p.unidad_facultad IS NOT NULL
+    `;
+
+    if (unidad) {
+      queryStr += ` AND p.unidad_facultad = $2`;
+      params.push(unidad);
+    }
+
+    queryStr += `
+        GROUP BY p.unidad_facultad, p.id, p.nombre, p.presupuesto_total
+        ORDER BY p.unidad_facultad, p.nombre
+    `;
+
+    const result = await query(queryStr, params);
 
     // Get gastos for all projects
-    const gastosResult = await query(
-      `SELECT 
+    const gastosParams: any[] = [anio];
+    let gastosQuery = `
+       SELECT 
         p.id as proyecto_id,
         COALESCE(SUM(g.monto), 0) as total_gastado
        FROM proyecto p
        LEFT JOIN actividad a ON a.id_proyecto = p.id
        LEFT JOIN gasto_actividad g ON g.id_actividad = a.id
        WHERE p.anio = $1
-       GROUP BY p.id`,
-      [anio]
-    );
+    `;
+
+    if (unidad) {
+      gastosQuery += ` AND p.unidad_facultad = $2`;
+      gastosParams.push(unidad);
+    }
+
+    gastosQuery += ` GROUP BY p.id`;
+
+    const gastosResult = await query(gastosQuery, gastosParams);
 
     const gastosMap: Record<number, number> = {};
     gastosResult.rows.forEach((row: any) => {
@@ -311,17 +329,25 @@ export const proyectosService = {
     return unidades;
   },
 
-  async getReporteMetricasAnual(anio: number) {
+  async getReporteMetricasAnual(anio: number, unidad?: string) {
     // 1. Obtener proyectos basicos
-    const proyectosResult = await query(
-      `SELECT p.id, p.nombre, p.unidad_facultad, p.presupuesto_total, 
-              u.nombre_completo as responsable_nombre
-       FROM proyecto p
-       LEFT JOIN usuario u ON p.id_responsable = u.id
-       WHERE p.anio = $1
-       ORDER BY p.nombre`,
-      [anio]
-    );
+    let queryStr = `
+        SELECT p.id, p.nombre, p.unidad_facultad, p.presupuesto_total, 
+               u.nombre_completo as responsable_nombre
+        FROM proyecto p
+        LEFT JOIN usuario u ON p.id_responsable = u.id
+        WHERE p.anio = $1
+    `;
+    const params: any[] = [anio];
+
+    if (unidad) {
+      queryStr += ` AND p.unidad_facultad = $2`;
+      params.push(unidad);
+    }
+
+    queryStr += ` ORDER BY p.nombre`;
+
+    const proyectosResult = await query(queryStr, params);
 
     // 2. Calcular metricas para cada proyecto
     const reporte = [];
@@ -997,9 +1023,9 @@ export const proyectosService = {
         const costosRes = await client.query('SELECT * FROM costo_proyecto WHERE id_proyecto = $1', [p.id]);
         for (const c of costosRes.rows) {
           await client.query(`
-            INSERT INTO costo_proyecto (id_proyecto, tipo, descripcion, precio_unitario, cantidad, costo_total, unidad, id_actividad)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-          `, [nuevoId, c.tipo, c.descripcion, c.precio_unitario, c.cantidad, c.costo_total, c.unidad, null]); // id_actividad set to null to avoid old references
+            INSERT INTO costo_proyecto (id_proyecto, tipo, descripcion, precio_unitario, cantidad, costo_total, unidad, id_actividad, incluir_en_avance)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          `, [nuevoId, c.tipo, c.descripcion, c.precio_unitario, c.cantidad, c.costo_total, c.unidad, null, c.incluir_en_avance ?? true]); // id_actividad set to null to avoid old references
         }
 
         // D. Copiar Actividades
@@ -1048,7 +1074,8 @@ export const proyectosService = {
     } catch (e) {
       await client.query('ROLLBACK');
       console.error('Error duplicando POA:', e);
-      throw e;
+      // Re-lanzar con mensaje claro para el frontend
+      throw { statusCode: 500, message: `Error SQL: ${(e as any).message}` };
     } finally {
       client.release();
     }

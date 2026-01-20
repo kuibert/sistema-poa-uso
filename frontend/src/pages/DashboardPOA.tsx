@@ -123,9 +123,15 @@ export const DashboardPOA: React.FC = () => {
 
     } catch (error: any) {
       console.error(error);
+      let msg = error.response?.data?.message || 'Error al duplicar POA';
+
+      if (error.response?.status === 403) {
+        msg = 'Acción exclusiva para el administrador. No tiene permisos para realizar esta acción.';
+      }
+
       Swal.fire({
         title: 'Error',
-        text: error.response?.data?.message || 'Error al duplicar POA',
+        text: msg,
         icon: 'error',
         confirmButtonColor: '#3fa65b',
         background: '#1e293b',
@@ -225,9 +231,22 @@ export const DashboardPOA: React.FC = () => {
           </div>
 
           <Flex gap="0.5rem">
-            <Button onClick={() => setShowDuplicateModal(true)}>
-              📋 Duplicar POA
-            </Button>
+            {(() => {
+              const userStr = localStorage.getItem('user');
+              if (userStr) {
+                try {
+                  const user = JSON.parse(userStr);
+                  if (user.rol === 'ADMIN') {
+                    return (
+                      <Button onClick={() => setShowDuplicateModal(true)}>
+                        📋 Duplicar POA
+                      </Button>
+                    );
+                  }
+                } catch (e) { }
+              }
+              return null;
+            })()}
           </Flex>
         </Flex>
 

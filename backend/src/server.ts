@@ -54,18 +54,7 @@ app.listen(PORT, () => {
 
   // Verificar conexión a Base de Datos y ejecutar migraciones
   query('SELECT NOW()')
-    .then(async () => {
-      console.log('🔌 Base de datos conectada correctamente');
-
-      // Ejecutar migraciones
-      try {
-        const { runMigrations } = require('./migrations/migrationRunner');
-        await runMigrations();
-      } catch (error) {
-        console.error('❌ Error ejecutando migraciones:', error);
-      }
-
-    })
+    .then(() => console.log('🔌 Base de datos conectada correctamente'))
     .catch((err: any) => console.error('❌ Error fatal al conectar a la BD:', err));
 });
 

@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model actividad {
+  id                        BigInt                      @id @default(autoincrement())
+  id_proyecto               BigInt
+  nombre                    String
+  descripcion               String?
+  id_responsable            BigInt?
+  cargo_responsable         String?
+  unidad_responsable        String?
+  presupuesto_asignado      Decimal?                    @db.Decimal(14, 2)
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  proyecto                  proyecto                    @relation(fields: [id_proyecto], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_actividad_proyecto")
+  usuario                   usuario?                    @relation(fields: [id_responsable], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_actividad_responsable")
+  actividad_mes_plan        actividad_mes_plan[]
+  actividad_mes_seguimiento actividad_mes_seguimiento[]
+  costo_proyecto            costo_proyecto[]
+  evidencia_actividad       evidencia_actividad[]
+  gasto_actividad           gasto_actividad[]
+  indicador_actividad       indicador_actividad[]
+
+  @@index([id_proyecto], map: "idx_actividad_id_proyecto")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model actividad_mes_plan {
+  id           BigInt    @id @default(autoincrement())
+  id_actividad BigInt
+  mes          Int       @db.SmallInt
+  planificado  Boolean   @default(true)
+  actividad    actividad @relation(fields: [id_actividad], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_amp_actividad")
+
+  @@unique([id_actividad, mes])
+  @@index([id_actividad], map: "idx_amp_id_actividad")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model actividad_mes_seguimiento {
+  id                         BigInt    @id @default(autoincrement())
+  id_actividad               BigInt
+  mes                        Int       @db.SmallInt
+  estado                     String    @db.Char(1)
+  comentario                 String?
+  fecha_ultima_actualizacion DateTime  @default(now()) @db.Timestamptz(6)
+  actividad                  actividad @relation(fields: [id_actividad], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ams_actividad")
+
+  @@unique([id_actividad, mes])
+  @@index([id_actividad], map: "idx_ams_id_actividad")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model costo_proyecto {
+  id                BigInt     @id @default(autoincrement())
+  id_proyecto       BigInt
+  tipo              String     @db.VarChar(10)
+  descripcion       String
+  cantidad          Decimal    @default(0) @db.Decimal(14, 2)
+  unidad            String?
+  precio_unitario   Decimal    @default(0) @db.Decimal(14, 2)
+  costo_total       Decimal    @default(0) @db.Decimal(14, 2)
+  id_actividad      BigInt?
+  created_at        DateTime   @default(now()) @db.Timestamptz(6)
+  incluir_en_avance Boolean?   @default(true)
+  actividad         actividad? @relation(fields: [id_actividad], references: [id], onUpdate: NoAction, map: "fk_costo_actividad")
+  proyecto          proyecto   @relation(fields: [id_proyecto], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_costo_proyecto")
+
+  @@index([id_actividad], map: "idx_costo_id_actividad")
+  @@index([id_proyecto], map: "idx_costo_id_proyecto")
+}
+
+model evidencia_actividad {
+  id                      BigInt    @id @default(autoincrement())
+  id_actividad            BigInt
+  fecha                   DateTime  @db.Date
+  tipo                    String?
+  descripcion             String?
+  ruta_archivo            String
+  nombre_archivo_original String?
+  mime_type               String?
+  tamano_bytes            BigInt?
+  id_subido_por           BigInt?
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  actividad               actividad @relation(fields: [id_actividad], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_evidencia_actividad")
+  usuario                 usuario?  @relation(fields: [id_subido_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_evidencia_subido_por")
+
+  @@index([id_actividad], map: "idx_evidencia_id_actividad")
+}
+
+model gasto_actividad {
+  id                BigInt    @id @default(autoincrement())
+  id_actividad      BigInt
+  fecha             DateTime  @db.Date
+  descripcion       String
+  monto             Decimal   @db.Decimal(14, 2)
+  id_registrado_por BigInt?
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  actividad         actividad @relation(fields: [id_actividad], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_gasto_actividad")
+  usuario           usuario?  @relation(fields: [id_registrado_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_gasto_registrado_por")
+
+  @@index([id_actividad], map: "idx_gasto_id_actividad")
+}
+
+model indicador_actividad {
+  id                      BigInt    @id @default(autoincrement())
+  id_actividad            BigInt
+  categoria               String
+  descripcion_especifica  String?
+  meta_valor              Decimal?  @db.Decimal(14, 2)
+  unidad_medida           String?
+  beneficiarios           String?
+  valor_logrado           Decimal?  @db.Decimal(14, 2)
+  porcentaje_cumplimiento Decimal?  @db.Decimal(5, 2)
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  actividad               actividad @relation(fields: [id_actividad], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_indicador_actividad")
+
+  @@index([id_actividad], map: "idx_indicador_id_actividad")
+}
+
+model proyecto {
+  id                   BigInt                 @id @default(autoincrement())
+  anio                 Int                    @db.SmallInt
+  unidad_facultad      String
+  linea_estrategica    String?
+  objetivo_estrategico String?
+  accion_estrategica   String?
+  nombre               String
+  objetivo_proyecto    String?
+  id_responsable       BigInt?
+  presupuesto_total    Decimal?               @db.Decimal(14, 2)
+  activo               Boolean                @default(true)
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  actividad            actividad[]
+  costo_proyecto       costo_proyecto[]
+  usuario              usuario?               @relation(fields: [id_responsable], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_proyecto_responsable")
+  proyecto_usuario_rol proyecto_usuario_rol[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model proyecto_usuario_rol {
+  id          BigInt   @id @default(autoincrement())
+  id_proyecto BigInt
+  id_usuario  BigInt
+  rol         String   @db.VarChar(20)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  proyecto    proyecto @relation(fields: [id_proyecto], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pur_proyecto")
+  usuario     usuario  @relation(fields: [id_usuario], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pur_usuario")
+
+  @@unique([id_proyecto, id_usuario])
+  @@index([id_proyecto], map: "idx_pur_id_proyecto")
+  @@index([id_usuario], map: "idx_pur_id_usuario")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model usuario {
+  id                   BigInt                 @id @default(autoincrement())
+  nombre_completo      String
+  email                String                 @unique
+  contrasena           String
+  rol                  String                 @default("VIEWER") @db.VarChar(20)
+  cargo                String?
+  unidad               String?
+  activo               Boolean                @default(true)
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  actividad            actividad[]
+  evidencia_actividad  evidencia_actividad[]
+  gasto_actividad      gasto_actividad[]
+  proyecto             proyecto[]
+  proyecto_usuario_rol proyecto_usuario_rol[]
+}

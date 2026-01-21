@@ -1,66 +1,63 @@
 # Sistema de Gestión POA
 ## Universidad de Sonsonate
 
-Sistema completo de gestión de Plan Operativo Anual (POA) con frontend React y backend Node.js.
+Sistema integral para la gestión, seguimiento y control del Plan Operativo Anual (POA).
 
 ---
 
-## 🚀 Inicio Rápido
+## 🚀 Inicio Rápido (Desarrollo)
 
-### Iniciar Backend
-```bash
-cd backend
-npm run dev
-```
+Si ya tienes todo configurado, simplemente ejecuta:
 
-### Iniciar Frontend
-```bash
-cd frontend
-npm run dev
-```
+1. **Backend:**
+   ```powershell
+   cd backend
+   npm run dev
+   ```
+
+2. **Frontend:**
+   ```powershell
+   cd frontend
+   npm run dev
+   ```
 
 ---
 
-## 📦 Instalación
+## 📦 Configuración para Nuevos Desarrolladores
 
-### 1. Instalar Node.js
-- Descargar de: https://nodejs.org/
-- Versión recomendada: 18 LTS o superior
+### 1. Requisitos Previos
+- **Node.js**: v18 LTS o superior.
+- **PostgreSQL**: Instalado y corriendo.
 
-### 2. Instalar dependencias
-
-**Backend:**
-```bash
+### 2. Instalación de Dependencias
+Ejecuta en la raíz del proyecto:
+```powershell
+# Instalar en backend
 cd backend
+npm install
+
+# Instalar en frontend
+cd ../frontend
 npm install
 ```
 
-**Frontend:**
-```bash
-cd frontend
-npm install
-```
+### 3. Variables de Entorno
+Copia los archivos de ejemplo y configura tus credenciales:
 
-### 3. Configurar variables de entorno
-
-**Backend:**
-```bash
+**Backend (`backend/.env`):**
+```powershell
 cd backend
-copy .env.example .env
-# Editar .env con tus credenciales de base de datos
+cp .env.template .env
+# 💡 Configura DATABASE_URL y las credenciales de DB_USER, DB_PASSWORD, etc.
 ```
 
-**Frontend:**
-```bash
-cd frontend
-copy .env.example .env
-```
+### 4. Base de Datos (Flujo Prisma)
+Ya no necesitas ejecutar scripts SQL manuales. Prisma se encarga de todo:
 
-### 4. Configurar base de datos
-
-```bash
-# Crear base de datos en PostgreSQL
-psql -U postgres -f database/base_postgres.sql
+```powershell
+cd backend
+# Sincroniza la estructura de la base de datos
+npx prisma migrate dev
 ```
 
 ---
@@ -68,56 +65,34 @@ psql -U postgres -f database/base_postgres.sql
 ## 📁 Estructura del Proyecto
 
 ```
-POA DEVELOPMENT/
-├── backend/          # API Node.js + Express + TypeScript
-├── frontend/         # React + TypeScript + Vite
-├── database/         # Scripts SQL
-└── docs/             # Documentación y prototipos
+sistema-poa-uso/
+├── backend/          # API REST (Node.js + Express + TypeScript)
+│   ├── prisma/       # Esquema y migraciones de Base de Datos
+│   ├── src/          # Código fuente (Rutas, Servicios, Controllers)
+│   └── scripts/      # Utilidades de mantenimiento
+├── frontend/         # Interfaz de Usuario (React + Vite + TypeScript)
+├── database/         # Datos de semilla y notas de usuarios
+└── README.md         # Guía principal
 ```
 
 ---
 
-## 🌐 URLs del Sistema
+## 🛠️ Stack Tecnológico
 
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:5000
-- **Base de datos:** PostgreSQL (puerto 5432)
-
----
-
-## 📚 Documentación
-
-- **Frontend:** Ver `frontend/README.md`
-- **Backend:** Ver `backend/README.md`
-- **Prototipos HTML:** Ver `docs/Sistema de Gestión de POA/`
+- **Frontend**: React 18, TypeScript, Vite, CSS Vanilla (Premium Design).
+- **Backend API**: Node.js, Express, TypeScript.
+- **ORM / Database**: Prisma (Migraciones), PostgreSQL (pg pool para queries).
+- **Autenticación**: JWT (JSON Web Tokens) con Cookies.
 
 ---
 
-## 🛠️ Tecnologías
-
-### Frontend
-- React 18
-- TypeScript
-- Vite
-- Axios
-- React Router
-
-### Backend
-- Node.js
-- Express
-- TypeScript
-- PostgreSQL
-- JWT Authentication
-- Multer (uploads)
+## � Notas para el Equipo
+- **Ramas**: Los cambios más recientes se encuentran usualmente en la rama `devmelvin`.
+- **Base de Datos**: Si haces cambios al esquema, edita `backend/prisma/schema.prisma` y ejecuta `npx prisma migrate dev`.
+- **Usuarios de Prueba**: Revisa `database/usuarios` para ver credenciales de login disponibles.
 
 ---
-
-## 👥 Equipo de Desarrollo
 
 **Universidad de Sonsonate**  
-Sistema de Gestión POA
-
----
-
-**Última actualización:** Diciembre 2024
-
+*Facultad de Ingeniería / Sistema de Gestión POA*  
+Última actualización: Enero 2026

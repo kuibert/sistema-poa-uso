@@ -1,5 +1,5 @@
 
-import { query } from '../src/db';
+import { query } from '../src/config/db';
 import { proyectosService } from '../src/services/proyectos.service';
 import { gastosService } from '../src/services/gastos.service';
 

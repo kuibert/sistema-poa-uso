@@ -25,7 +25,7 @@ export const proyectosService = {
     LEFT JOIN actividad_mes_plan amp ON amp.id_actividad = a.id AND amp.mes = $2
     LEFT JOIN gasto_actividad g ON g.id_actividad = a.id
     WHERE p.anio = $1
-    ${unidad ? 'AND p.unidad_facultad = $3' : ''}
+    ${unidad ? 'AND UPPER(p.unidad_facultad) = UPPER($3)' : ''}
     GROUP BY p.id, u.nombre_completo
     ORDER BY p.created_at DESC
     `,
@@ -57,7 +57,7 @@ export const proyectosService = {
     JOIN actividad_mes_plan amp ON amp.id_actividad = a.id AND amp.mes = $2 AND amp.planificado = true
     LEFT JOIN indicador_actividad ia ON ia.id_actividad = a.id
     WHERE p.anio = $1
-    ${unidad ? 'AND p.unidad_facultad = $3' : ''}
+    ${unidad ? 'AND UPPER(p.unidad_facultad) = UPPER($3)' : ''}
     `,
       unidad ? [anio, mes, unidad] : [anio, mes]
     );
@@ -136,7 +136,7 @@ export const proyectosService = {
       // Si el usuario tiene unidad, filtramos. Si no tiene unidad (caso raro), no ve nada o ve todo? 
       // Asumiremos que debe tener unidad. Si no, no ve proyectos.
       if (user.unidad) {
-        queryStr += ` AND p.unidad_facultad = $${params.length + 1}`;
+        queryStr += ` AND UPPER(p.unidad_facultad) = UPPER($${params.length + 1})`;
         params.push(user.unidad);
       } else {
         // Usuario sin unidad (y no admin) -> return empty?
@@ -251,7 +251,7 @@ export const proyectosService = {
     `;
 
     if (unidad) {
-      queryStr += ` AND p.unidad_facultad = $2`;
+      queryStr += ` AND UPPER(p.unidad_facultad) = UPPER($2)`;
       params.push(unidad);
     }
 
@@ -275,7 +275,7 @@ export const proyectosService = {
     `;
 
     if (unidad) {
-      gastosQuery += ` AND p.unidad_facultad = $2`;
+      gastosQuery += ` AND UPPER(p.unidad_facultad) = UPPER($2)`;
       gastosParams.push(unidad);
     }
 
@@ -341,7 +341,7 @@ export const proyectosService = {
     const params: any[] = [anio];
 
     if (unidad) {
-      queryStr += ` AND p.unidad_facultad = $2`;
+      queryStr += ` AND UPPER(p.unidad_facultad) = UPPER($2)`;
       params.push(unidad);
     }
 

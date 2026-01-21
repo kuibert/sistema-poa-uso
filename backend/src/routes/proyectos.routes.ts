@@ -36,6 +36,10 @@ router.get('/dashboard', authMiddleware, async (req: AuthRequest, res, next) => 
 
     // Si usuario no es admin, forzar su unidad
     if (req.user && req.user.rol !== 'ADMIN') {
+      if (!req.user.unidad) {
+        // Si no tiene unidad, retornamos dashboard vacío por seguridad
+        return res.json({ proyectos: [], actividadesMes: [] });
+      }
       unidad = req.user.unidad;
     }
 
@@ -46,8 +50,12 @@ router.get('/dashboard', authMiddleware, async (req: AuthRequest, res, next) => 
   }
 });
 
-router.get('/unidades', authMiddleware, async (req, res, next) => {
+router.get('/unidades', authMiddleware, async (req: AuthRequest, res, next) => {
   try {
+    // Si no es admin, solo puede ver su propia unidad en la lista
+    if (req.user && req.user.rol !== 'ADMIN') {
+      return res.json(req.user.unidad ? [req.user.unidad] : []);
+    }
     const unidades = await proyectosService.getUnidades();
     res.json(unidades);
   } catch (error) {

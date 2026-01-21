@@ -297,7 +297,18 @@ export const DashboardPOA: React.FC = () => {
                     } catch { return false; }
                   })()}
                 >
-                  <option value="">Todas las unidades</option>
+                  {(() => {
+                    const userStr = localStorage.getItem('user');
+                    if (userStr) {
+                      try {
+                        const user = JSON.parse(userStr);
+                        if (user.rol === 'ADMIN') {
+                          return <option value="">Todas las unidades</option>;
+                        }
+                      } catch { }
+                    }
+                    return null;
+                  })()}
                   {unidades.map((u, idx) => (
                     <option key={idx} value={u}>{u}</option>
                   ))}

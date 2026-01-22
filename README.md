@@ -47,7 +47,7 @@ Copia los archivos de ejemplo y configura tus credenciales:
 **Backend (`backend/.env`):**
 ```powershell
 cd backend
-cp .env.template .env
+cp .env.example .env
 # 💡 Configura DATABASE_URL y las credenciales de DB_USER, DB_PASSWORD, etc.
 ```
 

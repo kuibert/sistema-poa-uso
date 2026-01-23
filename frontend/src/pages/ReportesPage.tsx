@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PageLayout, Card, Typography, Section, Button, Select, Label, Divider, LoadingSpinner, Flex, Input } from '../components/common';
+import { PageLayout, Card, Typography, Section, Button, Select, Label, Divider, LoadingSpinner, Flex, Input, Modal } from '../components/common';
 import { poaApi } from '../services/poaApi';
 
 // Import report components
@@ -22,6 +22,7 @@ export const ReportesPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
     const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+    const [showPdfModal, setShowPdfModal] = useState(false);
 
     useEffect(() => {
         loadProyectos();
@@ -94,6 +95,7 @@ export const ReportesPage: React.FC = () => {
             // Crear blob y URL
             const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
             setPdfPreviewUrl(url);
+            setShowPdfModal(true);
         } catch (error) {
             console.error("Error descargando reporte PDF", error);
             alert("Error al obtener reporte");
@@ -295,16 +297,22 @@ export const ReportesPage: React.FC = () => {
                 <ReporteMetricasAnual reporte={reporte} anio={anio} />
             )}
 
-            {/* Previsualizador PDF */}
-            {tipoReporte === 'pdf' && pdfPreviewUrl && (
-                <Card padding="0" style={{ marginTop: '1rem', height: '600px', overflow: 'hidden' }}>
-                    <iframe
-                        src={pdfPreviewUrl}
-                        style={{ width: '100%', height: '100%', border: 'none' }}
-                        title="Vista previa PDF"
-                    />
-                </Card>
-            )}
+            {/* Previsualizador PDF en Modal */}
+            <Modal
+                isOpen={showPdfModal}
+                onClose={() => setShowPdfModal(false)}
+                title={`Vista Previa: Reporte de Proyectos - ${selectedUnidad}`}
+            >
+                <div style={{ height: '80vh', width: '100%' }}>
+                    {pdfPreviewUrl && (
+                        <iframe
+                            src={pdfPreviewUrl}
+                            style={{ width: '100%', height: '100%', border: 'none', borderRadius: '4px' }}
+                            title="Vista previa PDF"
+                        />
+                    )}
+                </div>
+            </Modal>
 
             {/* Estilos para impresión */}
             <style>{`

@@ -9,6 +9,14 @@ export const poaApi = {
   getProyectos: (anio: number) =>
     apiClient.get<Proyecto[]>(`/proyectos?anio=${anio}`),
 
+  getUnidades: () =>
+    apiClient.get<string[]>('/proyectos/unidades'),
+
+  getReportePDF: (unidad: string, anio: number) =>
+    apiClient.get(`/reportes/proyectos-texto?unidad=${encodeURIComponent(unidad)}&anio=${anio}`, {
+      responseType: 'blob'
+    }),
+
   // ==================== PLANIFICACIÓN (Page1) ====================
 
   // Proyectos

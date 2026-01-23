@@ -9,19 +9,23 @@ import { ReporteFinancieroUnidad } from './reportes/ReporteFinancieroUnidad';
 import { ReporteMetricasAnual } from './reportes/ReporteMetricasAnual';
 
 export const ReportesPage: React.FC = () => {
-    const [tipoReporte, setTipoReporte] = useState<'detallado' | 'financiero' | 'metricas'>('detallado');
+    const [tipoReporte, setTipoReporte] = useState<'detallado' | 'financiero' | 'metricas' | 'pdf'>('detallado');
     const [vistaFinanciera, setVistaFinanciera] = useState<'proyecto' | 'unidad'>('proyecto');
 
     const [proyectos, setProyectos] = useState<any[]>([]);
+    const [unidades, setUnidades] = useState<string[]>([]);
     const [selectedProyectoId, setSelectedProyectoId] = useState<number | string>("");
+    const [selectedUnidad, setSelectedUnidad] = useState("");
     const [anio, setAnio] = useState(new Date().getFullYear());
     const [reporte, setReporte] = useState<any | null>(null);
     const [loadingProyectos, setLoadingProyectos] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+    const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
     useEffect(() => {
         loadProyectos();
+        loadUnidades();
     }, [anio]);
 
     useEffect(() => {
@@ -58,6 +62,15 @@ export const ReportesPage: React.FC = () => {
         }
     };
 
+    const loadUnidades = async () => {
+        try {
+            const { data } = await poaApi.getUnidades();
+            setUnidades(data);
+        } catch (error) {
+            console.error("Error cargando unidades", error);
+        }
+    };
+
     const handleGenerarReporteDetallado = async () => {
         if (!selectedProyectoId) return;
         try {
@@ -67,6 +80,23 @@ export const ReportesPage: React.FC = () => {
         } catch (error) {
             console.error("Error generando reporte", error);
             alert("Error al generar el reporte");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGenerarReportePDF = async () => {
+        if (!selectedUnidad) return;
+        try {
+            setLoading(true);
+            const response = await poaApi.getReportePDF(selectedUnidad, anio);
+
+            // Crear blob y URL
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+            setPdfPreviewUrl(url);
+        } catch (error) {
+            console.error("Error descargando reporte PDF", error);
+            alert("Error al obtener reporte");
         } finally {
             setLoading(false);
         }
@@ -108,6 +138,7 @@ export const ReportesPage: React.FC = () => {
                                     onClick={() => {
                                         setTipoReporte('financiero');
                                         setReporte(null);
+                                        setPdfPreviewUrl(null);
                                     }}
                                 >
                                     💰 Reporte Financiero
@@ -120,6 +151,16 @@ export const ReportesPage: React.FC = () => {
                                     }}
                                 >
                                     📊 Métricas Anuales
+                                </Button>
+                                <Button
+                                    variant={tipoReporte === 'pdf' ? 'main' : 'alt'}
+                                    onClick={() => {
+                                        setTipoReporte('pdf');
+                                        setReporte(null);
+                                        setPdfPreviewUrl(null);
+                                    }}
+                                >
+                                    📄 Reporte PDF
                                 </Button>
                             </Flex>
                         </div>
@@ -150,8 +191,50 @@ export const ReportesPage: React.FC = () => {
                                 </div>
                             )}
 
+                            {/* Selector de unidad para reporte PDF */}
+                            {tipoReporte === 'pdf' && (
+                                <>
+                                    <div style={{ flex: '0 0 250px' }}>
+                                        <Label>Unidad / Facultad</Label>
+                                        <Select
+                                            value={selectedUnidad}
+                                            onChange={e => setSelectedUnidad(e.target.value)}
+                                        >
+                                            <option value="">-- Seleccione Unidad --</option>
+                                            {unidades.map(u => (
+                                                <option key={u} value={u}>{u}</option>
+                                            ))}
+                                        </Select>
+                                    </div>
+                                    <div style={{ alignSelf: 'flex-end', display: 'flex', gap: '0.5rem' }}>
+                                        <Button
+                                            variant="alt"
+                                            onClick={handleGenerarReportePDF}
+                                            disabled={!selectedUnidad || loading}
+                                        >
+                                            {loading ? 'Cargando...' : '👁 Vista Previa'}
+                                        </Button>
+                                        {pdfPreviewUrl && (
+                                            <Button
+                                                variant="main"
+                                                onClick={() => {
+                                                    const link = document.createElement('a');
+                                                    link.href = pdfPreviewUrl;
+                                                    link.setAttribute('download', `Reporte_Proyectos_${selectedUnidad}_${anio}.pdf`);
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    link.remove();
+                                                }}
+                                            >
+                                                ⬇ Descargar PDF
+                                            </Button>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+
                             {/* Selector de proyecto */}
-                            {(tipoReporte === 'detallado' || vistaFinanciera === 'proyecto') && (
+                            {(tipoReporte === 'detallado' || (tipoReporte === 'financiero' && vistaFinanciera === 'proyecto')) && (
                                 <>
                                     <div style={{ flex: '1', minWidth: '300px', position: 'relative' }}>
                                         <Label>Seleccionar Proyecto</Label>
@@ -210,6 +293,17 @@ export const ReportesPage: React.FC = () => {
 
             {tipoReporte === 'metricas' && reporte && (
                 <ReporteMetricasAnual reporte={reporte} anio={anio} />
+            )}
+
+            {/* Previsualizador PDF */}
+            {tipoReporte === 'pdf' && pdfPreviewUrl && (
+                <Card padding="0" style={{ marginTop: '1rem', height: '600px', overflow: 'hidden' }}>
+                    <iframe
+                        src={pdfPreviewUrl}
+                        style={{ width: '100%', height: '100%', border: 'none' }}
+                        title="Vista previa PDF"
+                    />
+                </Card>
             )}
 
             {/* Estilos para impresión */}

@@ -4,6 +4,7 @@ import authRoutes from './routes/auth.routes';
 import proyectosRoutes from './routes/proyectos.routes';
 import gastosRoutes from './routes/gastos.routes';
 import evidenciasRoutes from './routes/evidencias.routes';
+import reportesRoutes from './routes/reportes.routes';
 import { query } from './config/db';
 
 import cookieParser from 'cookie-parser';
@@ -36,6 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/proyectos', proyectosRoutes);
 app.use('/api', gastosRoutes);  // Ya incluye /actividades/:id/gastos
 app.use('/api', evidenciasRoutes);  // Ya incluye /actividades/:id/evidencias
+app.use('/api/reportes', reportesRoutes);
 
 // Manejo de errores
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
